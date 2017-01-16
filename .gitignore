@@ -1,0 +1,12 @@
+*.bak
+
+# We don't need these in git.
+screenlog*
+*.swp
+*.lck
+*~
+.~lock.*
+
+# and we DEFINITELY don't need these.
+__pycache__/
+*.pyc
