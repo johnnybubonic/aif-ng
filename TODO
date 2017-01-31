@@ -15,3 +15,5 @@
 would yield the *client* sending info via URL params, e.g.
   https://build.domain.tld/aif-ng.php?disk[]=sda&disk[]=sdb&disk[sda]=300GB&disk[sdb]=500GB
 ? something like that.
+
+parser: make sure to use https://mikeknoop.com/lxml-xxe-exploit/ fix

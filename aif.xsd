@@ -1,0 +1,61 @@
+<?xml version="1.1" encoding="UTF-8" ?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+
+<!-- BEGIN STORAGE -->
+<xs:element name="storage"><!-- storage media related things. -->
+    <xs:element name="disk"><!-- a disk device. -->
+        <xs:element name="type"><!-- gpt, bios, etc. -->
+        <xs:element name="name"><!-- device, e.g. 'sda' -->
+        <xs:element name="part"><!-- define a partition -->
+            <xs:element name="num" /><!-- partition number -->
+            <xs:element name="name" /><!-- the filesystem or partition label. optional. -->
+            <xs:element name="size" /><!-- the size of the partition. can be e.g.: #G,#K, etc. or #%. -->
+            <xs:element name="fstype" /><!-- the filesystem to format as. see the gdisk filesystem types: http://www.rodsbooks.com/gdisk/walkthrough.html -->
+        </xs:element>
+    </xs:element>
+    <xs:element name="mount"><!-- mountpoint -->
+        <xs:element name="source" /><!-- the device to mount, e.g. /dev/sda1 -->
+        <xs:element name="mountpt" /><!-- where to mount, e.g. /boot -->
+        <xs:element name="type" /><!-- the filesystem type. optional; should normally be auto-detected. -->
+        <xs:element name="options" /><!-- other mount options. optional. -->
+    </xs:element>
+</xs:element>
+<!-- END STORAGE -->
+
+<!-- BEGIN NETWORK -->
+<xs:element name="network">
+    <xs:element name="interface"><!-- the interface name, e.g. 'enp3s0'. if set to 'auto', use the first ethernet device we find. -->
+        <xs:element name="addressing" /><!-- i.e. 'dhcp', 'static', etc. -->
+        <xs:element name="ipaddr" /><!-- the IP address to assign if set as static. -->
+    </xs:element>
+    <xs:element name="hostname" /><!-- the hostname for the install. highly recommended to be a FQDN. -->
+</xs:element>
+<!-- END NETWORK -->
+
+<!-- BEGIN SYSTEM -->
+<xs:element name="system"><!-- system-related configuration. -->
+    <xs:element name="timezone" /><!-- the timezone for the system. must be valid timezone, case-sensitive. -->
+    <xs:element name="locale" /><!-- the locale. must be valid locale, case-sensitive. -->
+    <xs:element name="kbdlayout" /><!-- the keyboard layout for vconsole. optional. -->
+</xs:element>
+<!-- END SYSTEM -->
+
+<!-- BEGIN USER -->
+<xs:element name="user">
+</xs:element>
+<!-- END USER -->
+
+<!-- BEGIN PACMAN -->
+    <!-- BEGIN REPOS -->
+    <!-- END REPOS -->
+
+    <!-- BEGIN SOFTWARE BASE -->
+    <!-- END SOFTWARE BASE -->
+
+    <!-- BEGIN EXTRA PACKAGES -->
+    <!-- END EXTRA PACKAGES -->
+
+<!-- END PACMAN -->
+
+
+</xs:schema>
