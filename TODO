@@ -17,3 +17,5 @@ would yield the *client* sending info via URL params, e.g.
 ? something like that.
 
 parser: make sure to use https://mikeknoop.com/lxml-xxe-exploit/ fix
+
+need to set proper location block for https://aif.square-r00t.net/aif.xsd
