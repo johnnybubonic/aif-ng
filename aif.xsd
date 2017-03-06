@@ -1,11 +1,11 @@
-<?xml version="1.1" encoding="UTF-8" ?>
+<?xml version="1.0" encoding="UTF-8" ?>
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
-
+<xs:element name="aif"><!-- the defined root element -->
 <!-- BEGIN STORAGE -->
 <xs:element name="storage"><!-- storage media related things. -->
     <xs:element name="disk"><!-- a disk device. -->
-        <xs:element name="type"><!-- gpt, bios, etc. -->
-        <xs:element name="name"><!-- device, e.g. 'sda' -->
+        <xs:element name="type" /><!-- gpt, bios, etc. -->
+        <xs:element name="name" /><!-- device, e.g. 'sda' -->
         <xs:element name="part"><!-- define a partition -->
             <xs:element name="num" /><!-- partition number -->
             <xs:element name="name" /><!-- the filesystem or partition label. optional. -->
@@ -26,7 +26,7 @@
 <xs:element name="network">
     <xs:element name="interface"><!-- the interface name, e.g. 'enp3s0'. if set to 'auto', use the first ethernet device we find. -->
         <xs:element name="addressing" /><!-- i.e. 'dhcp', 'static', etc. -->
-        <xs:element name="ipaddr" /><!-- the IP address to assign if set as static. -->
+        <xs:element name="ipaddr" /><!-- the IP address and netmask to assign if set as static. -->
     </xs:element>
     <xs:element name="hostname" /><!-- the hostname for the install. highly recommended to be a FQDN. -->
 </xs:element>
@@ -42,20 +42,90 @@
 
 <!-- BEGIN USER -->
 <xs:element name="user">
+    <xs:element name="root"><!-- the root user. -->
+        <xs:element name="password" /><!-- the HASHED AND SALTED version of the password. if blank, password will be blank. if not defined, account will be locked. -->
+    </xs:element>
+    <xs:element name="regusr"><!-- a regular user -->
+        <xs:element name="username" /><!-- the username -->
+        <xs:element name="homedir"><!-- the home directory -->
+            <xs:element name="path" /><!-- the path for the user's homedir. /home/USERNAME if not defined. -->
+            <xs:element name="create" /><!-- create the user's homedir. boolean. default is yes. -->
+        </xs:element>
+        <xs:element name="group" /><!-- the user's primary group. optional; if not specified, one will be created that matches the username. -->
+        <xs:element name="xgroup" /><!-- an extra group to add the user to. -->
+        <xs:element name="password" /><!-- see user/root/password -->
+        <xs:element name="comment" /><!-- the description of the user. optional. -->
+        <xs:element name="sudo" /><!-- whether or not to give the user FULL sudo privileges. boolean. no if unspecified. -->
+     </xs:element>
 </xs:element>
 <!-- END USER -->
 
 <!-- BEGIN PACMAN -->
+<xs:element name="pacman"><!-- core pacman settings -->
     <!-- BEGIN REPOS -->
+    <xs:element name="repos"><!-- define which repos, or "branches", are enabled. -->
+        <xs:element name="core"><!-- "[core]" -->
+            <xs:element name="status" /><!-- one of "enabled" or "disabled". assume enabled by default. -->
+            <xs:element name="mirror" /><!-- the URI for the mirror for the repo, or an Include directive. -->
+        </xs:element>
+        <xs:element name="extra"><!-- "[extra]" -->
+            <xs:element name="status" /><!-- one of "enabled" or "disabled". assume enabled by default. -->
+            <xs:element name="mirror" /><!-- the URI for the mirror for the repo, or an Include directive. -->
+        </xs:element>
+        <xs:element name="community"><!-- "[community]" -->
+            <xs:element name="status" /><!-- one of "enabled" or "disabled". assume enabled by default. -->
+            <xs:element name="mirror" /><!-- the URI for the mirror for the repo, or an Include directive. -->
+        </xs:element>
+        <xs:element name="multilib"><!-- "[multilib]" -->
+            <xs:element name="status" /><!-- one of "enabled" or "disabled". assume disabled by default. -->
+            <xs:element name="mirror" /><!-- the URI for the mirror for the repo, or an Include directive. -->
+        </xs:element>
+        <xs:element name="testing"><!-- "[testing]" -->
+            <xs:element name="status" /><!-- one of "enabled" or "disabled". assume disabled by default. -->
+            <xs:element name="mirror" /><!-- the URI for the mirror for the repo, or an Include directive. -->
+        </xs:element>
+        <xs:element name="multilib-testing"><!-- "[multilib-testing]" -->
+            <xs:element name="status" /><!-- one of "enabled" or "disabled". assume disabled by default. -->
+            <xs:element name="mirror" /><!-- the URI for the mirror for the repo, or an Include directive. -->
+        </xs:element>
+        <xs:element name="custom"><!-- "[custom]", or whatever the repository's name should be per the repo. can specify multiple of these. -->
+            <xs:element name="status" /><!-- one of "enabled" or "disabled". assume disabled by default. -->
+            <xs:element name="siglevel" /><!-- the siglevel. one element specified per additional trust level. if none provided, default is "Optional" and "TrustAll". -->
+            <xs:element name="mirror" /><!-- the URI for the mirror for the repo, or an Include directive. -->
+        </xs:element>
+    </xs:element>
+    <xs:element name="mirrorlist">
+        <xs:element name="mirror" /><!-- a URI to generate a mirrorlist, if we're using a custom entry. multiple of these can be specified. -->
+    </xs:element>
     <!-- END REPOS -->
-
     <!-- BEGIN SOFTWARE BASE -->
+    <xs:element name="software"><!-- packages considered *required*. these will be installed first/early on. -->
+        <xs:element name="package"><!-- a package item -->
+            <xs:element name="name" /><!-- the name of the package. -->
+            <xs:element name="repo" /><!-- optional. the repo to install the package from. MUST BE ENABLED IN THE REPOS ELEMENT TREE. -->
+            <xs:element name="version" /><!-- optional, and most likely will never need it. a version specification, like ">1.0.1" or "<3.0.3". -->
+        </xs:element>
+    </xs:element>
     <!-- END SOFTWARE BASE -->
-
     <!-- BEGIN EXTRA PACKAGES -->
+    <xs:element name="xsoftware"><!-- packages considered "extra. these will be installed later, and are considered non-fatal if they fail install. -->
+        <xs:element name="package"><!-- a package item -->
+            <xs:element name="name" /><!-- the name of the package. -->
+            <xs:element name="repo" /><!-- optional. the repo to install the package from. MUST BE ENABLED IN THE REPOS ELEMENT TREE. -->
+            <xs:element name="version" /><!-- optional, and most likely will never need it. a version specification, like ">1.0.1" or "<3.0.3". -->
+        </xs:element>
+    </xs:element>
     <!-- END EXTRA PACKAGES -->
-
+</xs:element>
 <!-- END PACMAN -->
 
+<!-- BEGIN BOOTLOADER -->
+<xs:element name="bootloader">
+    <xs:element name="type" /><!-- the type of bootloader. one of "grub", "lilo", "syslinux"... -->
+</xs:element>
+<!-- END BOOTLOADER -->
 
+<!-- BEGIN CUSTOM SCRIPT -->
+<!-- END CUSTOM SCRIPT -->
+</xs:element>
 </xs:schema>
