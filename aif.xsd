@@ -24,7 +24,8 @@
 
 <!-- BEGIN NETWORK -->
 <xs:element name="network">
-    <xs:element name="interface"><!-- the interface name, e.g. 'enp3s0'. if set to 'auto', use the first ethernet device we find. -->
+    <xs:element name="iface"><!-- an interface -->
+        <xs:element name="device" /><!-- the interface name, e.g. 'enp3s0'. if set to 'auto', use the first ethernet device we find. -->
         <xs:element name="addressing" /><!-- i.e. 'dhcp', 'static', etc. -->
         <xs:element name="ipaddr" /><!-- the IP address and netmask to assign if set as static. -->
     </xs:element>
@@ -52,7 +53,9 @@
             <xs:element name="create" /><!-- create the user's homedir. boolean. default is yes. -->
         </xs:element>
         <xs:element name="group" /><!-- the user's primary group. optional; if not specified, one will be created that matches the username. -->
-        <xs:element name="xgroup" /><!-- an extra group to add the user to. -->
+        <xs:element name="xgroup"><!-- an extra group to add the user to. -->
+            <xs:element name="name" /><!-- the name of the group -->
+        </xs:element>
         <xs:element name="password" /><!-- see user/root/password -->
         <xs:element name="comment" /><!-- the description of the user. optional. -->
         <xs:element name="sudo" /><!-- whether or not to give the user FULL sudo privileges. boolean. no if unspecified. -->
@@ -88,7 +91,8 @@
             <xs:element name="status" /><!-- one of "enabled" or "disabled". assume disabled by default. -->
             <xs:element name="mirror" /><!-- the URI for the mirror for the repo, or an Include directive. -->
         </xs:element>
-        <xs:element name="custom"><!-- "[custom]", or whatever the repository's name should be per the repo. can specify multiple of these. -->
+        <xs:element name="custom"><!-- "[custom]" -->
+            <xs:element name="name" /><!-- whatever the repository's name should be per the repo. can specify multiple of these. -->
             <xs:element name="status" /><!-- one of "enabled" or "disabled". assume disabled by default. -->
             <xs:element name="siglevel" /><!-- the siglevel. one element specified per additional trust level. if none provided, default is "Optional" and "TrustAll". -->
             <xs:element name="mirror" /><!-- the URI for the mirror for the repo, or an Include directive. -->
