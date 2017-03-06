@@ -1,3 +1,9 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <aif xmlns="https://aif.square-r00t.net/aif.xsd">
+    <storage>
+        <disk name="sda" type="gpt">
+            <part num="1" size="10%" fstype="ef00" />
+            <part num="2" size="90%" fstype="8300" />
+        </disk>
+    </storage>
 </aif>
