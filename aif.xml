@@ -1,11 +1,12 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<aif xmlns="https://aif.square-r00t.net/aif.xsd">
+<aif xmlns="http://aif.square-r00t.net/aif.xsd">
     <storage>
         <disk name="sda" type="gpt">
             <part num="1" size="10%" fstype="ef00" />
             <part num="2" size="90%" fstype="8300" />
         </disk>
-        <mount source="/dev/sda1" mountpt="/mnt" />
+        <mount source="/dev/sda1" mountpt="/mnt/boot" order="2" />
+        <mount source="/dev/sda2" mountpt="/mnt" order="1" />
     </storage>
     <network hostname="aiftest.square-r00t.net">
         <iface name="auto" addressing="dhcp" />
@@ -72,7 +73,8 @@
             <package name="sed" repo="core" />
         </software>
     </pacman>
-    <bootloader>
+    <bootloader efi="true">
         <type>GRUB</type>
+        <where>/boot</where>
     </bootloader>
 </aif>

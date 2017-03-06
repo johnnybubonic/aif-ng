@@ -14,6 +14,7 @@
         </xs:element>
     </xs:element>
     <xs:element name="mount"><!-- mountpoint -->
+        <xs:element name="order" /><!-- optional. the "weight" to give this mount point. -->
         <xs:element name="source" /><!-- the device to mount, e.g. /dev/sda1 -->
         <xs:element name="mountpt" /><!-- where to mount, e.g. /boot -->
         <xs:element name="type" /><!-- the filesystem type. optional; should normally be auto-detected. -->
@@ -126,10 +127,18 @@
 <!-- BEGIN BOOTLOADER -->
 <xs:element name="bootloader">
     <xs:element name="type" /><!-- the type of bootloader. one of "grub", "lilo", "syslinux"... -->
+    <xs:element name="efi" /><!-- boolean. UEFI support. if false, strictly MBR. -->
+    <xs:element name="where" /><!-- if efi is true, the mountpoint for the ESP (from within the chroot). if false, the device (or partition) to install the bootloader on. -->
 </xs:element>
 <!-- END BOOTLOADER -->
 
 <!-- BEGIN CUSTOM SCRIPT -->
+<xs:element name="scripts">
+    <xs:element name="script">
+        <xs:element name="uri" /><!-- a URI where to find the file. http://, https://, ftp://, file://, etc. -->
+        <xs:element name="lang" /><!-- optional. the language of the script. "bash", "python3", "python2", "awk" (if you're insane), etc. -->
+    </xs:element>
+</xs:element>
 <!-- END CUSTOM SCRIPT -->
 </xs:element>
 </xs:schema>
