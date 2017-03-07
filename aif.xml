@@ -1,5 +1,8 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<aif xmlns="http://aif.square-r00t.net/aif.xsd">
+<aif
+     xmlns="https://aif.square-r00t.net"
+     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+     xsi:schemaLocation="https://aif.square-r00t.net aif.xsd">
     <storage>
         <disk name="sda" type="gpt">
             <part num="1" size="10%" fstype="ef00" />

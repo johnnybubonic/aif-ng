@@ -20,3 +20,16 @@ would yield the *client* sending info via URL params, e.g.
 parser: make sure to use https://mikeknoop.com/lxml-xxe-exploit/ fix
 
 need to set proper location block for https://aif.square-r00t.net/aif.xsd
+
+
+xmllint --noout --schema aif.xsd aif.xml
+
+docs:
+http://lxml.de/parsing.html
+https://www.w3.org/2001/XMLSchema.xsd
+http://lxml.de/validation.html#xmlschema
+https://stackoverflow.com/questions/3084155/custom-attributes-in-an-xsd-schema
+https://www.w3schools.com/xml/schema_intro.asp
+https://www.w3schools.com/xml/schema_example.asp
+https://msdn.microsoft.com/en-us/library/dd489258.aspx
+
