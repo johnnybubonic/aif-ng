@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+           targetNamespace="https://aif.square-r00t.net"
+           xmlns="https://aif.square-r00t.net"
+           elementFormDefault="qualified">
+<xs:element name="aif"><!-- the defined root element -->
+    <!-- BEGIN STORAGE -->
+    <xs:element name="storage"><!-- storage media related things. -->
+        <xs:element name="disk"><!-- a disk device. -->
+            <xs:element name="type" type="xs:string" /><!-- TODO: custom type. gpt, bios, etc. -->
+            <xs:element name="name" type="xs:string" /><!-- device, e.g. 'sda' -->
+            <xs:element name="part"><!-- define a partition -->
+                <xs:element name="num" type="xs:positiveInteger" /><!-- partition number -->
+                <xs:element name="name" type="xs:string" /><!-- TODO: custom type. the filesystem or partition label. optional. -->
+                <xs:element name="size" type="xs:string" /><!-- TODO: custom type. the size of the partition. can be e.g.: #G,#K, etc. or #%. -->
+                <xs:element name="fstype" type="xs:string" /><!-- TODO: custom type. the filesystem to format as. see the gdisk filesystem types: http://www.rodsbooks.com/gdisk/walkthrough.html -->
+            </xs:element>
+        </xs:element>
+        <xs:element name="mount"><!-- mountpoint -->
+            <xs:element name="order" type="xs:integer" /><!-- optional. the "weight" to give this mount point. -->
+            <xs:element name="source" type="xs:string" /><!-- TODO: custom type. the device to mount, e.g. /dev/sda1 -->
+            <xs:element name="mountpt" type="xs:string" /><!-- TODO: custom type. where to mount, e.g. /boot -->
+            <xs:element name="type" type="xs:string" /><!-- TODO: custom type. the filesystem type. optional; should normally be auto-detected. -->
+            <xs:element name="options" type="xs:string" /><!-- other mount options. optional. -->
+        </xs:element>
+    </xs:element>
+    <!-- END STORAGE -->
+
+    <!-- BEGIN NETWORK -->
+    <xs:element name="network">
+        <xs:element name="iface"><!-- an interface -->
+            <xs:element name="device" type="xs:string" /><!-- the interface name, e.g. 'enp3s0'. if set to 'auto', use the first ethernet device we find. -->
+            <xs:element name="addressing" type="xs:string" /><!-- i.e. 'dhcp', 'static', etc. -->
+            <xs:element name="ipaddr" type="xs:string" /><!-- TODO: custom type. the IP address and netmask to assign if set as static. -->
+        </xs:element>
+        <xs:element name="hostname" type="xs:string"/><!-- TODO: custom type. the hostname for the install. highly recommended to be a FQDN. -->
+    </xs:element>
+    <!-- END NETWORK -->
+
+    <!-- BEGIN SYSTEM -->
+    <xs:element name="system"><!-- system-related configuration. -->
+        <xs:element name="timezone" type="xs:string" /><!-- TODO: custom type. the timezone for the system. must be valid timezone, case-sensitive. -->
+        <xs:element name="locale" type="xs:string" /><!-- TODO: custom type. the locale. must be valid locale, case-sensitive. -->
+        <xs:element name="kbdlayout" type="xs:string" /><!-- TODO: custom type. the keyboard layout for vconsole. optional. -->
+        <xs:element name="services"><!-- services to manage. note that the required software for the daemon(s) should be installed in the pacman section. -->
+            <xs:element name="name" type="xs:string" /><!-- the name of the service, e.g. "sshd" -->
+            <xs:element name="status" type="xs:string" /><!-- TODO: custom type. state. enable, disable -->
+        </xs:element>
+    </xs:element>
+    <!-- END SYSTEM -->
+
+    <!-- BEGIN USER -->
+    <xs:element name="user">
+        <xs:element name="root"><!-- the root user. -->
+            <xs:element name="password" type="xs:string" /><!-- TODO: custom type. the HASHED AND SALTED version of the password. if blank, password will be blank. if not defined, account will be locked. -->
+        </xs:element>
+        <xs:element name="regusr"><!-- TODO: add UID/GID support. GID support for xgroup? a regular user -->
+            <xs:element name="username" type="xs:string" /><!-- TODO: custom type (some char restrictions, etc.) the username -->
+            <xs:element name="homedir"><!-- the home directory -->
+                <xs:element name="path"  type="xs:string" /><!-- TODO: can use same type as storage/mount/mountpt. the path for the user's homedir. /home/USERNAME if not defined. -->
+                <xs:element name="create" type="xs:booleanean" /><!-- TODO: set default. create the user's homedir. boolean. default is yes. -->
+            </xs:element>
+            <xs:element name="group" type="xs:string" /><!-- TODO: custom type, some naming restrictions apply. the user's primary group. optional; if not specified, one will be created that matches the username. -->
+            <xs:element name="xgroup"><!-- an extra group to add the user to. -->
+                <xs:element name="name" type="xs:string" /><!-- TODO: same type as user/regusr/group. the name of the group -->
+            </xs:element>
+            <xs:element name="password" type="xs:string" /><!-- TODO: same type as user/root/password. see user/root/password -->
+            <xs:element name="comment" type="xs:string" /><!-- the description of the user. optional. -->
+            <xs:element name="sudo" type="xs:booleanean" /><!-- TODO: set default. whether or not to give the user FULL sudo privileges. boolean. no if unspecified. -->
+         </xs:element>
+    </xs:element>
+    <!-- END USER -->
+
+    <!-- BEGIN PACMAN -->
+    <xs:element name="pacman"><!-- core pacman settings -->
+        <!-- BEGIN REPOS -->
+        <xs:element name="repos"><!-- define which repos, or "branches", are enabled. -->
+            <xs:element name="core"><!-- "[core]" -->
+                <xs:element name="status" type="xs:booleanean" /><!-- TODO: set default. boolean. assume enabled by default. -->
+                <xs:element name="mirror" type="xs:anyURI" /><!-- TODO: restrict based on pattern. the URI for the mirror for the repo, or an Include directive. -->
+            </xs:element><!-- TODO: apply above restrictions/todos below. -->
+            <xs:element name="extra"><!-- "[extra]" -->
+                <xs:element name="status" type="xs:booleanean" /><!-- one of "enabled" or "disabled". assume enabled by default. -->
+                <xs:element name="mirror" type="xs:anyURI" /><!-- the URI for the mirror for the repo, or an Include directive. -->
+            </xs:element>
+            <xs:element name="community"><!-- "[community]" -->
+                <xs:element name="status" type="xs:booleanean" /><!-- one of "enabled" or "disabled". assume enabled by default. -->
+                <xs:element name="mirror" type="xs:anyURI" /><!-- the URI for the mirror for the repo, or an Include directive. -->
+            </xs:element>
+            <xs:element name="multilib"><!-- "[multilib]" -->
+                <xs:element name="status" type="xs:boolean"/><!-- one of "enabled" or "disabled". assume disabled by default. -->
+                <xs:element name="mirror" type="xs:anyURI" /><!-- the URI for the mirror for the repo, or an Include directive. -->
+            </xs:element>
+            <xs:element name="testing"><!-- "[testing]" -->
+                <xs:element name="status" type="xs:boolean" /><!-- one of "enabled" or "disabled". assume disabled by default. -->
+                <xs:element name="mirror" type="xs:anyURI" /><!-- the URI for the mirror for the repo, or an Include directive. -->
+            </xs:element>
+            <xs:element name="multilib-testing"><!-- "[multilib-testing]" -->
+                <xs:element name="status" type="xs:boolean" /><!-- one of "enabled" or "disabled". assume disabled by default. -->
+                <xs:element name="mirror" type="xs:anyURI" /><!-- the URI for the mirror for the repo, or an Include directive. -->
+            </xs:element>
+            <xs:element name="custom"><!-- "[custom]" -->
+                <xs:element name="name" type="xs:string" /><!-- whatever the repository's name should be per the repo. can specify multiple of these. -->
+                <xs:element name="status" type="xs:boolean" /><!-- one of "enabled" or "disabled". assume disabled by default. -->
+                <xs:element name="siglevel" type="xs:string" /><!-- TODO: custom type as a list or something? the siglevel. one element specified per additional trust level. if none provided, default is "Optional" and "TrustAll". -->
+                <xs:element name="mirror" type="xs:anyURI" /><!-- the URI for the mirror for the repo, or an Include directive. -->
+            </xs:element>
+        </xs:element>
+        <xs:element name="mirrorlist">
+            <xs:element name="mirror" type="xs:anyURI" /><!-- TODO: restriction here on valid URIs for pacman. a URI to generate a mirrorlist, if we're using a custom entry. multiple of these can be specified. -->
+        </xs:element>
+        <!-- END REPOS -->
+        <!-- BEGIN SOFTWARE BASE -->
+        <xs:element name="software"><!-- packages considered *required*. these will be installed first/early on. -->
+            <xs:element name="package"><!-- a package item -->
+                <xs:element name="name" type="xs:string" /><!-- the name of the package. -->
+                <xs:element name="repo" type="xs:string" /><!-- optional. the repo to install the package from. MUST BE ENABLED IN THE REPOS ELEMENT TREE. -->
+                <xs:element name="version" type="xs:string" /><!-- TODO: custom type. optional, and most likely will never need it. a version specification, like ">1.0.1" or "<3.0.3". -->
+            </xs:element>
+        </xs:element>
+        <!-- END SOFTWARE BASE -->
+        <!-- BEGIN EXTRA PACKAGES -->
+        <xs:element name="xsoftware"><!-- packages considered "extra". these will be installed later, and are considered non-fatal if they fail install. -->
+            <xs:element name="package"><!-- a package item --><!-- SEE ABOVE! -->
+                <xs:element name="name" type="xs:string" /><!-- the name of the package. -->
+                <xs:element name="repo" type="xs:string" /><!-- optional. the repo to install the package from. MUST BE ENABLED IN THE REPOS ELEMENT TREE. -->
+                <xs:element name="version" type="xs:string" /><!-- optional, and most likely will never need it. a version specification, like ">1.0.1" or "<3.0.3". -->
+            </xs:element>
+        </xs:element>
+        <!-- END EXTRA PACKAGES -->
+    </xs:element>
+    <!-- END PACMAN -->
+
+    <!-- BEGIN BOOTLOADER -->
+    <xs:element name="bootloader">
+        <xs:element name="type" type="xs:string" /><!-- TODO: custom type via a list? the type of bootloader. one of "grub", "lilo", "syslinux"... -->
+        <xs:element name="efi" type="xs:boolean" /><!-- boolean. UEFI support. if false, strictly MBR. -->
+        <xs:element name="where" type="xs:string" /><!-- TODO: same type as storage/mount/mountpt. if efi is true, the mountpoint for the ESP (from within the chroot). if false, the device (or partition) to install the bootloader on. -->
+    </xs:element>
+    <!-- END BOOTLOADER -->
+
+    <!-- BEGIN CUSTOM SCRIPT -->
+    <xs:element name="scripts">
+        <xs:element name="script">
+            <xs:element name="uri" type="xs:anyURI" /><!-- TODO: restrict to URIs understandable by python's urllib. a URI where to find the file. http://, https://, ftp://, file://, etc. -->
+            <xs:element name="lang" type="xs:string" /><!-- TODO: validate/restrict somehow? might need custom type. optional. the language of the script. "/bin/bash", "/bin/python3", "/bin/python2", "/bin/awk" (if you're insane), etc.  -->
+        </xs:element>
+    </xs:element>
+    <!-- END CUSTOM SCRIPT -->
+</xs:element>
+</xs:schema>

@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<aif
-     xmlns="https://aif.square-r00t.net"
+<aif xmlns="https://aif.square-r00t.net"
      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
      xsi:schemaLocation="https://aif.square-r00t.net aif.xsd">
     <storage>

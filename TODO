@@ -1,4 +1,4 @@
-- config layout. xml? e.g.
+bf566e594a2ad3e488fef7cfa6832d4ba857d8129b0c00fe3a096e9fbb85e92c268368a201f12f22571312923393b2174e11f9c9e347df5c8682d5b355da0d8b- config layout. xml? e.g.
 ...
 <disk type="gpt" name="sda">
   <part size="50%" name="/" format="8303" />
