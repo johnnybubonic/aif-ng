@@ -3,15 +3,15 @@
      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
      xsi:schemaLocation="https://aif.square-r00t.net aif.xsd">
     <storage>
-        <disk device="sda" type="gpt">
+        <disk device="/dev/sda" diskfmt="gpt">
             <part num="1" size="10%" fstype="ef00" />
             <part num="2" size="90%" fstype="8300" />
         </disk>
-        <mount source="/dev/sda1" mountpt="/mnt/boot" order="2" />
-        <mount source="/dev/sda2" mountpt="/mnt" order="1" />
+        <mount source="/dev/sda2" target="/mnt" order="1" />
+        <mount source="/dev/sda1" target="/mnt/boot" order="2" />
     </storage>
     <network hostname="aiftest.square-r00t.net">
-        <iface name="auto" addressing="dhcp" />
+        <iface device="auto" address="auto" netproto="ipv4" />
     </network>
     <system timezone="EST5EDT" locale="en_US.UTF-8" />
     <user>
