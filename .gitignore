@@ -6,6 +6,7 @@ screenlog*
 *.lck
 *~
 .~lock.*
+.editix
 
 # and we DEFINITELY don't need these.
 __pycache__/
