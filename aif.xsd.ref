@@ -8,7 +8,7 @@
     <xs:element name="storage"><!-- storage media related things. -->
         <xs:element name="disk"><!-- a disk device. -->
             <xs:element name="type" type="xs:string" /><!-- TODO: custom type. gpt, bios, etc. -->
-            <xs:element name="name" type="xs:string" /><!-- device, e.g. 'sda' -->
+            <xs:element name="device" type="xs:string" /><!-- device, e.g. 'sda' -->
             <xs:element name="part"><!-- define a partition -->
                 <xs:element name="num" type="xs:positiveInteger" /><!-- partition number -->
                 <xs:element name="name" type="xs:string" /><!-- TODO: custom type. the filesystem or partition label. optional. -->

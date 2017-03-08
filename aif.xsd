@@ -3,41 +3,71 @@
            targetNamespace="https://aif.square-r00t.net"
            xmlns="https://aif.square-r00t.net"
            elementFormDefault="qualified">
-	<!-- GLOBAL CUSTOM DATA TYPES -->
+<!-- GLOBAL CUSTOM DATA TYPES -->
 	<xs:simpleType name="diskdev">
 		<xs:restriction base="xs:string">
 			<xs:pattern value="^/dev/[A-Za-z_/]+[0-9]+" />
 		</xs:restriction>
 	</xs:simpleType>
-	
-	<xs:attribute name="device" type="diskdev" />
 
+	<xs:simpleType name="diskfmt">
+		<xs:restriction base="xs:string">
+			<xs:pattern value="(gpt|bios)" />
+		</xs:restriction>
+	</xs:simpleType>
+
+	<xs:simpleType name="disksize">
+		<xs:restriction base="xs:string">
+			<xs:pattern value="^(\+|-)[0-9]+([KMGTP]|%)" />
+		</xs:restriction>
+	</xs:simpleType>
+
+  <xs:simpleType name="fstype">
+		<xs:restriction base="xs:token">
+			<xs:pattern value="^[a-z0-9]+$" />
+		</xs:restriction>
+	</xs:simpleType>
+<!-- ROOT -->
 	<xs:element name="aif">
 		<xs:complexType>
 		<xs:all>
-			
+<!-- BEGIN STORAGE -->
 			<xs:element name="storage" minOccurs="1">
 				<xs:complexType>
 				<xs:sequence>
 					<xs:element name="disk" maxOccurs="unbounded" minOccurs="1">
 						<xs:complexType>
-						<xs:attribute ref="device"/>
-						<xs:complexContent>
-						<xs:choice minOccurs="1">
-							<xs:element name="gpt" type="diskfmt" />
-							<xs:element name="bios" type="diskfmt" />
-						</xs:choice>
-							</xs:complexContent>
+						<xs:sequence>
+							<xs:element name="part" minOccurs="1">
+								<xs:complexType>
+									<xs:attribute name="num" type="xs:positiveInteger" />
+									<xs:attribute name="name" type="xs:token" />
+									<xs:attribute name="size" type="disksize" />
+									<xs:attribute name="fstype" type="fstype" />
+								</xs:complexType>
+								<xs:unique name="unique-partnum">
+      						<xs:selector xpath="part"/>
+      						<xs:field xpath="@num"/>
+   							</xs:unique>
+							</xs:element>
+							</xs:sequence>
+							<xs:attribute name="device" type="diskdev" />
+							<xs:attribute name="diskfmt" type="diskfmt" />
 						</xs:complexType>
+						<xs:unique name="unique-diskdev">
+      				<xs:selector xpath="disk"/>
+      				<xs:field xpath="@device"/>
+   					</xs:unique>
 					</xs:element>
 				</xs:sequence>
 				</xs:complexType>
 				</xs:element>
+<!-- END STORAGE -->
 <!--
-			
+
 				<xs:element ref="mount" maxOccurs="unbounded" minOccurs="1" />
 				<xs:element ref="network" maxOccurs="unbounded" minOccurs="1" />
-				<xs:element ref="scripts" maxOccurs="unbounded" minOccurs="0" /> 
+				<xs:element ref="scripts" maxOccurs="unbounded" minOccurs="0" />
 -->
 		</xs:all>
 		</xs:complexType><!--
