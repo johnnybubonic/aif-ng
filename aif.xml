@@ -3,7 +3,7 @@
      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
      xsi:schemaLocation="https://aif.square-r00t.net aif.xsd">
     <storage>
-        <disk name="sda" type="gpt">
+        <disk device="sda" type="gpt">
             <part num="1" size="10%" fstype="ef00" />
             <part num="2" size="90%" fstype="8300" />
         </disk>

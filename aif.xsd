@@ -3,30 +3,51 @@
            targetNamespace="https://aif.square-r00t.net"
            xmlns="https://aif.square-r00t.net"
            elementFormDefault="qualified">
+	<!-- GLOBAL CUSTOM DATA TYPES -->
+	<xs:simpleType name="diskdev">
+		<xs:restriction base="xs:string">
+			<xs:pattern value="^/dev/[A-Za-z_/]+[0-9]+" />
+		</xs:restriction>
+	</xs:simpleType>
+	
+	<xs:attribute name="device" type="diskdev" />
+
 	<xs:element name="aif">
 		<xs:complexType>
-		<xs:sequence>
-			<xs:element name="storage" maxOccurs="unbounded" minOccurs="1">
+		<xs:all>
+			
+			<xs:element name="storage" minOccurs="1">
 				<xs:complexType>
 				<xs:sequence>
-					<xs:element name="disk">
+					<xs:element name="disk" maxOccurs="unbounded" minOccurs="1">
 						<xs:complexType>
-						<xs:element name="type" type="xs:string" /><!-- TODO: custom type. gpt, bios, etc. -->
-						<!-- NOTE: this should be the node.<xs:element name="name" type="xs:string" />device, e.g. 'sda' -->
-						<xs:element name="part" type="xs:string" />
+						<xs:attribute ref="device"/>
+						<xs:complexContent>
+						<xs:choice minOccurs="1">
+							<xs:element name="gpt" type="diskfmt" />
+							<xs:element name="bios" type="diskfmt" />
+						</xs:choice>
+							</xs:complexContent>
 						</xs:complexType>
 					</xs:element>
 				</xs:sequence>
 				</xs:complexType>
 				</xs:element>
+<!--
+			
 				<xs:element ref="mount" maxOccurs="unbounded" minOccurs="1" />
 				<xs:element ref="network" maxOccurs="unbounded" minOccurs="1" />
-				<xs:element ref="system" maxOccurs="1" minOccurs="1" />
-				<xs:element ref="user" maxOccurs="1" minOccurs="1" />
-				<xs:element ref="pacman" maxOccurs="1" minOccurs="1" />
-				<xs:element ref="bootloader" maxOccurs="1" minOccurs="1" />
-				<xs:element ref="scripts" maxOccurs="unbounded" minOccurs="0" />
-			</xs:sequence>
-		</xs:complexType>
+				<xs:element ref="scripts" maxOccurs="unbounded" minOccurs="0" /> 
+-->
+		</xs:all>
+		</xs:complexType><!--
+		<xs:complexType>
+		<xs:sequence>
+			<xs:element ref="system" maxOccurs="1" minOccurs="1" />
+			<xs:element ref="user" maxOccurs="1" minOccurs="1" />
+			<xs:element ref="pacman" maxOccurs="1" minOccurs="1" />
+			<xs:element ref="bootloader" maxOccurs="1" minOccurs="1" />
+		</xs:sequence>
+		</xs:complexType>-->
 	</xs:element>
 </xs:schema>
