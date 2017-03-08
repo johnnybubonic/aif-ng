@@ -53,13 +53,49 @@
 			<xs:pattern value="(both|ipv4|ipv6)" />
 		</xs:restriction>
 	</xs:simpleType>
-		
+	
+	<xs:simpleType name="scripturi">
+		<xs:restriction base="xs:anyURI">
+			<xs:pattern value="(https?|ftps?|file)://" />
+		</xs:restriction>
+	</xs:simpleType>
+	
+	<xs:simpleType name="devlang">
+		<xs:restriction base="xs:token">
+			<xs:pattern value="/(usr/)?s?bin/[A-Za-z0-9][A-Za-z\.\-]?" />
+		</xs:restriction>
+	</xs:simpleType>
+	
+	<xs:simpleType name="nixgroup">
+		<xs:restriction base="xs:token">
+			<xs:pattern value="[_a-z][-0-9_a-z]*$?" />
+		</xs:restriction>
+	</xs:simpleType>
+	
+	<xs:simpleType name="nixpass">
+		<xs:restriction base="xs:token">
+			<xs:pattern value="$(6$[A-Za-z0-9\./\+=]{8,16}$[A-Za-z0-9\./\+=]{86}|1$[A-Za-z0-9\./\+=]{8,16}$[A-Za-z0-9\./\+=]{22}|5$[A-Za-z0-9\./\+=]{8,16}$[A-Za-z0-9\./\+=]{43})" />
+		</xs:restriction>
+	</xs:simpleType>
+	
+	<xs:simpleType name="pacuri">
+		<xs:restriction base="xs:anyURI">
+			<xs:pattern value="(file|https?)://.*" />
+		</xs:restriction>
+	</xs:simpleType>
+	
+	<xs:simpleType name="bootloaders">
+		<xs:restriction base="xs:token">
+			<xs:pattern value="(grub|lilo|syslinux)" />
+		</xs:restriction>
+	</xs:simpleType>
+	
 <!-- ROOT -->
 	<xs:element name="aif">
 		<xs:complexType>
 		<xs:all>
 <!-- BEGIN STORAGE -->
-			<xs:element name="storage" minOccurs="1">
+			<xs:element name="storage" minOccurs="1" maxOccurs="1">
 				<xs:complexType>
 				<xs:sequence>
 <!-- BEGIN DISK -->
@@ -126,9 +162,126 @@
 					<xs:selector xpath="iface" />
 					<xs:field xpath="@address" />
 					<xs:field xpath="@netproto" />
-				</xs:unique>				
+				</xs:unique>
 			</xs:element>
 <!-- END NETWORK -->
+<!-- BEGIN SYSTEM -->
+			<xs:element name="system" maxOccurs="1" minOccurs="1">
+				<xs:complexType>
+				<xs:sequence>
+					<xs:element name="users" minOccurs="1" maxOccurs="1">
+						<xs:complexType>
+						<xs:sequence>
+							<xs:element name="user" minOccurs="0" maxOccurs="unbounded">
+								<xs:complexType>
+								<xs:sequence>
+									<xs:element name="home" minOccurs="0" maxOccurs="1">
+										<xs:complexType>
+											<xs:attribute name="path" type="xs:token" />
+											<xs:attribute name="create" type="xs:boolean" />
+										</xs:complexType>
+									</xs:element>
+									<xs:element name="xgroup" minOccurs="0" maxOccurs="unbounded">
+										<xs:complexType>
+											<xs:attribute name="name" type="nixgroup" use="required" />
+											<xs:attribute name="create" type="xs:boolean" />
+											<xs:attribute name="gid" type="xs:boolean" />
+										</xs:complexType>
+										<xs:unique name="unique-grp">
+											<xs:selector xpath="xgroup" />
+											<xs:field xpath="@name" />
+										</xs:unique>
+									</xs:element>
+									</xs:sequence>
+									<xs:attribute name="name" type="xs:token" use="required" />
+									<xs:attribute name="uid" type="xs:token" />
+									<xs:attribute name="group" type="nixgroup" />
+									<xs:attribute name="gid" type="xs:token" />
+									<xs:attribute name="password" type="nixpass" />
+									<xs:attribute name="comment" type="xs:token" />
+									<xs:attribute name="sudo" type="xs:boolean" />
+								</xs:complexType>
+							</xs:element>
+						</xs:sequence>
+						<xs:attribute name="rootpass" type="nixpass" />
+						</xs:complexType>
+							<xs:unique name="unique-usr">
+									<xs:selector xpath="user" />
+									<xs:field xpath="@name" />
+							</xs:unique>
+						</xs:element>
+					<xs:element name="service" minOccurs="0" maxOccurs="unbounded">
+						<xs:complexType>
+							<xs:attribute name="name" type="xs:token" use="required" />
+							<xs:attribute name="status" type="xs:boolean" use="required" />
+						</xs:complexType>
+						<xs:unique name="unique-svc">
+							<xs:selector xpath="service" />
+							<xs:field xpath="@name" />
+							<xs:field xpath="@status" />
+						</xs:unique>
+					</xs:element>
+				</xs:sequence>
+				<xs:attribute name="timezone" type="xs:string" use="required" />
+				<xs:attribute name="locale" type="xs:string" use="required" />
+				<xs:attribute name="kbd" type="xs:token" />
+				</xs:complexType>
+			</xs:element>
+<!-- END SYSTEM -->
+<!-- BEGIN PACMAN -->
+			<xs:element name="pacman" maxOccurs="1" minOccurs="1">
+				<xs:complexType>
+				<xs:sequence>
+					<xs:element name="repos" maxOccurs="1" minOccurs="1">
+						<xs:complexType>
+							<xs:sequence>
+								<xs:element name="repo" maxOccurs="unbounded" minOccurs="1">
+									<xs:complexType>
+										<xs:attribute name="name" type="xs:token" use="required" />
+										<xs:attribute name="enabled" type="xs:boolean" use="required" />
+										<xs:attribute name="siglevel" type="xs:token" use="required" />
+										<xs:attribute name="mirror" type="pacuri" use="required" />
+									</xs:complexType>
+								</xs:element>
+							</xs:sequence>
+						</xs:complexType>
+					</xs:element>
+					<xs:element name="mirrorlist" maxOccurs="1" minOccurs="0">
+						<xs:complexType>
+							<xs:sequence>
+								<xs:element name="mirror" type="pacuri" maxOccurs="unbounded" minOccurs="1" />
+							</xs:sequence>
+						</xs:complexType>
+						<xs:unique name="unique-mirrors">
+							<xs:selector xpath="mirror" />
+							<xs:field xpath="." />
+						</xs:unique>
+					</xs:element>
+					<xs:element name="software" maxOccurs="1" minOccurs="0">
+						<xs:complexType>
+							<xs:sequence>
+								<xs:element name="package" maxOccurs="unbounded" minOccurs="1">
+									<xs:complexType>
+										<xs:attribute name="name" type="xs:token" use="required" />
+										<xs:attribute name="repo" type="xs:token" />
+									</xs:complexType>
+								</xs:element>
+							</xs:sequence>
+						</xs:complexType>
+					</xs:element>
+				</xs:sequence>
+				</xs:complexType>
+			</xs:element>
+<!-- END PACMAN -->
+<!-- BEGIN BOOTLOADER -->
+			<xs:element name="bootloader" maxOccurs="1" minOccurs="1">
+				<xs:complexType>
+					<xs:attribute name="type" type="bootloaders" use="required" />
+					<xs:attribute name="target" type="xs:token" use="required" />
+					<xs:attribute name="efi" type="xs:boolean" />
+				</xs:complexType>
+			</xs:element>
+<!-- END BOOTLOADER -->
 <!--- BEGIN SCRIPTS -->
 			<xs:element name="scripts" maxOccurs="1" minOccurs="0">
 				<xs:complexType>
@@ -149,14 +302,6 @@
 			</xs:element>
 <!-- END SCRIPTS -->
 		</xs:all>
-		</xs:complexType>
-		<xs:complexType>
-		<xs:sequence>
-			<xs:element ref="system" maxOccurs="1" minOccurs="1" />
-			<xs:element ref="user" maxOccurs="1" minOccurs="1" />
-			<xs:element ref="pacman" maxOccurs="1" minOccurs="1" />
-			<xs:element ref="bootloader" maxOccurs="1" minOccurs="1" />
-		</xs:sequence>
 		</xs:complexType>
 	</xs:element>
 </xs:schema>
