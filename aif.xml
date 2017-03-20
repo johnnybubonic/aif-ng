@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<aif xmlns="https://aif.square-r00t.net"
+<aif xmlns:aif="https://aif.square-r00t.net"
      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
      xsi:schemaLocation="https://aif.square-r00t.net aif.xsd">
     <storage>
         <disk device="/dev/sda" diskfmt="gpt">
-            <part num="1" size="10%" fstype="ef00" />
-            <part num="2" size="90%" fstype="8300" />
+            <part num="1" start="0%" size="10%" fstype="ef00" />
+            <part num="2" start="10%" size="90%" fstype="8300" />
         </disk>
         <mount source="/dev/sda2" target="/mnt" order="1" />
         <mount source="/dev/sda1" target="/mnt/boot" order="2" />

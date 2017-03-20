@@ -3,26 +3,51 @@
            targetNamespace="https://aif.square-r00t.net"
            xmlns="https://aif.square-r00t.net"
            elementFormDefault="qualified">
+<xs:annotation>
+	<xs:documentation>
+		See https://aif.square-r00t.net/ for more information about this project.
+	</xs:documentation>
+</xs:annotation>
 <!-- GLOBAL CUSTOM DATA TYPES -->
 	<xs:simpleType name="diskdev">
+		<xs:annotation>
+			<xs:documentation>
+				This element specifies a type to be used for validating storage devices, such as hard disks or mdadm-managed devices.
+			</xs:documentation>
+		</xs:annotation>
 		<xs:restriction base="xs:string">
 			<xs:pattern value="/dev/([A-Za-z0-9_]+/)?[A-Za-z0-9_]+[0-9]?" />
 		</xs:restriction>
 	</xs:simpleType>
 
 	<xs:simpleType name="diskfmt">
+		<xs:annotation>
+			<xs:documentation>
+				This element specifies a type to validate what kind of disk formatting. Accept either GPT or BIOS only.
+			</xs:documentation>
+		</xs:annotation>
 		<xs:restriction base="xs:string">
-			<xs:pattern value="(gpt|bios)" />
+			<xs:pattern value="([Gg][Pp][Tt]|[Bb][Ii][Oo][Ss])" />
 		</xs:restriction>
 	</xs:simpleType>
 
 	<xs:simpleType name="disksize">
+		<xs:annotation>
+			<xs:documentation>
+				This element validates a disk size specification for a partition. Same rules apply as those in parted's size specification.
+			</xs:documentation>
+		</xs:annotation>
 		<xs:restriction base="xs:string">
 			<xs:pattern value="(\+|\-)?[0-9]+([KMGTP]|%)" />
 		</xs:restriction>
 	</xs:simpleType>
 
   <xs:simpleType name="fstype">
+		<xs:annotation>
+			<xs:documentation>
+				This element validates a filesystem type to be specified for formatting a partition. Recommended is ext3, ext4, btrfs, vfat (for UEFI ESP).
+			</xs:documentation>
+		</xs:annotation>
 		<xs:restriction base="xs:token">
 			<xs:pattern value="[a-z0-9]+" />
 		</xs:restriction>
@@ -106,6 +131,7 @@
 								<xs:complexType>
 									<xs:attribute name="num" type="xs:positiveInteger" use="required" />
 									<xs:attribute name="name" type="xs:token" />
+									<xs:attribute name="start" type="disksize" use="required" />
 									<xs:attribute name="size" type="disksize" use="required" />
 									<xs:attribute name="fstype" type="fstype" use="required" />
 								</xs:complexType>
