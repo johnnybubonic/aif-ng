@@ -23,7 +23,7 @@
 	<xs:simpleType name="diskfmt">
 		<xs:annotation>
 			<xs:documentation>
-				This element specifies a type to validate what kind of disk formatting. Accept either GPT or BIOS only.
+				This element specifies a type to validate what kind of disk formatting. Accepts either GPT or BIOS (for MBR systems) only.
 			</xs:documentation>
 		</xs:annotation>
 		<xs:restriction base="xs:string">
@@ -45,7 +45,7 @@
   <xs:simpleType name="fstype">
 		<xs:annotation>
 			<xs:documentation>
-				This element validates a filesystem type to be specified for formatting a partition. Recommended is ext3, ext4, btrfs, vfat (for UEFI ESP).
+				This element validates a filesystem type to be specified for formatting a partition. See sgdisk -L (or the table at http://www.rodsbooks.com/gdisk/walkthrough.html) for valid filesystem codes.
 			</xs:documentation>
 		</xs:annotation>
 		<xs:restriction base="xs:token">
@@ -157,6 +157,7 @@
 						<xs:attribute name="target" type="xs:token" use="required" />
 						<xs:attribute name="fstype" type="fstype" />
 						<xs:attribute name="opts" type="mntopts" />
+						<xs:attribute name="swap" type="xs:bool" />
 					</xs:complexType>
 					<xs:unique name="unique-mnts">
 						<xs:selector xpath="mount" />
@@ -250,6 +251,7 @@
 				</xs:sequence>
 				<xs:attribute name="timezone" type="xs:string" use="required" />
 				<xs:attribute name="locale" type="xs:string" use="required" />
+				<xs:attribute name="chrootpath" type="xs:string" user="required" />
 				<xs:attribute name="kbd" type="xs:token" />
 				</xs:complexType>
 			</xs:element>

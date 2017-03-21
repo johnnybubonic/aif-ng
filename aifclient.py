@@ -1,5 +1,15 @@
 #!/usr/bin/env python3
 
+## REQUIRES: ##
+# parted
+# sgdisk (yes, both)
+# python 3 with standard library
+# (OPTIONAL) lxml
+# pacman in the host environment
+# arch-install-scripts: https://www.archlinux.org/packages/extra/any/arch-install-scripts/
+# a network connection
+# the proper kernel arguments.
+
 try:
     from lxml import etree
     lxml_avail = True
@@ -205,7 +215,8 @@ class aif(object):
         aifdict['system']['timezone'] = False
         aifdict['system']['locale'] = False
         aifdict['system']['kbd'] = False
-        for i in ('locale', 'timezone', 'kbd'):
+        aifdict['system']['chrootpath'] = False
+        for i in ('locale', 'timezone', 'kbd', 'chrootpath'):
             if i in xmlobj.find('system').attrib:
                 aifdict['system'][i] = xmlobj.find('system').attrib[i]
         # And now services...
@@ -332,19 +343,186 @@ class archInstall(object):
             for p in cmds:
                 subprocess.call(p, stdout = DEVNULL, stderr = subprocess.STDOUT)
 
-    def mount(self):
-        pass
+    def mounts(self):
+        mntorder = list(self.mount.keys())
+        mntorder.sort()
+        for m in mntorder:
+            mnt = self.mount[m]
+            if mnt['mountpt'].lower() == 'swap':
+                cmd = ['swapon', mnt['device']]
+            else:
+                cmd = ['mount', mnt['device'], mnt['mountpt']]
+                if mnt['opts']:
+                    cmd.insert(1, '-o {0}'.format(mnt['opts']))
+                if mnt['fstype']:
+                    cmd.insert(1, '-t {0}'.format(mnt['fstype']))
+#        with open(os.devnull, 'w') as DEVNULL:
+#            for p in cmd:
+#                subprocess.call(p, stdout = DEVNULL, stderr = subprocess.STDOUT)
+        # And we need to add some extra mounts to support a chroot. We also need to know what was mounted before.
+        with open('/proc/mounts', 'r') as f:
+            procmounts = f.read()
+        mountlist = {}
+        for i in procmounts.splitlines():
+            mountlist[i.split()[1]] = i
+        cmounts = {}
+        for m in ('chroot', 'resolv', 'proc', 'sys', 'efi', 'dev', 'pts', 'shm', 'run', 'tmp'):
+            cmounts[m] = None
+        chrootdir = self.system['chrootpath']
+        # chroot (bind mount... onto itself. it's so stupid, i know. see https://bugs.archlinux.org/task/46169)
+        if chrootdir not in mountlist.keys():
+            cmounts['chroot'] = ['mount', '--bind', chrootdir, chrootdir]
+        # resolv.conf (for DNS resolution in the chroot) 
+        if (chrootdir + '/etc/resolv.conf') not in mountlist.keys():
+            cmounts['resolv'] = ['/bin/mount', '--bind', '-o', 'ro', '/etc/resolv.conf', chrootdir + '/etc/resolv.conf']
+        # proc
+        if (chrootdir + '/proc') not in mountlist.keys():
+            cmounts['proc'] = ['/bin/mount', '-t', 'proc', '-o', 'nosuid,noexec,nodev', 'proc', chrootdir + '/proc']
+        # sys
+        if (chrootdir + '/sys') not in mountlist.keys():
+            cmounts['sys'] = ['/bin/mount', '-t', 'sysfs', '-o', 'nosuid,noexec,nodev,ro', 'sys', chrootdir + '/sys']
+        # efi (if it exists on the host)
+        if '/sys/firmware/efi/efivars' in mountlist.keys():
+            if (chrootdir + '/sys/firmware/efi/efivars') not in mountlist.keys():
+                cmounts['efi'] = ['/bin/mount', '-t', 'efivarfs', '-o', 'nosuid,noexec,nodev', 'efivarfs', chrootdir + '/sys/firmware/efi/efivars']
+        # dev
+        if (chrootdir + '/dev') not in mountlist.keys():
+            cmounts['dev'] = ['/bin/mount', '-t', 'devtmpfs', '-o', 'mode=0755,nosuid', 'udev', chrootdir + '/dev']
+        # pts
+        if (chrootdir + '/dev/pts') not in mountlist.keys():
+            cmounts['pts'] = ['/bin/mount', '-t', 'devpts', '-o', 'mode=0620,gid=5,nosuid,noexec', 'devpts', chrootdir + '/dev/pts']
+        # shm (if it exists on the host)
+        if '/dev/shm' in mountlist.keys():
+            if (chrootdir + '/dev/shm') not in mountlist.keys():
+                cmounts['shm'] = ['/bin/mount', '-t', 'tmpfs', '-o', 'mode=1777,nosuid,nodev', 'shm', chrootdir + '/dev/shm']
+        # run (if it exists on the host)
+        if '/run' in mountlist.keys():
+            if (chrootdir + '/run') not in mountlist.keys():
+                cmounts['run'] = ['/bin/mount', '-t', 'tmpfs', '-o', 'nosuid,nodev,mode=0755', 'run', chrootdir + '/run']
+        # tmp (if it exists on the host)
+        if '/tmp' in mountlist.keys():
+            if (chrootdir + '/tmp') not in mountlist.keys():
+                cmounts['tmp'] = ['/bin/mount', '-t', 'tmpfs', '-o', 'mode=1777,strictatime,nodev,nosuid', 'tmp', chrootdir + '/tmp']
+        # Because the order of these mountpoints is so ridiculously important, we hardcode it. Yeah, python 3.6 has ordered dicts, but do we really want to risk it?
+        with open(os.devnull, 'w') as DEVNULL:
+            for m in ('chroot', 'resolv', 'proc', 'sys', 'efi', 'dev', 'pts', 'shm', 'run', 'tmp'):
+                if cmounts[m]:
+                    subprocess.call(cmounts[m], stdout = DEVNULL, stderr = subprocess.STDOUT)
+        # Okay. So we finally have all the mounts bound. Whew.
+    
+    def setup(self):
+        # TODO: could we leverage https://github.com/hartwork/image-bootstrap somehow? I want to keep this close
+        # to standard Python libs, though, to reduce dependency requirements.
+        hostscript = []
+        chrootcmds = []
+        locales = []
+        locale = []
+        # Get the necessary fstab additions for the guest
+        chrootfstab = subprocess.check_output(['genfstab', '-U', self.system['chrootpath']])
+        # Set up the time, and then kickstart the guest install.
+        hostscript.append(['timedatectl', 'set-ntp', 'true'])
+        hostscript.append(['pacstrap', self.system['chrootpath'], 'base'])
+        with open('{0}/etc/fstab'.format(self.system['chrootpath']), 'a') as f:
+            f.write(chrootfstab.decode('utf-8'))
+        # Validating this would be better with pytz, but it's not stdlib. dateutil would also work, but same problem.
+        # https://stackoverflow.com/questions/15453917/get-all-available-timezones
+        tzlist = subprocess.check_output(['timedatectl', 'list-timezones']).decode('utf-8').splitlines()
+        if self.system['timezone'] not in tzlist:
+            print('WARNING (non-fatal): {0} does not seem to be a valid timezone, but we\'re continuing anyways.'.format(self.system['timezone']))
+        os.symlink('/usr/share/zoneinfo/{0}'.format(self.system['timezone']),
+                   '{0}/etc/localtime'.format(self.system['chrootpath']))
+        # This is an ugly hack. TODO: find a better way of determining if the host is set to UTC in the RTC. maybe the datetime module can do it.
+        utccheck = subprocess.check_output(['timedatectl', 'status']).decode('utf-8').splitlines()
+        utccheck = [x.strip(' ') for x in utccheck]
+        for i, v in enumerate(utccheck):
+            if v.startswith('RTC in local'):
+                utcstatus = (v.split(': ')[1]).lower() in ('yes')
+                break
+        if utcstatus:
+            chrootcmds.append(['hwclock', '--systohc'])
+        # We need to check the locale, and set up locale.gen.
+        with open('{0}/etc/locale.gen'.format(self.system['chrootpath']), 'r') as f:
+            localeraw = f.readlines()
+        for line in localeraw:
+            if not line.startswith('# '):  # Comments, thankfully, have a space between the leading octothorpe and the comment. Locales have no space.
+                i = line.strip().strip('#')
+                if i != '':  # We also don't want blank entries. Keep it clean, folks.
+                    locales.append(i)
+        for i in locales:
+            localelst = i.split()
+            if localelst[0].lower().startswith(self.system['locale'].lower()):
+                locale.append(' '.join(localelst).strip())
+        for i, v in enumerate(localeraw):
+            for x in locale:
+                if v.startswith('#{0}'.format(x)):
+                    localeraw[i] = x + '\n'
+        with open('{0}/etc/locale.gen'.format(self.system['chrootpath']), 'w') as f:
+            f.write(''.join(localeraw))
+        with open('{0}/etc/locale.conf', 'a') as f:
+            f.write('LANG={0}\n'.format(locale[0].split()[0]))
+        chrootcmds.append(['locale-gen'])
+        # Set up the kbd layout.
+        # Currently there is NO validation on this. TODO.
+        if self.system['kbd']:
+            with open('{0}/etc/vconsole.conf'.format(self.system['chrootpath']), 'a') as f:
+                f.write('KEYMAP={0}\n'.format(self.system['kbd']))
+        # Set up the hostname.
+        with open('{0}/etc/hostname'.format(self.system['chrootpath']), 'w') as f:
+            f.write(self.network['hostname'] + '\n')
+        with open('{0}/etc/hosts'.format(self.system['chrootpath']), 'a') as f:
+            f.write('127.0.0.1\t{0}\t{1}\n'.format(self.network['hostname'], (self.network['hostname']).split('.')[0]))
+        # SET UP NETWORKING HERE
+        ########################
+        chrootcmds.append(['mkinitcpio', '-p', 'linux'])
+        with open(os.devnull, 'w') as DEVNULL:
+            for c in hostscript:
+                subprocess.call(c, stdout = DEVNULL, stderr = subprocess.STDOUT)
+        return(chrootcmds)
+    
+    def chroot(self, chrootcmds = False):
+        if not chrootcmds:
+            chrootcmds = self.setup()
+        chrootscript = """#!/bin/bash
+# https://aif.square-r00t.net/
+
+"""
+        with open('{0}/root/aif.sh'.format(self.system['chrootpath']), 'w') as f:
+            f.write(chrootscript)
+        os.chmod('{0}/root/aif.sh'.format(self.system['chrootpath']), 0o700)
+        real_root = os.open("/", os.O_RDONLY)
+        os.chroot(self.system['chrootpath'])
+        # Does this even work with an os.chroot()? Let's hope so!
+        with open(os.devnull, 'w') as DEVNULL:
+            for c in chrootcmds:
+                subprocess.call(c, stdout = DEVNULL, stderr = subprocess.STDOUT)
+        os.system('{0}/root/aif.sh'.format(self.system['chrootpath']))
+        os.system('{0}/root/aif-post.sh'.format(self.system['chrootpath']))
+        os.fchdir(real_root)
+        os.chroot('.')
+        os.close(real_root)
+        if not os.path.isfile('{0}/sbin/init'.format(chrootdir)):
+            os.symlink('../lib/systemd/systemd', '{0}/sbin/init'.format(chrootdir))
+    
+    def unmount(self):
+        with open(os.devnull, 'w') as DEVNULL:
+            subprocess.call(['unmount', '-lR', self.system['chrootpath']], stdout = DEVNULL, stderr = subprocess.STDOUT)
                 
 def runInstall(confdict):
     install = archInstall(confdict)
     #install.format()
-    install.mount()
+    #install.mounts()
+    ##chrootcmds = install.setup()
+    ##install.chroot(chrootcmds)
+    #install.chroot()
+    #install.unmount()
 
 def main():
     if os.getuid() != 0:
         exit('This must be run as root.')
     conf = aif()
+    import pprint
     instconf = conf.buildDict()
+    pprint.pprint(instconf)
     runInstall(instconf)
 
 if __name__ == "__main__":
