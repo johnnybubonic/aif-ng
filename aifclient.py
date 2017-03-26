@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 
 ## REQUIRES: ##
-# parted
-# sgdisk (yes, both)
+# parted  #
+# sgdisk  ### (yes, both)
 # python 3 with standard library
 # (OPTIONAL) lxml
 # pacman in the host environment
