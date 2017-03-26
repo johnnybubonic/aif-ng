@@ -471,8 +471,10 @@ class archInstall(object):
             f.write(self.network['hostname'] + '\n')
         with open('{0}/etc/hosts'.format(self.system['chrootpath']), 'a') as f:
             f.write('127.0.0.1\t{0}\t{1}\n'.format(self.network['hostname'], (self.network['hostname']).split('.')[0]))
-        # SET UP NETWORKING HERE
-        ########################
+        # SET UP NETWORKING HERE #
+        # Set up networking.
+        
+        ##########################
         chrootcmds.append(['mkinitcpio', '-p', 'linux'])
         with open(os.devnull, 'w') as DEVNULL:
             for c in hostscript:
