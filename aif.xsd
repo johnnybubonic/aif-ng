@@ -180,6 +180,8 @@
 							<xs:attribute name="device" type="iface" use="required" />
 							<xs:attribute name="address" type="netaddress" use="required" />
 							<xs:attribute name="netproto" type="netproto" use="required" />
+							<xs:attribute name="gateway" type="netaddress" />
+							<xs:attribute name="resolvers" type="xs:string" />
 						</xs:complexType>
 					</xs:element>
 				</xs:sequence>

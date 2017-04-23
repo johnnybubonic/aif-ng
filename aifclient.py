@@ -19,7 +19,10 @@ except ImportError:
 import shlex
 import os
 import re
+import socket
 import subprocess
+import ipaddress
+import copy
 import pprint
 import urllib.request as urlrequest
 import urllib.parse as urlparse
@@ -163,11 +166,29 @@ class aif(object):
             iface = i.attrib['device']
             proto = i.attrib['netproto']
             address = i.attrib['address']
+            if 'gateway' in i.attrib.keys():
+                gateway = i.attrib['gateway']
+            else:
+                gateway = False
+            if 'resolvers' in i.attrib.keys():
+                resolvers = i.attrib['resolvers']
+            else:
+                resolvers = False
             if iface not in aifdict['network']['ifaces'].keys():
                 aifdict['network']['ifaces'][iface] = {}
             if proto not in aifdict['network']['ifaces'][iface].keys():
-                aifdict['network']['ifaces'][iface][proto] = []
-            aifdict['network']['ifaces'][iface][proto].append(address)
+                aifdict['network']['ifaces'][iface][proto] = {}
+            if 'gw' not in aifdict['network']['ifaces'][iface][proto].keys():
+                aifdict['network']['ifaces'][iface][proto]['gw'] = gateway
+            aifdict['network']['ifaces'][iface][proto]['addresses'] = []
+            aifdict['network']['ifaces'][iface][proto]['addresses'].append(address)
+            aifdict['network']['ifaces'][iface]['resolvers'] = []
+            if resolvers:
+                for ip in filter(None, re.split('[,\s]+', resolvers)):
+                    if ip not in aifdict['network']['ifaces'][iface]['resolvers']:
+                        aifdict['network']['ifaces'][iface]['resolvers'].append(ip)
+            else:
+                aifdict['network']['ifaces'][iface][proto]['resolvers'] = False
         # Set up the users dicts
         aifdict['users']['root']['password'] = xmlobj.find('system/users').attrib['rootpass']
         for i in xmlobj.findall('system/users'):
@@ -309,8 +330,8 @@ class archInstall(object):
                         stripped = val.replace('%', '')
                         modifier = re.sub('[0-9]+%', '', val)
                         percent = re.sub('(-|\+)*', '', stripped)
-                        decimal = float(percent) / 100
-                        newval = int(int(disksize['max']) * decimal)
+                        decimal = float(percent) / float(100)
+                        newval = int(float(disksize['max']) * decimal)
                         if s == 'start':
                             newval = newval + int(disksize['start'])
                         self.disk[d]['parts'][str(p)][s] = modifier + str(newval)
@@ -337,8 +358,6 @@ class archInstall(object):
                         if y == '%PART%':
                             mkformat[x] = d + str(p)
                     cmds.append(mkformat)
-        import pprint
-        pprint.pprint(cmds)
         with open(os.devnull, 'w') as DEVNULL:
             for p in cmds:
                 subprocess.call(p, stdout = DEVNULL, stderr = subprocess.STDOUT)
@@ -471,10 +490,80 @@ class archInstall(object):
             f.write(self.network['hostname'] + '\n')
         with open('{0}/etc/hosts'.format(self.system['chrootpath']), 'a') as f:
             f.write('127.0.0.1\t{0}\t{1}\n'.format(self.network['hostname'], (self.network['hostname']).split('.')[0]))
-        # SET UP NETWORKING HERE #
         # Set up networking.
-        
-        ##########################
+        ifaces = []
+        # Ideally we'd find a better way to do... all of this. Patches welcome. TODO.
+        if 'auto' in self.network['ifaces'].keys():
+            # Get the default route interface.
+            for line in subprocess.check_output(['ip', '-oneline', 'route', 'show']).decode('utf-8').splitlines():
+                line = line.split()
+                if line[0] == 'default':
+                    autoiface = line[4]
+                    break
+        ifaces = list(self.network['ifaces'].keys())
+        ifaces.sort()
+        if autoiface in ifaces:
+            ifaces.remove(autoiface)
+        for iface in ifaces:
+            resolvers = False
+            if 'resolvers' in self.network['ifaces'][iface].keys():
+                resolvers = self.network['ifaces'][iface]['resolvers']
+            print(resolvers)
+            if iface == 'auto':
+                ifacedev = autoiface
+                iftype = 'dhcp'
+            else:
+                ifacedev = iface
+                iftype = 'static'
+            netprofile = 'Description=\'A basic {0} ethernet connection ({1})\'\nInterface={1}\nConnection=ethernet\n'.format(iftype, ifacedev)
+            if 'ipv4' in self.network['ifaces'][iface].keys():
+                if self.network['ifaces'][iface]['ipv4']:
+                    netprofile += 'IP={0}\n'.format(iftype)
+            if 'ipv6' in self.network['ifaces'][iface].keys():
+                if self.network['ifaces'][iface]['ipv6']:
+                    netprofile += 'IP6={0}\n'.format(iftype)  # TODO: change this to stateless if iftype='dhcp' instead?
+            for proto in ('ipv4', 'ipv6'):
+                addrs = []
+                if proto in self.network['ifaces'][iface].keys():
+                    if proto == 'ipv4':
+                        addr = 'Address'
+                        gwstring = 'Gateway'
+                    elif proto == 'ipv6':
+                        addr = 'Address6'
+                        gwstring = 'Gateway6'
+                    gw = self.network['ifaces'][iface][proto]['gw']
+                    for ip in self.network['ifaces'][iface][proto]['addresses']:
+                        if ip == 'auto':
+                            continue
+                        else:
+                            try:
+                                ipver = ipaddress.ip_network(ip, strict = False)
+                                addrs.append(ip)
+                            except ValueError:
+                                exit('{0} was specified but is NOT a valid IPv4/IPv6 address!'.format(ip))
+                    if iftype == 'static':
+                        # Static addresses
+                        netprofile += '{0}=(\'{1}\')\n'.format(addr, ('\' \'').join(addrs))
+                        # Gateway
+                        if gw:
+                            netprofile += '{0}={1}\n'.format(gwstring, gw)
+            # DNS resolvers
+            if resolvers:
+                netprofile += 'DNS=(\'{0}\')\n'.format('\' \''.join(resolvers))
+            filename = '{0}/etc/netctl/{1}'.format(self.system['chrootpath'], ifacedev)
+            # The good news is since it's a clean install, we only have to account for our own data, not pre-existing.
+            with open(filename, 'w') as f:
+                f.write(netprofile)
+            with open('{0}/etc/systemd/system/netctl@{1}.service'.format(self.system['chrootpath'], ifacedev)) as f:
+                f.write(('.include /usr/lib/systemd/system/netctl@.service\n\n[Unit]\n' +
+                         'Description=A basic {0} ethernet connection\n' +
+                         'BindsTo=sys-subsystem-net-devices-{1}.device\n' +
+                         'After=sys-subsystem-net-devices-{1}.device\n').format(iftype, ifacedev))
+            os.symlink('/etc/systemd/system/netctl@{0}.service'.format(ifacedev),
+                       '{0}/etc/systemd/system/multi-user.target.wants/netctl@{1}.service'.format(self.system['chrootpath'], ifacedev))
+        os.symlink('/usr/lib/systemd/system/netctl.service',
+                   '{0}/etc/systemd/system/multi-user.target.wants/netctl.service'.format(self.system['chrootpath']))
+        # Base configuration- initcpio, etc.
         chrootcmds.append(['mkinitcpio', '-p', 'linux'])
         with open(os.devnull, 'w') as DEVNULL:
             for c in hostscript:
