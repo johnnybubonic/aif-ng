@@ -27,6 +27,8 @@ need to write docs
 
 make sure you call install.scripts or whatever it's called in main()
 
+update aif.xsd for auth stuff in scripts
+
 
 docs:
 http://lxml.de/parsing.html
