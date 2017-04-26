@@ -111,7 +111,7 @@
 	
 	<xs:simpleType name="bootloaders">
 		<xs:restriction base="xs:token">
-			<xs:pattern value="(grub|lilo|syslinux)" />
+			<xs:pattern value="(grub|systemd|syslinux)" />
 		</xs:restriction>
 	</xs:simpleType>
 	
@@ -321,6 +321,7 @@
 							<xs:attribute name="uri" type="scripturi" use="required" />
 							<xs:attribute name="lang" type="devlang" />
 							<xs:attribute name="order" type="xs:integer" use="required" />
+							<xs:attribute name="bootstrap" type="xs:boolean" use="required" />
 						</xs:complexType>
 					</xs:element>
 				</xs:sequence>

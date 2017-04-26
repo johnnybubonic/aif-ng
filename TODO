@@ -19,6 +19,8 @@ would yield the *client* sending info via URL params, e.g.
 
 parser: make sure to use https://mikeknoop.com/lxml-xxe-exploit/ fix
 
+left off at network config- i think i just have software/packages/etc. next, unless i already did that
+
 
 docs:
 http://lxml.de/parsing.html
