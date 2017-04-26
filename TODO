@@ -21,6 +21,12 @@ parser: make sure to use https://mikeknoop.com/lxml-xxe-exploit/ fix
 
 left off at network config- i think i just have software/packages/etc. next, unless i already did that
 
+convert use of confobj or whatever to maybe be suitable to use webFetch instead. LOTS of duplicated code there.
+
+need to write docs
+
+make sure you call install.scripts or whatever it's called in main()
+
 
 docs:
 http://lxml.de/parsing.html
