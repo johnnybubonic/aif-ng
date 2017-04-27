@@ -717,57 +717,77 @@ class archInstall(object):
         return(bootcmds)
 
     def scriptcmds(self):
-    if xmlobj.find('scripts') is not None:
-        self.scripts['pre'] = []
-        self.scripts['post'] = []
-        tempscriptdict = {'pre': {}, 'post': {}}
-        for x in xmlobj.find('scripts'):
-            if all(keyname in list(x.attrib.keys()) for keyname in ('user', 'password')):
-                auth = {}
-                auth['user'] = x.attrib['user']
-                auth['password'] = x.attrib['password']
-                if 'realm' in x.attrib.keys():
-                    auth['realm'] = x.attrib['realm']
-                if 'authtype' in x.attrib.keys():
-                    auth['type'] = x.attrib['authtype']
-                scriptcontents = self.webFetch(x.attrib['uri']).decode('utf-8')
-            else:
-                scriptcontents = self.webFetch(x.attrib['uri']).decode('utf-8')
-            if x.attrib['bootstrap'].lower() in ('true', '1'):
-                tempscriptdict['pre'][x.attrib['order']] = scriptcontents
-            else:
-                tempscriptdict['post'][x.attrib['order']] = scriptcontents
-        for d in ('pre', 'post'):
-            keylst = list(tempscriptdict[d].keys())
-            keylst.sort()
-            for s in keylst:
-                aifdict['scripts'][d].append(tempscriptdict[d][s])
+        if xmlobj.find('scripts') is not None:
+            self.scripts['pre'] = []
+            self.scripts['post'] = []
+            tempscriptdict = {'pre': {}, 'post': {}}
+            for x in xmlobj.find('scripts'):
+                if all(keyname in list(x.attrib.keys()) for keyname in ('user', 'password')):
+                    auth = {}
+                    auth['user'] = x.attrib['user']
+                    auth['password'] = x.attrib['password']
+                    if 'realm' in x.attrib.keys():
+                        auth['realm'] = x.attrib['realm']
+                    if 'authtype' in x.attrib.keys():
+                        auth['type'] = x.attrib['authtype']
+                    scriptcontents = self.webFetch(x.attrib['uri'], auth).decode('utf-8')
+                else:
+                    scriptcontents = self.webFetch(x.attrib['uri']).decode('utf-8')
+                if x.attrib['bootstrap'].lower() in ('true', '1'):
+                    tempscriptdict['pre'][x.attrib['order']] = scriptcontents
+                else:
+                    tempscriptdict['post'][x.attrib['order']] = scriptcontents
+            for d in ('pre', 'post'):
+                keylst = list(tempscriptdict[d].keys())
+                keylst.sort()
+                for s in keylst:
+                    self.scripts[d].append(tempscriptdict[d][s])
 
-    def chroot(self, chrootcmds = False, bootcmds = False):
+    def packagecmds(self):
+        pass
+
+    def chroot(self, chrootcmds = False, bootcmds = False, scriptcmds = False):
         if not chrootcmds:
             chrootcmds = self.setup()
         if not bootcmds:
             bootcmds = self.bootloader()
+        if not scriptcmds:
+            scriptcmds = self.scripts
         # We don't need this currently, but we might down the road.
         #chrootscript = '#!/bin/bash\n# https://aif.square-r00t.net/\n\n'
         #with open('{0}/root/aif.sh'.format(self.system['chrootpath']), 'w') as f:
         #    f.write(chrootscript)
         #os.chmod('{0}/root/aif.sh'.format(self.system['chrootpath']), 0o700)
-        with open('{0}/root/aif-pre.sh'.format(self.system['chrootpath']), 'w') as f:
-            f.write(self.scripts['pre'])
-        with open('{0}/root/aif-post.sh'.format(self.system['chrootpath']), 'w') as f:
-            f.write(self.scripts['post'])
+        for t in self.scripts.keys():
+            os.makedirs('{0}/root/scripts/{1}'.format(self.system['chrootpath'], t), exist_ok = True)
+            cnt = 0
+            for s in self.scripts[t]:
+                with open('{0}/root/scripts/{1}/{2}'.format(self.system['chrootpath'],
+                                                            t,
+                                                            cnt), 'w') as f:
+                    f.write(self.scripts[t][cnt])
+                os.chmod('{0}/root/scripts/{1}/{2}'.format(self.system['chrootpath'],
+                                                           t,
+                                                           cnt), 0o700)
+                cnt += 1
         real_root = os.open("/", os.O_RDONLY)
         os.chroot(self.system['chrootpath'])
         # Does this even work with an os.chroot()? Let's hope so!
         with open(os.devnull, 'w') as DEVNULL:
+            if scriptcmds['pre']:
+                for s in len(scriptcmds['pre']):
+                    script = '/root/scripts/pre/{0}'.format(s - 1)
+                    subprocess.call(script, stdout = DEVNULL, stderr = subprocess.STDOUT)
             for c in chrootcmds:
                 subprocess.call(c, stdout = DEVNULL, stderr = subprocess.STDOUT)
             for b in bootcmds:
                 subprocess.call(b, stdout = DEVNULL, stderr = subprocess.STDOUT)
-        os.system('{0}/root/aif-pre.sh'.format(self.system['chrootpath']))
-        #os.system('{0}/root/aif.sh'.format(self.system['chrootpath']))
-        os.system('{0}/root/aif-post.sh'.format(self.system['chrootpath']))
+            if scriptcmds['post']:
+                for s in len(scriptcmds['post']):
+                    script = '/root/scripts/post/{0}'.format(s - 1)
+                    subprocess.call(script, stdout = DEVNULL, stderr = subprocess.STDOUT)
+        #os.system('{0}/root/aif-pre.sh'.format(self.system['chrootpath']))
+        #os.system('{0}/root/aif-post.sh'.format(self.system['chrootpath']))
         os.fchdir(real_root)
         os.chroot('.')
         os.close(real_root)

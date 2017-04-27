@@ -114,6 +114,12 @@
 			<xs:pattern value="(grub|systemd|syslinux)" />
 		</xs:restriction>
 	</xs:simpleType>
+
+	<xs:simpleType name="authselect">
+		<xs:restriction base="xs:token">
+			<xs:pattern value="(basic|digest)" />
+		</xs:restriction>
+	</xs:simpleType>
 	
 <!-- ROOT -->
 	<xs:element name="aif">
@@ -262,6 +268,7 @@
 			<xs:element name="pacman" maxOccurs="1" minOccurs="1">
 				<xs:complexType>
 				<xs:sequence>
+					<xs:element name="command" maxOccurs="1" minOccurs="0" />
 					<xs:element name="repos" maxOccurs="1" minOccurs="1">
 						<xs:complexType>
 							<xs:sequence>
@@ -319,9 +326,12 @@
 					<xs:element name="script" minOccurs="1" maxOccurs="unbounded">
 						<xs:complexType>
 							<xs:attribute name="uri" type="scripturi" use="required" />
-							<xs:attribute name="lang" type="devlang" />
 							<xs:attribute name="order" type="xs:integer" use="required" />
 							<xs:attribute name="bootstrap" type="xs:boolean" use="required" />
+							<xs:attribute name="user" type="xs:string" />
+							<xs:attribute name="password" type="xs:string" />
+							<xs:attribute name="realm" type="xs:string" />
+							<xs:attribute name="authtype" type="authselect" />
 						</xs:complexType>
 					</xs:element>
 				</xs:sequence>
