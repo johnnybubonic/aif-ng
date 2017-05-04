@@ -53,5 +53,8 @@
         </software>
     </pacman>
     <bootloader type="grub" target="/boot" efi="true" />
-    <script uri="https://aif.square-r00t.net/sample-scripts/pre.sh" order="1" bootstrap="1" />
+    <script uri="https://aif.square-r00t.net/sample-scripts/post/first.sh" order="1" bootstrap="0" />
+    <script uri="https://aif.square-r00t.net/sample-scripts/pre/second.pl" order="2" bootstrap="1" />
+    <script uri="https://aif.square-r00t.net/sample-scripts/pre/first.sh" order="1" bootstrap="1" />
+    <script uri="https://aif.square-r00t.net/sample-scripts/post/second.py" order="2" bootstrap="0" />
 </aif>

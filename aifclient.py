@@ -339,6 +339,7 @@ class aif(object):
             aifdict['scripts']['post'] = []
             tempscriptdict = {'pre': {}, 'post': {}}
             for x in xmlobj.find('scripts'):
+                print(x.attrib['uri'])
                 if all(keyname in list(x.attrib.keys()) for keyname in ('user', 'password')):
                     auth = {}
                     auth['user'] = x.attrib['user']
@@ -350,6 +351,7 @@ class aif(object):
                     scriptcontents = self.webFetch(x.attrib['uri'], auth).decode('utf-8')
                 else:
                     scriptcontents = self.webFetch(x.attrib['uri']).decode('utf-8')
+                print(scriptcontents)
                 if x.attrib['bootstrap'].lower() in ('true', '1'):
                     tempscriptdict['pre'][x.attrib['order']] = scriptcontents
                 else:
