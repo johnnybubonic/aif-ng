@@ -831,20 +831,20 @@ class archInstall(object):
                 pkgcmds.append(cmd)
         return(pkgcmds)
 
-    def serviceSetup(self)
-    # this runs inside the chroot
-    for s in self.system['services'].keys():
-        if not re.match('\.(service|socket)$', s):
-            s = '{0}.service'.format(s)
-        service = '/usr/lib/systemd/system/{0}'.format(s)
-        sysdunit = '/etc/systemd/system/multi-user.target.wants/{0}'.format(s)
-        if self.system['services'][s]:
-            if not os.path.lexists(sysdunit):
-                os.symlink(service, sysdunit)
-        else:
-            if os.path.lexists(sysdunit):
-                os.remove(sysdunit)
-    return()
+    def serviceSetup(self):
+        # this runs inside the chroot
+        for s in self.system['services'].keys():
+            if not re.match('\.(service|socket|target|timer)$', s):  # i don't bother with .path, .busname, etc.- i might in the future? TODO.
+                svcname = '{0}.service'.format(s)
+            service = '/usr/lib/systemd/system/{0}'.format(svcname)
+            sysdunit = '/etc/systemd/system/multi-user.target.wants/{0}'.format(svcname)
+            if self.system['services'][s]:
+                if not os.path.lexists(sysdunit):
+                    os.symlink(service, sysdunit)
+            else:
+                if os.path.lexists(sysdunit):
+                    os.remove(sysdunit)
+        return()
 
     def chroot(self, chrootcmds = False, bootcmds = False, scriptcmds = False, pkgcmds = False):
         if not chrootcmds:
