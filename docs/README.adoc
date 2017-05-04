@@ -1,0 +1,305 @@
+= AIF-NG User Manual: Arch Installation Framework, Next Generation
+Brent Saner <bts@square-r00t.net>
+v1.0, 2017-05-04
+:doctype: book
+:data-uri:
+:imagesdir: images
+:sectlinks:
+:toc: preamble
+:toc2: left
+:idprefix:
+:toclevels: 7
+//:sectnums: we have too many levels for this to be of use. it just gets ugly.
+
+
+[preface]
+== Preface
+=== About the Author
+I am a GNU/Linux Systems/Network Administrator/Engineer- I wear a lot of hats. I have a lot of side projects to keep me busy when I’m not working at _${dayjob}_, mostly to assist in other side projects and become more efficient and proficient at those tasks. “Shaving the yak,” footnote:[See http://catb.org/jargon/html/Y/yak-shaving.html] indeed.
+
+I got frustrated at the lack of options for installing Arch from a network or automated deployment environment and decided I needed a tool to do that for me.
+
+
+=== What is AIF-NG?
+https://github.com/jdodds/aif[AIF^] (classic) was written entirely in bash, required compilation, wasn't flexible enough, and is obsolete/no longer maintained. So I rewrote it in Python3 and give it a more basic yet flexible structure.
+
+The client (`aifclient.py`) is a single script and gets its configuration from a combination of an XML file and kernel paramaters (which tell it where to find the former and how to access it).
+
+AIF-NG is intended mainly for system administrators, but if you find yourself turning up a lot of Arch Linux installations in other environments, you may find it useful.
+
+=== What it's Not
+AIF-NG is not intended to be a complete turnup solution. Instead, it's useful to build up from baremetal and configure a system to a point where you can use another management tool (such as https://www.ansible.com/[Ansible^], https://www.chef.io/chef/[Chef^], https://puppet.com/[Puppet^], https://saltstack.com/[SaltStack^], and  https://en.wikipedia.org/wiki/List_of_build_automation_software#Configuration_management_tools[others^]).
+
+Though if you're really gung-ho about it, I suppose you could use the post-script feature to fully turn up a box.
+
+It is also not a magic bullet. It will not make an Arch Linux installation *easier*, nor is it designed to do that. Don't file bug reports for this. It's designed to make it *faster*. I recommend you follow the https://wiki.archlinux.org/index.php/installation_guide[manual installation process^] several times first so you're comfortable with the process and understand what's happening behind the scenes. (If you find it too hard to understand, you may instead be interested in https://antergos.com/[Antergos^] instead.)
+
+=== Copyright/Licensing
+The AIF-NG code is https://www.gnu.org/licenses/gpl-3.0.en.html[GPLv3-licensed^]. This means that you can use it for business reasons, personal reasons, modify it, etc. Please be sure to familiarize yourself with the full set of terms. You can find the full license in `docs/LICENSE`.
+
+image::https://www.gnu.org/graphics/gplv3-127x51.png[GPLv3,align="center"]
+
+This document, and all other associated author-generated documentation, are released under the http://creativecommons.org/licenses/by-sa/4.0/[Creative Commons CC-BY-SA 4.0^] copyright. It's essentially the GPL for non-software, so similar terms apply.
+
+image::https://i.creativecommons.org/l/by-sa/4.0/88x31.png[CC-BY-SA_4.0,align="center"]
+
+
+= Getting Started
+
+== Downloading
+If it isn't in your distro's repositories (It *is* in Arch's AUR! Both https://aur.archlinux.org/packages/aif/[tagged release^] and https://aur.archlinux.org/packages/aif-git/[git master^].), you can still easily get rolling. Simply visit the project's https://git.square-r00t.net/AIF-NG/[source code web interface^] and download a tarball under the *Download* column:
+
+image::fig1.1.png[cgit,align="center"]
+
+If you know the tag of the commit you want, you can use curl:
+
+ curl -sL -o aif.tar.xz https://git.square-r00t.net/AIF-NG/snapshot/AIF-NG-0.01-BETA.tar.xz
+
+or wget:
+
+ wget -O aif.tar.xz https://git.square-r00t.net/AIF-NG/snapshot/AIF-NG-0.01-BETA.tar.xz
+
+You can use `https://git.square-r00t.net/AIF-NG/snapshot/AIF-NG-master.tar.xz` for the URL if you want the latest working version. If you want a snapshot of a specific commit, you can use e.g. `https://git.square-r00t.net/AIF-NG/snapshot/AIF-NG-0e3b4572f9bc460741fe5cd3108b22fad89bfc71.tar.xz` and so on.
+
+Alternatively, you can use https://git-scm.com/[git^]. Git most definitely _should_ be in your distro's repositories.
+
+TIP: If you're new to git and want to learn more, I highly recommend the book https://git-scm.com/book/en/v2[Pro Git^]. It is available for free download (or online reading).
+
+You can clone via https:
+
+ git clone https://git.square-r00t.net/AIF-NG
+
+or native git protocol:
+
+ git clone git://git.square-r00t.net/aif-ng.git AIF-NG
+
+The git protocol is much faster, but at a cost of lessened security.
+
+NOTE: I also have a mirror at https://github.com/johnnybubonic/aif-ng[GitHub^], but I don't like GitHub very much and since it's a mirror repository, it's possible it will be out of date. For this reason, it's recommended that you use the resources above.
+
+== Prerequisites
+This is a list of software you'll need available to use the AIF-NG client.
+
+TIP: Your distro's package manager should have most if not all of these available, so it's unlikely you'll need to install from source.
+
+NOTE: Some versions may be higher than actually needed.
+
+
+=== Necessary
+These are needed for using AIF-NG.
+
+* https://www.python.org/[Python^] (>=3.6)
+* http://www.rodsbooks.com/gdisk/sgdisk.html[sgdisk^]
+* https://www.gnu.org/software/parted/[parted^]
+* https://www.archlinux.org/packages/?name=arch-install-scripts[arch-install-scripts^] (for `pacstrap`)
+** https://wiki.archlinux.org/index.php/Install_from_existing_Linux#From_a_host_running_another_Linux_distribution[This^] has some useful methods of installing them in a non-Arch Linux distro.
+
+These are no required Python modules; at least for the client. It uses only the python 3 stdlib library.
+
+=== Optional
+While not strictly necessary, these will greatly enhance your AIF-NG usage. I've included some reasons why you might want to install them.
+
+Python modules:
+
+* http://lxml.de/[LXML^]
+** Recommended for more complete XML processing, the `aifverify.py` utility, etc.
+
+
+= Writing an XML Configuration File
+I've included a sample `aif.xml` file which is fully functional. However, it's not ideal- namely because it will add my personal SSH pubkeys to your new install, and you probably don't want that. However, it's fairly complete so it should serve as a good example. If you want to see the full set of supported configuration elements, take a look at the most up-to-date https://aif.square-r00t.net/aif.xsd[aif.xsd^]. For explanation's sake, however, we'll go through it here. The directives are referred to in https://www.w3schools.com/xml/xml_xpath.asp[XPath^] syntax within the documentation text for easier context (but not the titles).
+
+== `<aif>`
+The `/aif` element is the https://en.wikipedia.org/wiki/Root_element[root element^]. It serves as a container for all the configuration data. The only http://www.xmlfiles.com/xml/xml_attributes.asp[attributes^] it contains are for formatting and verification of the containing XML.
+
+=== `<storage>`
+The `/aif/storage` element contains <<code_disk_code, disk>>, <<code_part_code, disk/part>>, and <<code_mount_code, mount>> elements.
+
+==== `<disk>`
+The `/aif/storage/disk` element holds information about disks on the system, and within this element are one (or more) <<code_part_code, part>> elements.
+
+[options="header"]
+|======================
+^|Attributes ^|Value
+^m|device |The disk to format (e.g. `/dev/sda`)
+^m|diskfmt |https://en.wikipedia.org/wiki/GUID_Partition_Table[`gpt`^] or https://en.wikipedia.org/wiki/Master_boot_record[`bios`^]
+|======================
+
+===== `<part>`
+The `/aif/storage/disk/part` element holds information on partitioning that it's parent <<code_disk_code, disk>> element should have.
+
+[options="header"]
+|======================
+^|Attributes ^|Value
+^m|num |The partition number (positive integer)
+^m|start |The amount of the *total disk size* to _start_ the partition at
+^m|size |The amount of the *total disk size* to _end_ the partition at
+^m|fstype |The partition type. Must be in http://www.rodsbooks.com/gdisk/cgdisk-walkthrough.html[gdisk format^] (see below)
+|======================
+
+The `start` and `size` attributes can be in the form of:
+
+* A percentage, indicated by a percentage sign (`"10%"`)
+* A size, indicated by the abbreviation (`"300K"`, `"30G"`, etc.)
+** Accepts *K* (Kilobytes), *M* (Megabytes), *G* (Gigabytes), *T* (Terabytes), or *P* (Petabytes - I know, I know.)
+** Can also accept modifiers for this form (`"+500G"`, `"-400M"`)
+
+NOTE: The following is a table for your reference of partition types. Note that it may be out of date, so reference the link above for the most up-to-date table.
+
+[options="header"]
+|======================
+^|fstype ^|Formatting type
+^m|0700 |Microsoft basic data
+^m|0c01 |Microsoft reserved
+^m|2700 |Windows RE
+^m|3000 |ONIE config
+^m|3900 |Plan 9
+^m|4100 |PowerPC PReP boot
+^m|4200 |Windows LDM data
+^m|4201 |Windows LDM metadata
+^m|4202 |Windows Storage Spaces
+^m|7501 |IBM GPFS
+^m|7f00 |ChromeOS kernel
+^m|7f01 |ChromeOS root
+^m|7f02 |ChromeOS reserved
+^m|8200 |Linux swap
+^m|8300 |Linux filesystem
+^m|8301 |Linux reserved
+^m|8302 |Linux /home
+^m|8303 |Linux x86 root (/)
+^m|8304 |Linux x86-64 root (/
+^m|8305 |Linux ARM64 root (/)
+^m|8306 |Linux /srv
+^m|8307 |Linux ARM32 root (/)
+^m|8400 |Intel Rapid Start
+^m|8e00 |Linux LVM
+^m|a500 |FreeBSD disklabel
+^m|a501 |FreeBSD boot
+^m|a502 |FreeBSD swap
+^m|a503 |FreeBSD UFS
+^m|a504 |FreeBSD ZFS
+^m|a505 |FreeBSD Vinum/RAID
+^m|a580 |Midnight BSD data
+^m|a581 |Midnight BSD boot
+^m|a582 |Midnight BSD swap
+^m|a583 |Midnight BSD UFS
+^m|a584 |Midnight BSD ZFS
+^m|a585 |Midnight BSD Vinum
+^m|a600 |OpenBSD disklabel
+^m|a800 |Apple UFS
+^m|a901 |NetBSD swap
+^m|a902 |NetBSD FFS
+^m|a903 |NetBSD LFS
+^m|a904 |NetBSD concatenated
+^m|a905 |NetBSD encrypted
+^m|a906 |NetBSD RAID
+^m|ab00 |Recovery HD
+^m|af00 |Apple HFS/HFS+
+^m|af01 |Apple RAID
+^m|af02 |Apple RAID offline
+^m|af03 |Apple label
+^m|af04 |AppleTV recovery
+^m|af05 |Apple Core Storage
+^m|bc00 |Acronis Secure Zone
+^m|be00 |Solaris boot
+^m|bf00 |Solaris root
+^m|bf01 |Solaris /usr & Mac ZFS
+^m|bf02 |Solaris swap
+^m|bf03 |Solaris backup
+^m|bf04 |Solaris /var
+^m|bf05 |Solaris /home
+^m|bf06 |Solaris alternate sector
+^m|bf07 |Solaris Reserved 1
+^m|bf08 |Solaris Reserved 2
+^m|bf09 |Solaris Reserved 3
+^m|bf0a |Solaris Reserved 4
+^m|bf0b |Solaris Reserved 5
+^m|c001 |HP-UX data
+^m|c002 |HP-UX service
+^m|ea00 |Freedesktop $BOOT
+^m|eb00 |Haiku BFS
+^m|ed00 |Sony system partition
+^m|ed01 |Lenovo system partition
+^m|ef00 |EFI System
+^m|ef01 |MBR partition scheme
+^m|ef02 |BIOS boot partition
+^m|f800 |Ceph OSD
+^m|f801 |Ceph dm-crypt OSD
+^m|f802 |Ceph journal
+^m|f803 |Ceph dm-crypt journal
+^m|f804 |Ceph disk in creation
+^m|f805 |Ceph dm-crypt disk in creation
+^m|fb00 |VMWare VMFS
+^m|fb01 |VMWare reserved
+^m|fc00 |VMWare kcore crash protection
+^m|fd00 |Linux RAID
+|======================
+
+NOTE: Automatic formatting is currently only enabled for the following (subject to further configuration in later versions):
+
+[options="header"]
+|======================
+^|fstype ^|Formatted as
+^m|ef00 |vFAT32 (mkfs.vfat -F 32)
+^m|ef01 ^|"
+^m|ef02 ^|"
+^m|8200 |GNU/Linux swap (mkswap)
+^m|8300 |ext4
+^m|8301 ^|"
+^m|8302 ^|"
+^m|8303 ^|"
+^m|8304 ^|"
+^m|8305 ^|"
+^m|8306 ^|"
+^m|8307 ^|"
+|======================
+
+==== `<mount>`
+The `/aif/storage/mount` element specifies mountpoints for each <<code_disk_code, disk>>'s <<code_part_code, partition>>.
+
+[options="header"]
+|======================
+^|Attributes ^|Value
+^m|source |The device to mount
+^m|target |Where it should be mounted to in the filesystem (on the host system, not the new installation)
+^m|order |The order in which it should be mounted. These should be unique positive integers.
+|======================
+
+=== `<network>`
+The `/aif/network` element specifies network configuration(s). It contains <<code_iface_code, iface>> ("interface") elements.
+
+[options="header"]
+|======================
+^|Attributes ^|Value
+^m|hostname |The hostname of the new installation
+|======================
+
+==== `<iface>`
+The `/aif/network/iface` element specifies various <<code_network_code, network>> configurations. Currently only ethernet is supported, and only limited support for IPv6 is available (but future improvements/flexible capabilities are planned).
+
+[options="header"]
+|======================
+^|Attributes ^|Value
+^m|device |The interface name (in https://www.freedesktop.org/wiki/Software/systemd/PredictableNetworkInterfaceNames/[Predictable Interface Naming^]) (e.g. `ens3`); can be `auto` (see below)
+^m|address |The address to be assigned to the interface (in https://en.wikipedia.org/wiki/Classless_Inter-Domain_Routing[CIDR^] format); can be `auto` (see below)
+^m|netproto |One of `ipv4`, `ipv6`, or `both`
+|======================
+
+If "auto" is specified for `device`, the system will configure the first (and *only* the first) interface it finds with an active link with the provided address information.
+
+If "auto" is specified for `address`, then DHCP (or https://en.wikipedia.org/wiki/DHCPv6[DHCPv6], depending on the configuration of `netproto`).
+
+NOTE: Setting `netproto` to "both" is really only useful if "auto" is specified for `address`.
+
+=== `<system>`
+The `/aif/system` element is for handling general system configuration. It contains the <<code_users_code, users>>, <<code_user_code, users/user>>, <<code_home_code, users/user/home>>, <<code_xgroup_code, users/user/xgroup>>, and <<code_service_code, service>> elements.
+
+[options="header"]
+|======================
+^|Attributes ^|Value
+^m|timezone |The https://wiki.archlinux.org/index.php/Time#Time_zone[timezone^] for the installed system (can be independent of the host system)
+^m|locale |The https://wiki.archlinux.org/index.php/Locale#Setting_the_system_locale[locale^] of the installed system (e.g. `en_US.UTF-8`)
+^m|chrootpath |The path on the host that will serve as the https://wiki.archlinux.org/index.php/Change_root[chroot^] path. This should be where your new install's / (root filesystem partition) is mounted at in <<code_mount_code, mounts>>.
+|======================
+
+==== `<users>`
+The `/aif/system/users` element is used to specify users you wish to create (if any). It contains the <<code_user_code, user>>, <<code_home_code, user/home>>, and <<code_xgroup_code, user/xgroup>> elements.
