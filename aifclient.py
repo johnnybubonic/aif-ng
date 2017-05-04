@@ -334,6 +334,31 @@ class aif(object):
 #            if not aifdict['scripts'][scripttype]:
 #                aifdict['scripts'][scripttype] = {}
 #            aifdict['scripts'][scripttype][int(x.attrib['order'])] = {}
+        if xmlobj.find('scripts') is not None:
+            aifdict['scripts']['pre'] = []
+            aifdict['scripts']['post'] = []
+            tempscriptdict = {'pre': {}, 'post': {}}
+            for x in xmlobj.find('scripts'):
+                if all(keyname in list(x.attrib.keys()) for keyname in ('user', 'password')):
+                    auth = {}
+                    auth['user'] = x.attrib['user']
+                    auth['password'] = x.attrib['password']
+                    if 'realm' in x.attrib.keys():
+                        auth['realm'] = x.attrib['realm']
+                    if 'authtype' in x.attrib.keys():
+                        auth['type'] = x.attrib['authtype']
+                    scriptcontents = self.webFetch(x.attrib['uri'], auth).decode('utf-8')
+                else:
+                    scriptcontents = self.webFetch(x.attrib['uri']).decode('utf-8')
+                if x.attrib['bootstrap'].lower() in ('true', '1'):
+                    tempscriptdict['pre'][x.attrib['order']] = scriptcontents
+                else:
+                    tempscriptdict['post'][x.attrib['order']] = scriptcontents
+            for d in ('pre', 'post'):
+                keylst = list(tempscriptdict[d].keys())
+                keylst.sort()
+                for s in keylst:
+                    aifdict['scripts'][d].append(tempscriptdict[d][s])
         return(aifdict)
 
 class archInstall(object):
@@ -569,7 +594,6 @@ class archInstall(object):
             resolvers = False
             if 'resolvers' in self.network['ifaces'][iface].keys():
                 resolvers = self.network['ifaces'][iface]['resolvers']
-            print(resolvers)
             if iface == 'auto':
                 ifacedev = autoiface
                 iftype = 'dhcp'
