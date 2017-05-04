@@ -50,6 +50,8 @@
         </mirrorlist>
         <software>
             <package name="sed" repo="core" />
+            <package name="python" />
+            <package name="perl" />
         </software>
     </pacman>
     <bootloader type="grub" target="/boot" efi="true" />
