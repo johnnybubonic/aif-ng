@@ -53,5 +53,7 @@
         </software>
     </pacman>
     <bootloader type="grub" target="/boot" efi="true" />
-    <script uri="https://aif.square-r00t.net/sample-scripts/pre.sh" order="1" bootstrap="1" />
+    <scripts>
+            <script uri="https://aif.square-r00t.net/sample-scripts/pre.sh" order="1" bootstrap="1" />
+    </scripts>
 </aif>
