@@ -325,10 +325,15 @@ class aif(object):
         for x in xmlobj.find('bootloader').attrib:
             aifdict['system']['bootloader'][x] = xmlobj.find('bootloader').attrib[x]
         # The script setup...
-        for x in xmlobj.find('scripts'):
-            scripttype = 
-            if not aifdict['scripts'][scripttype]:
-                aifdict['scripts'][scripttype] = {}
+        # We do this later on.
+#        for x in xmlobj.find('scripts'):
+#            if x.attrib['bootstrap'].lower() in ('true', '1'):
+#                scripttype = 'pre'
+#            else:
+#                scripttype = 'post'
+#            if not aifdict['scripts'][scripttype]:
+#                aifdict['scripts'][scripttype] = {}
+#            aifdict['scripts'][scripttype][int(x.attrib['order'])] = {}
         return(aifdict)
 
 class archInstall(object):
