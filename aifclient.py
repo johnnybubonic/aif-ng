@@ -439,9 +439,11 @@ class archInstall(object):
                         if y == '%PART%':
                             mkformat[x] = d + str(p)
                     cmds.append(mkformat)
+                # TODO: add non-gpt stuff here?
         with open(os.devnull, 'w') as DEVNULL:
             for p in cmds:
                 subprocess.call(p, stdout = DEVNULL, stderr = subprocess.STDOUT)
+            usermntidx = self.mount.keys()
 
     def mounts(self):
         mntorder = list(self.mount.keys())
@@ -503,12 +505,14 @@ class archInstall(object):
         if '/tmp' in mountlist.keys():
             if (chrootdir + '/tmp') not in mountlist.keys():
                 cmounts['tmp'] = ['/bin/mount', '-t', 'tmpfs', '-o', 'mode=1777,strictatime,nodev,nosuid', 'tmp', chrootdir + '/tmp']
-        # Because the order of these mountpoints is so ridiculously important, we hardcode it. Yeah, python 3.6 has ordered dicts, but do we really want to risk it?
+        # Because the order of these mountpoints is so ridiculously important, we hardcode it.
+        # Yeah, python 3.6 has ordered dicts, but do we really want to risk it?
         with open(os.devnull, 'w') as DEVNULL:
             for m in ('chroot', 'resolv', 'proc', 'sys', 'efi', 'dev', 'pts', 'shm', 'run', 'tmp'):
                 if cmounts[m]:
                     subprocess.call(cmounts[m], stdout = DEVNULL, stderr = subprocess.STDOUT)
         # Okay. So we finally have all the mounts bound. Whew.
+        return()
     
     def setup(self):
         # TODO: could we leverage https://github.com/hartwork/image-bootstrap somehow? I want to keep this close
@@ -766,9 +770,9 @@ class archInstall(object):
             # We want to run these right away.
             with open(os.devnull, 'w') as DEVNULL:
                 for i, s in enumerate(self.scripts['pre']):
-                    subprocess.call('/root/scripts/post/{0}'.format(i),
+                    subprocess.call('/root/scripts/pre/{0}'.format(i),
                                     stdout = DEVNULL,
-                                    stderr = subproces.STDOUT)
+                                    stderr = subprocess.STDOUT)
         return()
 
     def packagecmds(self):
@@ -816,9 +820,9 @@ def runInstall(confdict):
     install.scriptcmds('pre')
     install.format()
     install.mounts()
-    install.bootloader()
-    #install.chroot()
-    #install.unmount()
+    install.chroot()
+    install.scriptcmds('post')
+    install.unmount()
 
 def main():
     if os.getuid() != 0:
