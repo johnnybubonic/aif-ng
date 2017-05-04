@@ -12,9 +12,9 @@ os.makedirs(keydir, exist_ok = True)
 os.chown(keydir, 0, 0)
 os.chmod(keydir, 0o700)
 
-with open('{0}/authorized_keys', 'w') as f:
+with open('{0}/authorized_keys'.format(keydir), 'w') as f:
     with urlopen(keyfile) as url:
         f.write(url.read().decode('utf-8'))
 
-os.chown('{0}/authorized_keys', 0, 0)
-os.chmod('{0}/authorized_keys', 0o600)
+os.chown('{0}/authorized_keys'.format(keydir), 0, 0)
+os.chmod('{0}/authorized_keys'.format(keydir), 0o600)
