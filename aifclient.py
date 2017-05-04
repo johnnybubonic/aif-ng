@@ -24,12 +24,13 @@ import socket
 import subprocess
 import ipaddress
 import copy
-import pprint
 import urllib.request as urlrequest
 import urllib.parse as urlparse
 import urllib.response as urlresponse
 from ftplib import FTP_TLS
 from io import StringIO
+
+logfile = '/root/log'
 
 class aif(object):
     
@@ -191,7 +192,7 @@ class aif(object):
         for i in xmlobj.findall('storage/mount'):
             device = i.attrib['source']
             mntpt = i.attrib['target']
-            order = i.attrib['order']
+            order = int(i.attrib['order'])
             if 'fstype' in i.keys():
                 fstype = i.attrib['fstype']
             else:
@@ -396,9 +397,9 @@ class archInstall(object):
                 diskfmt = 'msdos'
                 cmds.append(['sgdisk', '-om', d])
             cmds.append(['parted', d, '--script', '-a', 'optimal'])
-            with open(os.devnull, 'w') as DEVNULL:
+            with open(logfile, 'a') as log:
                 for c in cmds:
-                    subprocess.call(c, stdout = DEVNULL, stderr = subprocess.STDOUT)
+                    subprocess.call(c, stdout = log, stderr = subprocess.STDOUT)
             cmds = []
             disksize = {}
             disksize['start'] = subprocess.check_output(['sgdisk', '-F', d])
@@ -440,10 +441,25 @@ class archInstall(object):
                             mkformat[x] = d + str(p)
                     cmds.append(mkformat)
                 # TODO: add non-gpt stuff here?
-        with open(os.devnull, 'w') as DEVNULL:
+        with open(logfile, 'a') as log:
             for p in cmds:
-                subprocess.call(p, stdout = DEVNULL, stderr = subprocess.STDOUT)
-            usermntidx = self.mount.keys()
+                subprocess.call(p, stdout = log, stderr = subprocess.STDOUT)
+            usermntidx = list(self.mount.keys())
+            usermntidx.sort()  # We want to make sure we do this in order.
+            for k in usermntidx:
+                if self.mount[k]['mountpt'] == 'swap':
+                    subprocess.call(['swapon', '-e', self.mount[k]['device']], stdout = log, stderr = subprocess.STDOUT)
+                else:
+                    os.makedirs(self.mount[k]['mountpt'], exist_ok = True)
+                    os.chown(self.mount[k]['mountpt'], 0, 0)
+                    cmd = ['mount']
+                    if self.mount[k]['fstype']:
+                        cmd.extend(['-t', self.mount[k]['fstype']])
+                    if self.mount[k]['opts']:
+                        cmd.extend(['-o', self.mount[k]['opts']])
+                    cmd.extend([self.mount[k]['device'], self.mount[k]['mountpt']])
+                    subprocess.call(cmd, stdout = log, stderr = subprocess.STDOUT)
+        return()
 
     def mounts(self):
         mntorder = list(self.mount.keys())
@@ -507,35 +523,54 @@ class archInstall(object):
                 cmounts['tmp'] = ['/bin/mount', '-t', 'tmpfs', '-o', 'mode=1777,strictatime,nodev,nosuid', 'tmp', chrootdir + '/tmp']
         # Because the order of these mountpoints is so ridiculously important, we hardcode it.
         # Yeah, python 3.6 has ordered dicts, but do we really want to risk it?
-        with open(os.devnull, 'w') as DEVNULL:
-            for m in ('chroot', 'resolv', 'proc', 'sys', 'efi', 'dev', 'pts', 'shm', 'run', 'tmp'):
-                if cmounts[m]:
-                    subprocess.call(cmounts[m], stdout = DEVNULL, stderr = subprocess.STDOUT)
         # Okay. So we finally have all the mounts bound. Whew.
-        return()
+        return(cmounts)
     
-    def setup(self):
+    def setup(self, mounts = False):
         # TODO: could we leverage https://github.com/hartwork/image-bootstrap somehow? I want to keep this close
         # to standard Python libs, though, to reduce dependency requirements.
         hostscript = []
         chrootcmds = []
         locales = []
         locale = []
+        if not mounts:
+            mounts = self.mounts()
         # Get the necessary fstab additions for the guest
         chrootfstab = subprocess.check_output(['genfstab', '-U', self.system['chrootpath']])
         # Set up the time, and then kickstart the guest install.
         hostscript.append(['timedatectl', 'set-ntp', 'true'])
+        # Also start haveged if we have it.
+        try:
+            with open(os.devnull, 'w') as devnull:
+                subprocess.call(['haveged'], stderr = devnull)
+        except:
+            pass
+        # Make sure we get the keys, in case we're running from a minimal live env.
+        hostscript.append(['pacman-key', '--init'])
+        hostscript.append(['pacman-key', '--populate'])
         hostscript.append(['pacstrap', self.system['chrootpath'], 'base'])
+        # Run the basic host prep
+        #with open(os.devnull, 'w') as DEVNULL:
+        with open(logfile, 'a') as log:
+            for c in hostscript:
+                subprocess.call(c, stdout = log, stderr = subprocess.STDOUT)
         with open('{0}/etc/fstab'.format(self.system['chrootpath']), 'a') as f:
             f.write('# Generated by AIF-NG.\n')
             f.write(chrootfstab.decode('utf-8'))
+        with open(logfile, 'a') as log:
+            for m in ('resolv', 'proc', 'sys', 'efi', 'dev', 'pts', 'shm', 'run', 'tmp'):
+                if mounts[m]:
+                    subprocess.call(mounts[m], stdout = log, stderr = subprocess.STDOUT)
+
         # Validating this would be better with pytz, but it's not stdlib. dateutil would also work, but same problem.
         # https://stackoverflow.com/questions/15453917/get-all-available-timezones
         tzlist = subprocess.check_output(['timedatectl', 'list-timezones']).decode('utf-8').splitlines()
         if self.system['timezone'] not in tzlist:
             print('WARNING (non-fatal): {0} does not seem to be a valid timezone, but we\'re continuing anyways.'.format(self.system['timezone']))
-        os.symlink('/usr/share/zoneinfo/{0}'.format(self.system['timezone']),
-                   '{0}/etc/localtime'.format(self.system['chrootpath']))
+        tzfile = '{0}/etc/localtime'.format(self.system['chrootpath'])
+        if os.path.lexists(tzfile):
+            os.remove(tzfile)
+        os.symlink('/usr/share/zoneinfo/{0}'.format(self.system['timezone']), tzfile)
         # This is an ugly hack. TODO: find a better way of determining if the host is set to UTC in the RTC. maybe the datetime module can do it.
         utccheck = subprocess.check_output(['timedatectl', 'status']).decode('utf-8').splitlines()
         utccheck = [x.strip(' ') for x in utccheck]
@@ -564,7 +599,7 @@ class archInstall(object):
         with open('{0}/etc/locale.gen'.format(self.system['chrootpath']), 'w') as f:
             f.write('# Modified by AIF-NG.\n')
             f.write(''.join(localeraw))
-        with open('{0}/etc/locale.conf', 'a') as f:
+        with open('{0}/etc/locale.conf'.format(self.system['chrootpath']), 'a') as f:
             f.write('# Added by AIF-NG.\n')
             f.write('LANG={0}\n'.format(locale[0].split()[0]))
         chrootcmds.append(['locale-gen'])
@@ -703,10 +738,6 @@ class archInstall(object):
                         f.write('# Generated by AIF-NG.\nDefaults:{0} !lecture\n{0} ALL=(ALL) ALL\n'.format(user))
         # Base configuration- initcpio, etc.
         chrootcmds.append(['mkinitcpio', '-p', 'linux'])
-        # Run the basic host prep
-        with open(os.devnull, 'w') as DEVNULL:
-            for c in hostscript:
-                subprocess.call(c, stdout = DEVNULL, stderr = subprocess.STDOUT)
         return(chrootcmds)
     
     def bootloader(self):
@@ -768,10 +799,10 @@ class archInstall(object):
                 os.chown(filepath, 0, 0)  # shouldn't be necessary, but just in case the umask's messed up or something.
         if t == 'pre':
             # We want to run these right away.
-            with open(os.devnull, 'w') as DEVNULL:
+            with open(logfile, 'a') as log:
                 for i, s in enumerate(self.scripts['pre']):
                     subprocess.call('/root/scripts/pre/{0}'.format(i),
-                                    stdout = DEVNULL,
+                                    stdout = log,
                                     stderr = subprocess.STDOUT)
         return()
 
@@ -793,15 +824,15 @@ class archInstall(object):
         real_root = os.open("/", os.O_RDONLY)
         os.chroot(self.system['chrootpath'])
         # Does this even work with an os.chroot()? Let's hope so!
-        with open(os.devnull, 'w') as DEVNULL:
+        with open(logfile, 'a') as log:
             for c in chrootcmds:
-                subprocess.call(c, stdout = DEVNULL, stderr = subprocess.STDOUT)
+                subprocess.call(c, stdout = log, stderr = subprocess.STDOUT)
             for b in bootcmds:
-                subprocess.call(b, stdout = DEVNULL, stderr = subprocess.STDOUT)
+                subprocess.call(b, stdout = log, stderr = subprocess.STDOUT)
             if scriptcmds['post']:
                 for i, s in enumerate(scriptcmds['post']):
                     subprocess.call('/root/scripts/post/{0}'.format(i),
-                                    stdout = DEVNULL,
+                                    stdout = log,
                                     stderr = subproces.STDOUT)
         #os.system('{0}/root/aif-pre.sh'.format(self.system['chrootpath']))
         #os.system('{0}/root/aif-post.sh'.format(self.system['chrootpath']))
@@ -812,14 +843,13 @@ class archInstall(object):
             os.symlink('../lib/systemd/systemd', '{0}/sbin/init'.format(chrootdir))
     
     def unmount(self):
-        with open(os.devnull, 'w') as DEVNULL:
-            subprocess.call(['unmount', '-lR', self.system['chrootpath']], stdout = DEVNULL, stderr = subprocess.STDOUT)
+        with open(logfile, 'a') as log:
+            subprocess.call(['unmount', '-lR', self.system['chrootpath']], stdout = log, stderr = subprocess.STDOUT)
                 
 def runInstall(confdict):
     install = archInstall(confdict)
     install.scriptcmds('pre')
     install.format()
-    install.mounts()
     install.chroot()
     install.scriptcmds('post')
     install.unmount()
@@ -831,7 +861,8 @@ def main():
     instconf = conf.buildDict()
     if 'DEBUG' in os.environ.keys():
         import pprint
-        pprint.pprint(instconf)
+        with open(logfile, 'a') as log:
+            pprint.pprint(instconf, stream = log)
     runInstall(instconf)
 
 if __name__ == "__main__":

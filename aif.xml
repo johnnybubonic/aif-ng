@@ -6,7 +6,7 @@
         <disk device="/dev/sda" diskfmt="gpt">
             <part num="1" start="0%" size="10%" fstype="ef00" />
             <part num="2" start="10%" size="80%" fstype="8300" />
-            <part num="3" start="80%" size="10%" fstype="8200" />
+            <part num="3" start="80%" size="100%" fstype="8200" />
         </disk>
         <mount source="/dev/sda2" target="/mnt/aif" order="1" />
         <mount source="/dev/sda1" target="/mnt/aif/boot" order="2" />
