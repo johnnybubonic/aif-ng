@@ -28,6 +28,7 @@
                 <xgroup name="users" />
             </user>
         </users>
+        <service name="sshd" status="0" />
     </system>
     <pacman>
         <repos>
@@ -52,6 +53,7 @@
             <package name="sed" repo="core" />
             <package name="python" />
             <package name="perl" />
+            <package name="openssh" />
         </software>
     </pacman>
     <bootloader type="grub" target="/boot" efi="true" />

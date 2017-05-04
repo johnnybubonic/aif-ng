@@ -831,6 +831,21 @@ class archInstall(object):
                 pkgcmds.append(cmd)
         return(pkgcmds)
 
+    def serviceSetup(self)
+    # this runs inside the chroot
+    for s in self.system['services'].keys():
+        if not re.match('\.(service|socket)$', s):
+            s = '{0}.service'.format(s)
+        service = '/usr/lib/systemd/system/{0}'.format(s)
+        sysdunit = '/etc/systemd/system/multi-user.target.wants/{0}'.format(s)
+        if self.system['services'][s]:
+            if not os.path.lexists(sysdunit):
+                os.symlink(service, sysdunit)
+        else:
+            if os.path.lexists(sysdunit):
+                os.remove(sysdunit)
+    return()
+
     def chroot(self, chrootcmds = False, bootcmds = False, scriptcmds = False, pkgcmds = False):
         if not chrootcmds:
             chrootcmds = self.setup()
@@ -861,6 +876,7 @@ class archInstall(object):
                     subprocess.call('/root/scripts/post/{0}'.format(i),
                                     stdout = log,
                                     stderr = subprocess.STDOUT)
+            self.serviceSetup()
         #os.system('{0}/root/aif-pre.sh'.format(self.system['chrootpath']))
         #os.system('{0}/root/aif-post.sh'.format(self.system['chrootpath']))
         os.fchdir(real_root)
