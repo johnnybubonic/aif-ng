@@ -9,7 +9,7 @@
             <part num="3" start="80%" size="10%" fstype="8200" />
         </disk>
         <mount source="/dev/sda2" target="/mnt/aif" order="1" />
-        <mount source="/dev/sda1" target="/mnt/boot" order="2" />
+        <mount source="/dev/sda1" target="/mnt/aif/boot" order="2" />
         <mount source="/dev/sda3" target="swap" order="3" />
     </storage>
     <network hostname="aiftest.square-r00t.net">
