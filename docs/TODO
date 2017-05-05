@@ -1,43 +1,26 @@
 - config layout
 -- need to apply defaults and annotate/document
-
-SCRATCH: find out where to run aif-pre.sh (runs on host) (rename to aif-pre.script)
-and get a way to insert that and aif-post(.script) from the kernel params, etc.
-remember to uncomment the functions in main() when ready to test
-INSTEAD: scripts['setup']?
-
-- add mkfs-ing
+--- is this necessary since i doc with asciidoctor now?
 - how to support mdadm, lvm?
-
--support serverside "autoconfig"- a mechanism to let servers automatically generate xml build configs. e.g.:
-  kernel ... aif_url="https://build.domain.tld/aif-ng.php" auto=yes
-would yield the *client* sending info via URL params, e.g.
-  https://build.domain.tld/aif-ng.php?disk[]=sda&disk[]=sdb&disk[sda]=300GB&disk[sdb]=500GB
-? something like that.
-
-parser: make sure to use https://mikeknoop.com/lxml-xxe-exploit/ fix
-
-convert use of confobj or whatever to maybe be suitable to use webFetch instead. LOTS of duplicated code there.
-
-need to write docs
-
-need to double-check aif.xsd spec for the packaging command- can i specify a single element?
-finish up software/packages section
-
--need to implement a "pkg" scripts section
-
-can i install packages the way pacstrap does, without a chroot? i still need to do it, unfortunately, for setting up efibootmgr etc. but..:
-pacman -r /mnt/aif -Sy base --cachedir=/mnt/aif/var/cache/pacman/pkg --noconfirm
-/dev/sda2 on /mnt/aif type ext4 (rw,relatime,data=ordered)
-/dev/sda1 on /mnt/aif/boot type vfat (rw,relatime,fmask=0022,dmask=0022,codepage=437,iocharset=iso8859-1,shortname=mixed,errors=remount-ro)
-proc on /mnt/aif/proc type proc (rw,nosuid,nodev,noexec,relatime)
-sys on /mnt/aif/sys type sysfs (ro,nosuid,nodev,noexec,relatime)
-efivarfs on /mnt/aif/sys/firmware/efi/efivars type efivarfs (rw,nosuid,nodev,noexec,relatime)
-udev on /mnt/aif/dev type devtmpfs (rw,nosuid,relatime,size=2012384k,nr_inodes=503096,mode=755)
-devpts on /mnt/aif/dev/pts type devpts (rw,nosuid,noexec,relatime,gid=5,mode=620,ptmxmode=000)
-shm on /mnt/aif/dev/shm type tmpfs (rw,nosuid,nodev,relatime)
-run on /mnt/aif/run type tmpfs (rw,nosuid,nodev,relatime,mode=755)
-tmp on /mnt/aif/tmp type tmpfs (rw,nosuid,nodev)
+- support serverside "autoconfig"- a mechanism to let servers automatically generate xml build configs. e.g.:
+	kernel ... aif_url="https://build.domain.tld/aif-ng.php" auto=yes
+  would yield the *client* sending info via URL params, e.g.
+	https://build.domain.tld/aif-ng.php?disk[]=sda&disk[]=sdb&disk[sda]=300GB&disk[sdb]=500GB
+  or something like that.
+- parser: make sure to use https://mikeknoop.com/lxml-xxe-exploit/ fix
+- convert use of confobj or whatever to maybe be suitable to use webFetch instead. LOTS of duplicated code there.
+- can i install packages the way pacstrap does, without a chroot? i still need to do it, unfortunately, for setting up efibootmgr etc. but..:
+	pacman -r /mnt/aif -Sy base --cachedir=/mnt/aif/var/cache/pacman/pkg --noconfirm
+	/dev/sda2 on /mnt/aif type ext4 (rw,relatime,data=ordered)
+	/dev/sda1 on /mnt/aif/boot type vfat (rw,relatime,fmask=0022,dmask=0022,codepage=437,iocharset=iso8859-1,shortname=mixed,errors=remount-ro)
+	proc on /mnt/aif/proc type proc (rw,nosuid,nodev,noexec,relatime)
+	sys on /mnt/aif/sys type sysfs (ro,nosuid,nodev,noexec,relatime)
+	efivarfs on /mnt/aif/sys/firmware/efi/efivars type efivarfs (rw,nosuid,nodev,noexec,relatime)
+	udev on /mnt/aif/dev type devtmpfs (rw,nosuid,relatime,size=2012384k,nr_inodes=503096,mode=755)
+	devpts on /mnt/aif/dev/pts type devpts (rw,nosuid,noexec,relatime,gid=5,mode=620,ptmxmode=000)
+	shm on /mnt/aif/dev/shm type tmpfs (rw,nosuid,nodev,relatime)
+	run on /mnt/aif/run type tmpfs (rw,nosuid,nodev,relatime,mode=755)
+	tmp on /mnt/aif/tmp type tmpfs (rw,nosuid,nodev)
 
 
 docs:
