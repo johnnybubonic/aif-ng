@@ -1,4 +1,4 @@
-= AIF-NG User Manual: Arch Installation Framework, Next Generation
+= AIF-NG User Manual
 Brent Saner <bts@square-r00t.net>
 v1.0, 2017-05-04
 :doctype: book
@@ -21,6 +21,8 @@ I got frustrated at the lack of options for installing Arch from a network or au
 
 
 === What is AIF-NG?
+AIF-NG (Arch Installation Framework, Next Generation) is a means to automatically install https://www.archlinux.org/[Arch Linux^]. Think of it as something akin to https://en.wikipedia.org/wiki/Kickstart_(Linux)[Kickstart^].
+
 https://github.com/jdodds/aif[AIF^] (classic) was written entirely in bash, required compilation, wasn't flexible enough, and is obsolete/no longer maintained. So I rewrote it in Python3 and give it a more basic yet flexible structure.
 
 The client (`aifclient.py`) is a single script and gets its configuration from a combination of an XML file and kernel paramaters (which tell it where to find the former and how to access it).
