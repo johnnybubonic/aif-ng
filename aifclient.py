@@ -19,6 +19,7 @@ except ImportError:
 import shlex
 import fileinput
 import os
+import shutil
 import re
 import socket
 import subprocess
@@ -801,6 +802,46 @@ class archInstall(object):
                                     stderr = subprocess.STDOUT)
         return()
 
+    def pacmanSetup(self):
+        # This should be run outside the chroot.
+        conf = '{0}/etc/pacman.conf'.format(self.system['chrootpath'])
+        with open(conf, 'r') as f:
+            confdata = f.readlines()
+        # This... is not 100% sane, and we need to change it if the pacman.conf upstream changes order of the default repos.
+        # Here be dragons; you have been warned. TODO.
+        idx = confdata.index('#[testing]\n')
+        shutil.copy2(conf, '{0}.arch'.format(conf))
+        newconf = confdata[:idx]
+        newconf.append('# Modified by AIF-NG.\n')
+        for r in self.software['repos']:
+            if self.software['repos'][r]['mirror'].startswith('file://'):
+                mirror = 'Include = {0}'.format(re.sub('^file://', '', self.software['repos'][r]['mirror']))
+            else:
+                mirror = 'Server = {0}'.format(self.software['repos'][r]['mirror'])
+            newentry = ['[{0}]\n'.format(r), '{0}\n'.format(mirror)]
+            if self.software['repos'][r][siglevel] != 'default':
+                newentry.append('Siglevel = {0}\n'.format(self.software['repos'][r][siglevel]))
+            if self.software['repos'][r]['enabled']:
+                pass  # I know, shame on me. We want this because we explicitly want it to be set as True
+            else:
+                newentry = ["#" + i for i in newentry]
+            newentry.append('\n')
+            newconf.extend(newentry)
+        with open(conf, 'w') as f:
+            f.write(''.join(newconf))
+        if self.software['mirrors']:
+            mirrorlst = '{0}/etc/pacman.d/mirrorlist'.format(self.system['chrootpath'])
+            shutil.copy2(mirrorlst, '{0}.arch'.format(mirrorlst))
+            # TODO: file vs. server?
+            with open(mirrorlst, 'w') as f:
+                for m in self.software['mirrors']:
+                    if m.startswith('file://'):
+                        mirror = 'Include = {0}'.format(re.sub('^file://', '', m))
+                    else:
+                        mirror = 'Server = {0}'.format(m)
+                    f.write('{0}\n'.format(mirror))
+        return()
+
     def packagecmds(self):
         pkgcmds = []
         # This should be run in the chroot, unless we find a way to pacstrap
@@ -812,11 +853,6 @@ class archInstall(object):
         pkgropts = ['--needed', '--noconfirm']
         if pkgr == 'apacman':
             pkgropts.extend(['--noedit', '--skipinteg'])
-        if self.software['mirrors']:
-            # TODO: file vs. server?
-            with open('/etc/pacman.d/mirrorlist', 'w') as f:
-                for m in self.software['mirrors']:
-                    f.write('Server = {0}\n'.format(m))
         if self.software['packages']:
             for p in self.software['packages'].keys():
                 if self.software['packages'][p]['repo']:
@@ -855,6 +891,7 @@ class archInstall(object):
             scripts = self.scripts
         if not pkgcmds:
             pkgcmds = self.packagecmds()
+        self.pacmanSetup()  # This needs to be done before the chroot
         # We don't need this currently, but we might down the road.
         #chrootscript = '#!/bin/bash\n# https://aif.square-r00t.net/\n\n'
         #with open('{0}/root/aif.sh'.format(self.system['chrootpath']), 'w') as f:

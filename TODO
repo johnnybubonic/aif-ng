@@ -24,6 +24,8 @@ need to write docs
 need to double-check aif.xsd spec for the packaging command- can i specify a single element?
 finish up software/packages section
 
+-need to implement a "pkg" scripts section
+
 can i install packages the way pacstrap does, without a chroot? i still need to do it, unfortunately, for setting up efibootmgr etc. but..:
 pacman -r /mnt/aif -Sy base --cachedir=/mnt/aif/var/cache/pacman/pkg --noconfirm
 /dev/sda2 on /mnt/aif type ext4 (rw,relatime,data=ordered)

@@ -136,7 +136,6 @@
 							<xs:element name="part" minOccurs="1" maxOccurs="unbounded">
 								<xs:complexType>
 									<xs:attribute name="num" type="xs:positiveInteger" use="required" />
-									<xs:attribute name="name" type="xs:token" />
 									<xs:attribute name="start" type="disksize" use="required" />
 									<xs:attribute name="size" type="disksize" use="required" />
 									<xs:attribute name="fstype" type="fstype" use="required" />
@@ -163,7 +162,6 @@
 						<xs:attribute name="target" type="xs:token" use="required" />
 						<xs:attribute name="fstype" type="fstype" />
 						<xs:attribute name="opts" type="mntopts" />
-						<xs:attribute name="swap" type="xs:bool" />
 					</xs:complexType>
 					<xs:unique name="unique-mnts">
 						<xs:selector xpath="mount" />

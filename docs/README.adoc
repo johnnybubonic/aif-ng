@@ -105,8 +105,50 @@ Python modules:
 ** Recommended for more complete XML processing, the `aifverify.py` utility, etc.
 
 
+= Starting an Install
+First, `aifclient.py` (`/usr/bin/aifclient` in AUR packages) must be configured to start at boot after networking has initiated in the host environment. This can be done very easily with a https://www.freedesktop.org/software/systemd/man/systemd.service.html[oneshot^] https://wiki.archlinux.org/index.php/systemd#Writing_unit_files[systemd unit file^].
+
+However, this will do nothing on its own. This is a security measure; you can very easily destroy the host's installation if you attempt to run AIF-NG with an inappropriate configuration. For this reason, AIF-NG will exit if it is not enabled via the https://wiki.archlinux.org/index.php/Kernel_parameters[kernel commandline/boot parameters^] (https://wiki.archlinux.org/index.php/Mkinitcpio#HOOKS[mkinitcpio hooks^] may be provided in future updates to the AUR packages to assist in creating more lightweight install environments).
+
+Configure your bootloader to add the following options as necessary:
+
+[options="header"]
+|======================
+^|Parameter ^|Purpose
+^m|aif |This enables AIF-NG; without this, a run will never be initiated - note that `aif` and `aif=True` are the same, and it can be explicitly disabled by setting `aif=False`
+^m|aif_url |The URI to your <<writing_an_xml_configuration_file, XML configuration file>> (see <<aif_url, below>>)
+^m|aif_auth |(see <<aif_url, below>>)
+^m|aif_username |(see <<aif_url, below>>)
+^m|aif_password |(see <<aif_url, below>>)
+^m|aif_realm |(see <<aif_url, below>>)
+|======================
+
+[[aif_url]]
+== Some notes on auth and URIs
+* `aif_url` can be an HTTP/HTTPS URL, an FTP/FTPS URI, or a `file://` URI. e.g.:
+** `aif_url=http://aif.square-r00t.net/aif.xml`
+** `aif_url=https://aif.square-r00t.net/aif.xml`
+** `aif_url=ftp://ftp.domain.tld/bootstrap/aif.xml`
+** `aif_url=ftps://secure.ftp.domain.tld/bootstrap/aif.xml`
+** `aif_url=file:///srv/aif/aif.xml`
+* If `aif_url` is an HTTP/HTTPS URL, then `aif_user` is the username to use with the https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#4xx_Client_errors[401^]/https://tools.ietf.org/html/rfc7235[RFC 7235] auth (via `aif_auth`).
+** If `aif_url` is an FTP/FTPS URI, then `aif_user` will be the FTP user.
+** The same behavior applies for `aif_password`.
+* If `aif_auth` is `digest`, this is the realm we would use (we attempt to "guess" if it isn’t specified); otherwise it is ignored.
+
+== Debugging
+Sometimes it's useful to get a little more information, or to start an installation from within an already-booted environment and you didn't remember (or weren't able to) change the kernel parameters. If this is the case, simple export the `DEBUG` environment variable (it can be set to anything, it doesn't matter) - if this is done, the arguments will be read from /tmp/cmdline instead. e.g.:
+
+ rm -f *
+ export DEBUG=true
+ cp /proc/cmdline /tmp/.
+ chmod 600 /tmp/cmdline
+ sed -i -e '1s/$/ aif aif_url=https:\/\/aif.square-r00t.net\/aif.xml/' /tmp/cmdline
+
+It will also write the full configuration (*after* parsing) to `/root/log`.
+
 = Writing an XML Configuration File
-I've included a sample `aif.xml` file which is fully functional. However, it's not ideal- namely because it will add my personal SSH pubkeys to your new install, and you probably don't want that. However, it's fairly complete so it should serve as a good example. If you want to see the full set of supported configuration elements, take a look at the most up-to-date https://aif.square-r00t.net/aif.xsd[aif.xsd^]. For explanation's sake, however, we'll go through it here. The directives are referred to in https://www.w3schools.com/xml/xml_xpath.asp[XPath^] syntax within the documentation text for easier context (but not the titles).
+I've included a sample `aif.xml` file with the project which is fully functional. However, it's not ideal- namely because it will add my personal SSH pubkeys to your new install, and you probably don't want that. However, it's fairly complete so it should serve as a good example. If you want to see the full set of supported configuration elements, take a look at the most up-to-date https://aif.square-r00t.net/aif.xsd[aif.xsd^]. For explanation's sake, however, we'll go through it here. The directives are referred to in https://www.w3schools.com/xml/xml_xpath.asp[XPath^] syntax within the documentation text for easier context (but not the titles).
 
 == `<aif>`
 The `/aif` element is the https://en.wikipedia.org/wiki/Root_element[root element^]. It serves as a container for all the configuration data. The only http://www.xmlfiles.com/xml/xml_attributes.asp[attributes^] it contains are for formatting and verification of the containing XML.
@@ -119,7 +161,7 @@ The `/aif/storage/disk` element holds information about disks on the system, and
 
 [options="header"]
 |======================
-^|Attributes ^|Value
+^|Attribute ^|Value
 ^m|device |The disk to format (e.g. `/dev/sda`)
 ^m|diskfmt |https://en.wikipedia.org/wiki/GUID_Partition_Table[`gpt`^] or https://en.wikipedia.org/wiki/Master_boot_record[`bios`^]
 |======================
@@ -129,13 +171,14 @@ The `/aif/storage/disk/part` element holds information on partitioning that it's
 
 [options="header"]
 |======================
-^|Attributes ^|Value
+^|Attribute ^|Value
 ^m|num |The partition number (positive integer)
-^m|start |The amount of the *total disk size* to _start_ the partition at
-^m|size |The amount of the *total disk size* to _end_ the partition at
-^m|fstype |The partition type. Must be in http://www.rodsbooks.com/gdisk/cgdisk-walkthrough.html[gdisk format^] (see below)
+^m|start |The amount of the *total disk size* to _start_ the partition at (see <<specialsize, below>>)
+^m|size |The amount of the *total disk size* to _end_ the partition at (see <<specialsize, below>>)
+^m|fstype |The partition type. Must be in http://www.rodsbooks.com/gdisk/cgdisk-walkthrough.html[gdisk format^] (see <<fstypes, below>>)
 |======================
 
+[[specialsize]]
 The `start` and `size` attributes can be in the form of:
 
 * A percentage, indicated by a percentage sign (`"10%"`)
@@ -143,6 +186,7 @@ The `start` and `size` attributes can be in the form of:
 ** Accepts *K* (Kilobytes), *M* (Megabytes), *G* (Gigabytes), *T* (Terabytes), or *P* (Petabytes - I know, I know.)
 ** Can also accept modifiers for this form (`"+500G"`, `"-400M"`)
 
+[[fstypes]]
 NOTE: The following is a table for your reference of partition types. Note that it may be out of date, so reference the link above for the most up-to-date table.
 
 [options="header"]
@@ -258,10 +302,12 @@ The `/aif/storage/mount` element specifies mountpoints for each <<code_disk_code
 
 [options="header"]
 |======================
-^|Attributes ^|Value
+^|Attribute ^|Value
 ^m|source |The device to mount
-^m|target |Where it should be mounted to in the filesystem (on the host system, not the new installation)
+^m|target |Where it should be mounted to in the filesystem (on the host system, not the new installation); if `swap`, it will be handled as swapspace instead
 ^m|order |The order in which it should be mounted. These should be unique positive integers.
+^m|fstype |The filesystem type; usually this is not required but if you need to manually specify the type of filesystem, this will allow you to do it
+^m|opts |The mount options; provide the string exactly as it would be provided to mount(8)'s `-o` option
 |======================
 
 === `<network>`
@@ -269,7 +315,7 @@ The `/aif/network` element specifies network configuration(s). It contains <<cod
 
 [options="header"]
 |======================
-^|Attributes ^|Value
+^|Attribute ^|Value
 ^m|hostname |The hostname of the new installation
 |======================
 
@@ -278,10 +324,12 @@ The `/aif/network/iface` element specifies various <<code_network_code, network>
 
 [options="header"]
 |======================
-^|Attributes ^|Value
+^|Attribute ^|Value
 ^m|device |The interface name (in https://www.freedesktop.org/wiki/Software/systemd/PredictableNetworkInterfaceNames/[Predictable Interface Naming^]) (e.g. `ens3`); can be `auto` (see below)
 ^m|address |The address to be assigned to the interface (in https://en.wikipedia.org/wiki/Classless_Inter-Domain_Routing[CIDR^] format); can be `auto` (see below)
 ^m|netproto |One of `ipv4`, `ipv6`, or `both`
+^m|gateway |The gateway address for the interface/protocol pairing; only used if `address` is not `auto`
+^m|resolvers |The DNS resolver addresses, if you wish/need to manually specify them; pass as a comma-separated list
 |======================
 
 If "auto" is specified for `device`, the system will configure the first (and *only* the first) interface it finds with an active link with the provided address information.
@@ -295,11 +343,140 @@ The `/aif/system` element is for handling general system configuration. It conta
 
 [options="header"]
 |======================
-^|Attributes ^|Value
+^|Attribute ^|Value
 ^m|timezone |The https://wiki.archlinux.org/index.php/Time#Time_zone[timezone^] for the installed system (can be independent of the host system)
 ^m|locale |The https://wiki.archlinux.org/index.php/Locale#Setting_the_system_locale[locale^] of the installed system (e.g. `en_US.UTF-8`)
-^m|chrootpath |The path on the host that will serve as the https://wiki.archlinux.org/index.php/Change_root[chroot^] path. This should be where your new install's / (root filesystem partition) is mounted at in <<code_mount_code, mounts>>.
+^m|chrootpath |The path on the host that will serve as the https://wiki.archlinux.org/index.php/Change_root[chroot^] path. This should be where your new install's / (root filesystem partition) is mounted at in <<code_mount_code, mounts>>
+^m|kbd |The https://wiki.archlinux.org/index.php/installation_guide#Set_the_keyboard_layout[keyboard layout^] (if not US)
 |======================
 
 ==== `<users>`
 The `/aif/system/users` element is used to specify users you wish to create (if any). It contains the <<code_user_code, user>>, <<code_home_code, user/home>>, and <<code_xgroup_code, user/xgroup>> elements.
+
+[options="header"]
+|======================
+^|Attribute ^|Value
+^m|rootpass |A properly hashed-and-salted password. See <<passwordhashes, below>>
+|======================
+
+[[passwordhashes]]
+NOTE: To generate a proper hashed/salted password, you may want to reference https://bdisk.square-r00t.net/#generating_a_password_salt_hash[this section^] from https://bdisk.square-r00t.net/[BDisk^]'s user manual (another project of mine). You can use https://git.square-r00t.net/BDisk/tree/extra/bin/hashgen.py[this python script^] to generate one. If you specify an empty string, the password will be BLANK (i.e. you can log in with just the username). This is very insecure. If you specify a `!` instead of a salted hash, TTY login will be disabled (though it will still be possible to log in via other means such as SSH pubkey auth - assuming you configure it beforehand. This has some *added* security benefits.
+
+===== `<user>`
+The `/aif/system/users/user` element specifies user(s) to create. It contains <<code_xgroup_code, xgroup>> and <<code_home_code, home>> elements.
+
+[options="header"]
+|======================
+^|Attribute ^|Value
+^m|name |The username/login name
+^m|sudo |If (full) sudo access should be granted to this user (boolean; must be one of `1`/`true` or `0`/`false`)
+^m|password |The salted/hashed password (see <<passwordhashes, above>>)
+^m|comment |A comment (typically, the user's real/full name)
+^m|uid |The https://en.wikipedia.org/wiki/User_identifier[UID^] of the user; if specified, must be a positive integer
+^m|group |The primary group of the user (the default is to create a new group named after that user)
+^m|gid |The https://en.wikipedia.org/wiki/Group_identifier[GID^] to use for the primary group; must be a positive integer
+|======================
+
+====== `<xgroup>`
+The `/aif/system/users/user/xgroup` elements specifies one (or more) "eXtra groups" (i.e. non-primary) that AIF-NG should add the user to.
+
+[options="header"]
+|======================
+^|Attribute ^|Value
+^m|name |The group name
+^m|create |If the group should be created (boolean; must be one of `1`/`true` or `0`/`false`)
+^m|gid |The https://en.wikipedia.org/wiki/Group_identifier[GID^] to use (if creating); must be a positive integer and not be taken by an existing group
+|======================
+
+====== `<home>`
+The `/aif/system/users/user/home` element contains information for a <<code_user_code, user>>'s home directory. It can be only specified once per user, but it is optional.
+
+[options="header"]
+|======================
+^|Attribute ^|Value
+^m|path |The path for the home directory; useful if you don't want it to be /home/<username>
+^m|create |If the home directory should be created (boolean; must be one of `1`/`true` or `0`/`false`)
+|======================
+
+==== `<service>`
+The `/aif/system/service` element holds information about services that should explicitly be enabled/disabled on boot.
+
+[options="header"]
+|======================
+^|Attribute ^|Value
+^m|name |The service name. It can be shortform (`sshd`) or long form (`git-daemon.socket`); if the shortform is provided, ".service" is assumed
+^m|status |A boolean that specifies if the service should be enabled (`1`/`true`) or disabled (`0`/`false`)
+|======================
+
+=== `<pacman>`
+The `/aif/pacman` element contains the <<code_repos_code, repos>>, <<code_repo_code, repos/repo>>, <<code_mirrorlist_code, mirrorlist>>, <<code_mirror_code, mirrorlist/mirror>>, <<code_software_code, software>>, <<code_package_code, software/packages>>, and <<code_command_code, command>> elements.
+
+==== `<command>`
+NOTE: This is currently kind of useless. I need to implement a pre-package-installation <<code_scripts_code, hook script>> first. I promise it's coming.
+
+If you configured an alternate package utility, you can specify the command here. Note that it should be configured/called with necessary options to avoid the necessity of user involvement (since that's the entire point of AIF-NG).
+
+==== `<repos>`
+The `/aif/pacman/repos` element contains one (or more) <<code_repo_code, repo>> element(s).
+
+===== `<repo>`
+The `/aif/pacman/repos/repo` elements specify information for configuring the installed system's /etc/pacman.conf (specifically, the repositories).
+
+[options="header"]
+|======================
+^|Attribute ^|Value
+^m|name |The name of the repository
+^m|enabled |A boolean that specifies if the repository should be enabled (`1`/`true`) or disabled (`0`/`false`)
+^m|siglevel |The https://wiki.archlinux.org/index.php/pacman#Package_security[siglevel^] of the repository (e.g. `Optional TrustedOnly`); can be `default` (in which the pacman.conf default siglevel will be used)
+^m|mirror |The URI for the https://wiki.archlinux.org/index.php/pacman#Repositories_and_mirrors[mirror^]; if it begins with `file://`, we will use it as an `Include =` instead of a `Server =` (make sure it is a full/absolute path and it exists on the newly installed system)
+|======================
+
+===== `<mirrorlist>`
+The `/aif/pacman/mirrorlist` element contains elements that should be in `/etc/pacman.d/mirrorlist`. It is optional; if it isn't specified, the default distributed mirrorlist will be used instead.
+
+====== `<mirror>`
+The `/aif/pacman/mirrorlist/mirror` elements are <<code_mirrorlist_code, mirrorlist>> entries.
+
+===== `<software>`
+The `/aif/pacman/software` element contains one (or more) <<code_package_code, package>> element(s) that describe software to install. It is optional.
+
+====== `<package>`
+The `/aif/pacman/software/package` element holds information about software to be installed.
+
+[options="header"]
+|======================
+^|Attribute ^|Value
+^m|name |The name of the package (e.g. `openssh`)
+^m|repo |Optional, but you can specify which repository to install the package from (in the case of multiple repositories providing the same package)
+|======================
+
+=== `<bootloader>`
+The `/aif/bootloader` element specifies a https://wiki.archlinux.org/index.php/installation_guide#Boot_loader[bootloader^] to install.
+
+[options="header"]
+|======================
+^|Attribute ^|Value
+^m|type |The bootloader to use; currently, the only supported values are `grub` and `systemd` (for https://wiki.archlinux.org/index.php/Systemd-boot[systemd-boot^]) but more options may be available in the future
+^m|efi |If used for (U)EFI support; note that the install environment must be booted in UEFI mode and that `systemd`(-boot) only supports EFI and that it is a boolean (`1`/`true` or `0`/`false`)
+^m|target |This should be the absolute path (from within the newly installed system) to your https://wiki.archlinux.org/index.php/EFI_System_Partition[ESP^] (if `efi` is true); otherwise the disk/partition to install the bootloader to (if you're using BIOS mode)
+|======================
+
+=== `<scripts>`
+The `/aif/scripts` element contains one or more <<code_script_code, script>> elements.
+
+==== `<script>`
+The `/aif/scripts/script` elements specify scripts to be run at different stages during the install process. This is useful if you need to set up SSH pubkey authentication, for example, or configure https://wiki.archlinux.org/index.php/RAID[mdadm^] so you can use that as a <<code_disk_code, disk>>.
+
+[options="header"]
+|======================
+^|Attribute ^|Value
+^m|uri |The URI to the script; can be an HTTP/HTTPS reference, an FTP/FTPS reference, or a local file reference (`file:///path/to/file`).
+^m|order |A unique positive integer used to order the scripts during the run; note that e.g. pre- and post-scripts are executed at different points, so you can use the same `order` as long as it's in different execution points
+^m|authtype |Same behavior as <<starting_an_install, `aif_auth`>> but for fetching this script (see also <<aif_url, further notes>> on this)
+^m|user |Same behavior as <<starting_an_install, `aif_user`>> but for fetching this script (see also <<aif_url, further notes>> on this)
+^m|password |Same behavior as <<starting_an_install, `aif_password`>> but for fetching this script (see also <<aif_url, further notes>> on this)
+^m|realm |Same behavior as <<starting_an_install, `aif_realm`>> but for fetching this script (see also <<aif_url, further notes>> on this)
+^m|bootstrap |A boolean; if `1`/`true` then we will run this script before even formatting <<code_disk_code, disks>>; otherwise if it's `0`/`false` then we would run it *inside* the chroot environment as the very last thing
+|======================
+
+NOTE: The `bootstrap` attribute is subject to change to something more flexible to allow more flexibility in when the scripts are executed. Expect this to happen soon, so be aware.
