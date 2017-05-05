@@ -24,6 +24,11 @@
 
 DOCUMENTATION: BUG REPORTS/FEATURE REQUESTS!!!!
 
+also create:
+-systemd unit to start on boot
+-mkinitcpio hooks to start from initrd environment (minimal boot env)
+-create boot media with bdisk since default arch doesn't even have python 3
+
 
 docs:
 http://lxml.de/parsing.html
