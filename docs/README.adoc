@@ -1,6 +1,6 @@
 = AIF-NG User Manual
 Brent Saner <bts@square-r00t.net>
-v1.0, 2017-05-04
+v1.0, 2017-05-05
 :doctype: book
 :data-uri:
 :imagesdir: images
@@ -9,7 +9,6 @@ v1.0, 2017-05-04
 :toc2: left
 :idprefix:
 :toclevels: 7
-//:sectnums: we have too many levels for this to be of use. it just gets ugly.
 
 
 [preface]
@@ -96,7 +95,7 @@ These are needed for using AIF-NG.
 * https://www.archlinux.org/packages/?name=arch-install-scripts[arch-install-scripts^] (for `pacstrap`)
 ** https://wiki.archlinux.org/index.php/Install_from_existing_Linux#From_a_host_running_another_Linux_distribution[This^] has some useful methods of installing them in a non-Arch Linux distro.
 
-These are no required Python modules; at least for the client. It uses only the python 3 stdlib library.
+These are no required Python modules; at least for the client. It can use only the python 3 stdlib library.
 
 === Optional
 While not strictly necessary, these will greatly enhance your AIF-NG usage. I've included some reasons why you might want to install them.
