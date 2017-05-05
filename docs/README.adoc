@@ -95,7 +95,7 @@ These are needed for using AIF-NG.
 * https://www.archlinux.org/packages/?name=arch-install-scripts[arch-install-scripts^] (for `pacstrap`)
 ** https://wiki.archlinux.org/index.php/Install_from_existing_Linux#From_a_host_running_another_Linux_distribution[This^] has some useful methods of installing them in a non-Arch Linux distro.
 
-These are no required Python modules; at least for the client. It can use only the python 3 stdlib library.
+These are no required Python modules, at least for the client; it will work fine with just the standard library for Python 3.
 
 === Optional
 While not strictly necessary, these will greatly enhance your AIF-NG usage. I've included some reasons why you might want to install them.
@@ -132,13 +132,13 @@ Configure your bootloader to add the following options as necessary:
 ** `aif_url=ftp://ftp.domain.tld/bootstrap/aif.xml`
 ** `aif_url=ftps://secure.ftp.domain.tld/bootstrap/aif.xml`
 ** `aif_url=file:///srv/aif/aif.xml`
-* If `aif_url` is an HTTP/HTTPS URL, then `aif_user` is the username to use with the https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#4xx_Client_errors[401^]/https://tools.ietf.org/html/rfc7235[RFC 7235] auth (via `aif_auth`).
+* If `aif_url` is an HTTP/HTTPS URL, then `aif_user` is the username to use with the https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#4xx_Client_errors[401^] (https://tools.ietf.org/html/rfc7235[RFC 7235^]) auth (via `aif_auth`).
 ** If `aif_url` is an FTP/FTPS URI, then `aif_user` will be the FTP user.
 ** The same behavior applies for `aif_password`.
 * If `aif_auth` is `digest`, this is the realm we would use (we attempt to "guess" if it isn’t specified); otherwise it is ignored.
 
 == Debugging
-Sometimes it's useful to get a little more information, or to start an installation from within an already-booted environment and you didn't remember (or weren't able to) change the kernel parameters. If this is the case, simple export the `DEBUG` environment variable (it can be set to anything, it doesn't matter) - if this is done, the arguments will be read from /tmp/cmdline instead. e.g.:
+Sometimes it's useful to get a little more information, or to start an installation from within an already-booted environment and you didn't remember (or weren't able to) change the kernel parameters. If this is the case, simply export the `DEBUG` environment variable (it can be set to anything, it doesn't matter) - if this is done, the arguments will be read from /tmp/cmdline instead. e.g.:
 
  rm -f *
  export DEBUG=true
@@ -346,7 +346,7 @@ The `/aif/system` element is for handling general system configuration. It conta
 |======================
 ^|Attribute ^|Value
 ^m|timezone |The https://wiki.archlinux.org/index.php/Time#Time_zone[timezone^] for the installed system (can be independent of the host system)
-^m|locale |The https://wiki.archlinux.org/index.php/Locale#Setting_the_system_locale[locale^] of the installed system (e.g. `en_US.UTF-8`)
+^m|locale |The https://wiki.archlinux.org/index.php/Locale#Setting_the_system_locale[locale^] of the installed system (e.g. `en_US.UTF-8`); if a short version is used (e.g. `en`), then all locales starting with that prefix will be enabled (multiple explicit locale support is in the TODO)
 ^m|chrootpath |The path on the host that will serve as the https://wiki.archlinux.org/index.php/Change_root[chroot^] path. This should be where your new install's / (root filesystem partition) is mounted at in <<code_mount_code, mounts>>
 ^m|kbd |The https://wiki.archlinux.org/index.php/installation_guide#Set_the_keyboard_layout[keyboard layout^] (if not US)
 |======================
@@ -361,7 +361,7 @@ The `/aif/system/users` element is used to specify users you wish to create (if 
 |======================
 
 [[passwordhashes]]
-NOTE: To generate a proper hashed/salted password, you may want to reference https://bdisk.square-r00t.net/#generating_a_password_salt_hash[this section^] from https://bdisk.square-r00t.net/[BDisk^]'s user manual (another project of mine). You can use https://git.square-r00t.net/BDisk/tree/extra/bin/hashgen.py[this python script^] to generate one. If you specify an empty string, the password will be BLANK (i.e. you can log in with just the username). This is very insecure. If you specify a `!` instead of a salted hash, TTY login will be disabled (though it will still be possible to log in via other means such as SSH pubkey auth - assuming you configure it beforehand. This has some *added* security benefits.
+NOTE: To generate a proper hashed/salted password, you may want to reference https://bdisk.square-r00t.net/#generating_a_password_salt_hash[this section^] from https://bdisk.square-r00t.net/[BDisk^]'s user manual (another project of mine). You can use https://git.square-r00t.net/BDisk/tree/extra/bin/hashgen.py[this python script^] to generate one. If you specify an empty string, the password will be BLANK (i.e. you can log in with just the username). This is very insecure. If you specify a `!` instead of a salted hash, TTY login will be disabled (though it will still be possible to log in via other means such as SSH pubkey auth - assuming you configure it beforehand. This has some *added* security benefits).
 
 ===== `<user>`
 The `/aif/system/users/user` element specifies user(s) to create. It contains <<code_xgroup_code, xgroup>> and <<code_home_code, home>> elements.
