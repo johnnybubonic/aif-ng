@@ -1,0 +1,10 @@
+run_hook () {
+	msg ":: Starting AIF-NG..."
+	/usr/bin/aifclient &
+	#nohup /usr/bin/aifclient &
+	#disown -h %1
+}
+
+run_cleanuphook () {
+	pkill -9 python
+}

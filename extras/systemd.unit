@@ -1,0 +1,10 @@
+[Unit]
+Description=AIF-NG Client Service
+After=network.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/aifclient
+
+[Install]
+WantedBy=multi-user.target

@@ -14,7 +14,7 @@ v1.0, 2017-05-05
 [preface]
 == Preface
 === About the Author
-I am a GNU/Linux Systems/Network Administrator/Engineer- I wear a lot of hats. I have a lot of side projects to keep me busy when I’m not working at _${dayjob}_, mostly to assist in other side projects and become more efficient and proficient at those tasks. “Shaving the yak,” footnote:[See http://catb.org/jargon/html/Y/yak-shaving.html] indeed.
+I am a GNU/Linux Systems/Network Administrator/Engineer -- I wear a lot of hats. I have a lot of side projects to keep me busy when I’m not working at _${dayjob}_, mostly to assist in other side projects and become more efficient and proficient at those tasks. “Shaving the yak,” footnote:[See http://catb.org/jargon/html/Y/yak-shaving.html] indeed.
 
 I got frustrated at the lack of options for installing Arch from a network or automated deployment environment and decided I needed a tool to do that for me.
 
@@ -116,7 +116,7 @@ Configure your bootloader to add the following options as necessary:
 [options="header"]
 |======================
 ^|Parameter ^|Purpose
-^m|aif |This enables AIF-NG; without this, a run will never be initiated - note that `aif` and `aif=True` are the same, and it can be explicitly disabled by setting `aif=False`
+^m|aif |This enables AIF-NG; without this, a run will never be initiated -- note that `aif` and `aif=True` are the same, and it can be explicitly disabled by setting `aif=False`
 ^m|aif_url |The URI to your <<writing_an_xml_configuration_file, XML configuration file>> (see <<aif_url, below>>)
 ^m|aif_auth |(see <<aif_url, below>>)
 ^m|aif_username |(see <<aif_url, below>>)
@@ -138,7 +138,7 @@ Configure your bootloader to add the following options as necessary:
 * If `aif_auth` is `digest`, this is the realm we would use (we attempt to "guess" if it isn’t specified); otherwise it is ignored.
 
 == Debugging
-Sometimes it's useful to get a little more information, or to start an installation from within an already-booted environment and you didn't remember (or weren't able to) change the kernel parameters. If this is the case, simply export the `DEBUG` environment variable (it can be set to anything, it doesn't matter) - if this is done, the arguments will be read from /tmp/cmdline instead. e.g.:
+Sometimes it's useful to get a little more information, or to start an installation from within an already-booted environment and you didn't remember (or weren't able to) change the kernel parameters. If this is the case, simply export the `DEBUG` environment variable (it can be set to anything, it doesn't matter) -- if this is done, the arguments will be read from /tmp/cmdline instead. e.g.:
 
  rm -f *
  export DEBUG=true
@@ -149,7 +149,7 @@ Sometimes it's useful to get a little more information, or to start an installat
 It will also write the full configuration (*after* parsing) to `/root/log`.
 
 = Writing an XML Configuration File
-I've included a sample `aif.xml` file with the project which is fully functional. However, it's not ideal- namely because it will add my personal SSH pubkeys to your new install, and you probably don't want that. However, it's fairly complete so it should serve as a good example. If you want to see the full set of supported configuration elements, take a look at the most up-to-date https://aif.square-r00t.net/aif.xsd[aif.xsd^]. For explanation's sake, however, we'll go through it here. The directives are referred to in https://www.w3schools.com/xml/xml_xpath.asp[XPath^] syntax within the documentation text for easier context (but not the titles).
+I've included a sample `aif.xml` file with the project which is fully functional. However, it's not ideal -- namely because it will add my personal SSH pubkeys to your new install, and you probably don't want that. However, it's fairly complete so it should serve as a good example. If you want to see the full set of supported configuration elements, take a look at the most up-to-date https://aif.square-r00t.net/aif.xsd[aif.xsd^]. For explanation's sake, however, we'll go through it here. The directives are referred to in https://www.w3schools.com/xml/xml_xpath.asp[XPath^] syntax within the documentation text for easier context (but not the titles).
 
 == `<aif>`
 The `/aif` element is the https://en.wikipedia.org/wiki/Root_element[root element^]. It serves as a container for all the configuration data. The only http://www.xmlfiles.com/xml/xml_attributes.asp[attributes^] it contains are for formatting and verification of the containing XML.
@@ -184,7 +184,7 @@ The `start` and `size` attributes can be in the form of:
 
 * A percentage, indicated by a percentage sign (`"10%"`)
 * A size, indicated by the abbreviation (`"300K"`, `"30G"`, etc.)
-** Accepts *K* (Kilobytes), *M* (Megabytes), *G* (Gigabytes), *T* (Terabytes), or *P* (Petabytes - I know, I know.)
+** Accepts *K* (Kilobytes), *M* (Megabytes), *G* (Gigabytes), *T* (Terabytes), or *P* (Petabytes -- I know, I know.)
 ** Can also accept modifiers for this form (`"+500G"`, `"-400M"`)
 
 [[fstypes]]
@@ -361,7 +361,7 @@ The `/aif/system/users` element is used to specify users you wish to create (if 
 |======================
 
 [[passwordhashes]]
-NOTE: To generate a proper hashed/salted password, you may want to reference https://bdisk.square-r00t.net/#generating_a_password_salt_hash[this section^] from https://bdisk.square-r00t.net/[BDisk^]'s user manual (another project of mine). You can use https://git.square-r00t.net/BDisk/tree/extra/bin/hashgen.py[this python script^] to generate one. If you specify an empty string, the password will be BLANK (i.e. you can log in with just the username). This is very insecure. If you specify a `!` instead of a salted hash, TTY login will be disabled (though it will still be possible to log in via other means such as SSH pubkey auth - assuming you configure it beforehand. This has some *added* security benefits).
+NOTE: To generate a proper hashed/salted password, you may want to reference https://bdisk.square-r00t.net/#generating_a_password_salt_hash[this section^] from https://bdisk.square-r00t.net/[BDisk^]'s user manual (another project of mine). You can use https://git.square-r00t.net/BDisk/tree/extra/bin/hashgen.py[this python script^] to generate one. If you specify an empty string, the password will be BLANK (i.e. you can log in with just the username). This is very insecure. If you specify a `!` instead of a salted hash, TTY login will be disabled (though it will still be possible to log in via other means such as SSH pubkey auth -- assuming you configure it beforehand. This has some *added* security benefits).
 
 ===== `<user>`
 The `/aif/system/users/user` element specifies user(s) to create. It contains <<code_xgroup_code, xgroup>> and <<code_home_code, home>> elements.
@@ -498,4 +498,36 @@ There are several script types availabe for `execution`. Currently, these are:
 * pkg
 * post
 
-*pre* scripts are run (in numerical `order`) before the disks are even formatted. *pkg* scripts are run (in numerical `order`) right before the <<code_package_code, packages>> are installed (this allows you to configure an <<command, alternate packager>> such as https://aur.archlinux.org/packages/apacman/[apacman^]) - these are run *inside* the chroot of the new install. *pre* scripts are run inside the chroot like *pkg*, but are executed very last thing, just before the reboot.
+*pre* scripts are run (in numerical `order`) before the disks are even formatted. *pkg* scripts are run (in numerical `order`) right before the <<code_package_code, packages>> are installed (this allows you to configure an <<command, alternate packager>> such as https://aur.archlinux.org/packages/apacman/[apacman^]) -- these are run *inside* the chroot of the new install. *pre* scripts are run inside the chroot like *pkg*, but are executed very last thing, just before the reboot.
+
+= Further Information
+Here you will find further info, other resources, and such relating to AIF-NG.
+
+== Bug Reports/Feature Requests
+NOTE: It is possible to submit a bug or feature request without registering in my bugtracker. One of my pet peeves is needing to create an account/register on a bugtracker simply to report a bug! The following links only require an email address to file a bug (which is necessary in case I need any further clarification from you or to keep you updated on the status of the bug/feature request -- so please be sure to use a valid email address).
+
+=== Bugs
+If you encounter any bugs in *AIF-NG*, you can file a bug report https://bugs.square-r00t.net/index.php?do=newtask&project=9&task_type=1[here^].
+
+If you encounter any bugs (inaccurate information, typos, misformatting, etc.) in *this documentation*, you can file a bug report https://bugs.square-r00t.net/index.php?do=newtask&project=10&task_type=1[here^].
+
+=== Feature Requests
+If you have any features you'd like to see or you think would help *AIF-NG* become even more useful, please file a feature request https://bugs.square-r00t.net/index.php?do=newtask&project=9&task_type=2[here^].
+
+If you have any suggestions on how to improve *this documentation* or feel it's missing information that could be useful, please file a feature request https://bugs.square-r00t.net/index.php?do=newtask&project=10&task_type=2[here^].
+
+=== Patches
+I gladly welcome https://www.gnu.org/software/diffutils/manual/html_node/Unified-Format.html[patches^], but I deplore using GitHub (even though I https://github.com/johnnybubonic/aif-ng[have a mirror there^]). For this reason, please follow the same https://www.kernel.org/doc/Documentation/SubmittingPatches[patch/pull request process] for the Linux kernel and email it to bts@square-r00t.net.
+
+Alternatively, you may attach a patch to a <<bugs,bug report>>/<<feature_requests,feature request>>.
+
+== Contact the Author
+If you have any questions, comments, or concerns, you can use the following information to get in touch with me.
+
+I am available via mailto:bts@square-r00t.net[email]. If you use GPG, you can find my pubkey and other related info https://devblog.square-r00t.net/about/my-gpg-public-key-verification-of-identity[here^] (and on most keyservers).
+
+I occasionally write howto articles, brief tips, and other information in my https://devblog.square-r00t.net[dev blog].
+
+I am on IRC as *r00t^2*, and am usually in the irc://irc.freenode.org/#sysadministrivia[Sysadministrivia channel on Freenode]. Which reminds me, I run a podcast called https://sysadministrivia.com[Sysadministrivia^].
+
+I am on Twitter as https://twitter.com/brentsaner[@brentsaner^], though I don't tweet very often. (I usually tweet from my https://twitter.com/SysAdm_Podcast[podcast's twitter^].)

@@ -1,0 +1,17 @@
+buid() {
+	add_binary "/usr/bin/python"
+	add_binary "/usr/bin/aifclient"
+
+	add_runscript
+}
+
+help() 
+{
+        cat <<HELPEOF
+Starts aifclient from an initramfs. Requires (and should be after):
+-any networking hooks (unless you embed an XML config inside the initrramfs as well)
+-aif (or aif-git) be installed OR the aifclient(.py) file located at /usr/bin/aifclient
+-python (3) be installed
+A word of warning, this will create a pretty huge initramfs since python is rather large.
+HELPEOF
+}
