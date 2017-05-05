@@ -26,7 +26,7 @@ https://github.com/jdodds/aif[AIF^] (classic) was written entirely in bash, requ
 
 The client (`aifclient.py`) is a single script and gets its configuration from a combination of an XML file and kernel paramaters (which tell it where to find the former and how to access it).
 
-AIF-NG is intended mainly for system administrators, but if you find yourself turning up a lot of Arch Linux installations in other environments, you may find it useful.
+AIF-NG is intended mainly for system administrators but if you find yourself turning up a lot of Arch Linux installations in other environments, you may find it useful.
 
 === What it's Not
 AIF-NG is not intended to be a complete turnup solution. Instead, it's useful to build up from baremetal and configure a system to a point where you can use another management tool (such as https://www.ansible.com/[Ansible^], https://www.chef.io/chef/[Chef^], https://puppet.com/[Puppet^], https://saltstack.com/[SaltStack^], and  https://en.wikipedia.org/wiki/List_of_build_automation_software#Configuration_management_tools[others^]).
