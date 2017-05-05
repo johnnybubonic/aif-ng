@@ -481,7 +481,7 @@ The `/aif/scripts/script` elements specify scripts to be run at different stages
 [options="header"]
 |======================
 ^|Attribute ^|Value
-^m|uri |The URI to the script; can be an HTTP/HTTPS reference, an FTP/FTPS reference, or a local file reference (`file:///path/to/file`).
+^m|uri |The URI to the script; can be an HTTP/HTTPS reference, an FTP/FTPS reference, or a local file reference (`\file:///path/to/file`).
 ^m|order |A unique positive integer used to order the scripts during the run; note that e.g. pre- and post-scripts are executed at different points, so you can use the same `order` as long as it's in different execution points
 ^m|authtype |Same behavior as <<starting_an_install, `aif_auth`>> but for fetching this script (see also <<aif_url, further notes>> on this)
 ^m|user |Same behavior as <<starting_an_install, `aif_user`>> but for fetching this script (see also <<aif_url, further notes>> on this)
