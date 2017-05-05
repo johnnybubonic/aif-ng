@@ -108,6 +108,12 @@
 			<xs:pattern value="(file|https?)://.*" />
 		</xs:restriction>
 	</xs:simpleType>
+
+        <xs:simpleType name="scripttype">
+                <xs:restriction base="xs:token">
+                        <xs:pattern value="(pre|post|pkg)" />
+                </xs:restriction>
+        </xs:simpleType>
 	
 	<xs:simpleType name="bootloaders">
 		<xs:restriction base="xs:token">
@@ -266,7 +272,6 @@
 			<xs:element name="pacman" maxOccurs="1" minOccurs="1">
 				<xs:complexType>
 				<xs:sequence>
-					<xs:element name="command" maxOccurs="1" minOccurs="0" />
 					<xs:element name="repos" maxOccurs="1" minOccurs="1">
 						<xs:complexType>
 							<xs:sequence>
@@ -305,6 +310,7 @@
 						</xs:complexType>
 					</xs:element>
 				</xs:sequence>
+				<xs:attribute name="command" type="xs:string" />
 				</xs:complexType>
 			</xs:element>
 <!-- END PACMAN -->
@@ -325,7 +331,7 @@
 						<xs:complexType>
 							<xs:attribute name="uri" type="scripturi" use="required" />
 							<xs:attribute name="order" type="xs:integer" use="required" />
-							<xs:attribute name="bootstrap" type="xs:boolean" use="required" />
+							<xs:attribute name="execution" type="xs:scripttype" use="required" />
 							<xs:attribute name="user" type="xs:string" />
 							<xs:attribute name="password" type="xs:string" />
 							<xs:attribute name="realm" type="xs:string" />

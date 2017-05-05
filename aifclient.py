@@ -306,10 +306,10 @@ class aif(object):
                 for i in x:
                     aifdict['software']['mirrors'].append(i.text)
         # Then the command
-        if xmlobj.find('pacman/command') is None:
-            aifdict['software']['command'] = False
+        if 'command' in xmlobj.find('pacman').attrib:
+            aifdict['software']['command'] = xmlobj.find('pacman').attrib['command']
         else:
-            aifdict['software']['command'] = xmlobj.find('pacman/command').text
+            aifdict['software']['command'] = False
         # And then the repo list.
         for x in xmlobj.findall('pacman/repos/repo'):
             repo = x.attrib['name']
@@ -348,11 +348,8 @@ class aif(object):
                     scriptcontents = self.webFetch(x.attrib['uri'], auth).decode('utf-8')
                 else:
                     scriptcontents = self.webFetch(x.attrib['uri']).decode('utf-8')
-                if x.attrib['bootstrap'].lower() in ('true', '1'):
-                    tempscriptdict['pre'][x.attrib['order']] = scriptcontents
-                else:
-                    tempscriptdict['post'][x.attrib['order']] = scriptcontents
-            for d in ('pre', 'post'):
+                tempscriptdict[x.attrib['execution']][x.attrib['order']] = scriptcontents
+            for d in ('pre', 'post', 'pkg'):
                 keylst = list(tempscriptdict[d].keys())
                 keylst.sort()
                 for s in keylst:
@@ -782,7 +779,6 @@ class archInstall(object):
         return(bootcmds)
 
     def scriptcmds(self, scripttype):
-        # Pre-run/"booststrap" scripts
         t = scripttype
         if t in self.scripts.keys():
             for i, s in enumerate(self.scripts[t]):
@@ -793,11 +789,11 @@ class archInstall(object):
                     f.write(s)
                 os.chmod(filepath, 0o700)
                 os.chown(filepath, 0, 0)  # shouldn't be necessary, but just in case the umask's messed up or something.
-        if t == 'pre':
+        if t in ('pre', 'pkg'):
             # We want to run these right away.
             with open(logfile, 'a') as log:
-                for i, s in enumerate(self.scripts['pre']):
-                    subprocess.call('/root/scripts/pre/{0}'.format(i),
+                for i, s in enumerate(self.scripts[t]):
+                    subprocess.call('/root/scripts/{0}/{1}'.format(t, i),
                                     stdout = log,
                                     stderr = subprocess.STDOUT)
         return()
@@ -847,12 +843,9 @@ class archInstall(object):
         # This should be run in the chroot, unless we find a way to pacstrap
         # packages separate from chrooting
         if self.software['command']:
-            pkgr = self.software['command']
+            pkgr = shlex.split(self.software['command'])
         else:
-            pkgr = 'pacman'
-        pkgropts = ['--needed', '--noconfirm']
-        if pkgr == 'apacman':
-            pkgropts.extend(['--noedit', '--skipinteg'])
+            pkgr = ['pacman', '--needed', '--noconfirm', '-S']
         if self.software['packages']:
             for p in self.software['packages'].keys():
                 if self.software['packages'][p]['repo']:
@@ -860,11 +853,8 @@ class archInstall(object):
                                                self.software['packages'][p])
                 else:
                     pkgname = p
-                cmd = [pkgr]
-                for o in pkgropts:
-                    cmd.append(o)
-                cmd.extend(['-S', pkgname])
-                pkgcmds.append(cmd)
+                pkgr.append(pkgname)
+                pkgcmds.append(pkgr)
         return(pkgcmds)
 
     def serviceSetup(self):
@@ -903,6 +893,12 @@ class archInstall(object):
         with open(logfile, 'a') as log:
             for c in chrootcmds:
                 subprocess.call(c, stdout = log, stderr = subprocess.STDOUT)
+            if scripts['pkg']:
+                self.scriptcmds('pkg')
+                for i, s in enumerate(scripts['pkg']):
+                    subprocess.call('/root/scripts/pkg/{0}'.format(i),
+                                    stdout = log,
+                                    stderr = subprocess.STDOUT)
             for p in pkgcmds:
                 subprocess.call(p, stdout = log, stderr = subprocess.STDOUT)
             for b in bootcmds:
@@ -946,6 +942,7 @@ def main():
         with open(logfile, 'a') as log:
             pprint.pprint(instconf, stream = log)
     runInstall(instconf)
+    subprocess.call(['reboot'])
 
 if __name__ == "__main__":
     main()

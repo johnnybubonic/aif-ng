@@ -1,8 +1,0 @@
-The following kernel parameters are supported:
-
-aif             aif=True   do the same thing. if aif is False, it behaves as if aif is not specified. Enable AIF.
-aif_url         path to install XML document. can be e.g.:   http://domain.tld/aif.xml  https://domain.tld/aif.xml  ftp://domain.tld/aif.xml  file:///tmp/aif.xml (note that local filesystem references are in relation to the system running the client) (note: HTTPS must be signed by a valid root CA)
-aif_username    the username to use for HTTP/HTTPS Basic auth, HTTP/HTTPS Digest auth, or FTP/FTPS auth (must be specified to use Basic/Digest auth)
-aif_password    the password to use for HTTP/HTTPS Basic auth, HTTP/HTTPS Digest auth, or FTP/FTPS auth (must be specified to use Basic/Digest auth)
-aif_auth        either 'basic' or 'digest', for HTTP/HTTPS auth (ignored for other types). default, if others are specified, is basic.
-aif_realm       the realm name for HTTP/HTTPS Digest auth (ignored for other types). leave unset to try whatever default realm is presented

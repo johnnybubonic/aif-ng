@@ -409,12 +409,22 @@ The `/aif/system/service` element holds information about services that should e
 |======================
 
 === `<pacman>`
-The `/aif/pacman` element contains the <<code_repos_code, repos>>, <<code_repo_code, repos/repo>>, <<code_mirrorlist_code, mirrorlist>>, <<code_mirror_code, mirrorlist/mirror>>, <<code_software_code, software>>, <<code_package_code, software/packages>>, and <<code_command_code, command>> elements.
+The `/aif/pacman` element contains the <<code_repos_code, repos>>, <<code_repo_code, repos/repo>>, <<code_mirrorlist_code, mirrorlist>>, <<code_mirror_code, mirrorlist/mirror>>, <<code_software_code, software>>, and <<code_package_code, software/packages>> elements.
 
-==== `<command>`
-NOTE: This is currently kind of useless. I need to implement a pre-package-installation <<code_scripts_code, hook script>> first. I promise it's coming.
+[options="header"]
+|======================
+^|Attribute ^|Value
+^m|command |The command to use to install a package
+|======================
 
-If you configured an alternate package utility, you can specify the command here. Note that it should be configured/called with necessary options to avoid the necessity of user involvement (since that's the entire point of AIF-NG).
+[[command]]
+If you configured an alternate package utility (using a `execution="pkg"` <<code_script_code, script>> entry), you can specify the command here. Note that it should be configured/called with necessary options to avoid the necessity of user involvement (since that's the entire point of AIF-NG). e.g.:
+
+ <aif ... >
+   ...
+     <pacman command="apacman --needed --noconfirm --noedit --skipinteg -S">
+   ...
+ </aif>
 
 ==== `<repos>`
 The `/aif/pacman/repos` element contains one (or more) <<code_repo_code, repo>> element(s).
@@ -476,7 +486,15 @@ The `/aif/scripts/script` elements specify scripts to be run at different stages
 ^m|user |Same behavior as <<starting_an_install, `aif_user`>> but for fetching this script (see also <<aif_url, further notes>> on this)
 ^m|password |Same behavior as <<starting_an_install, `aif_password`>> but for fetching this script (see also <<aif_url, further notes>> on this)
 ^m|realm |Same behavior as <<starting_an_install, `aif_realm`>> but for fetching this script (see also <<aif_url, further notes>> on this)
-^m|bootstrap |A boolean; if `1`/`true` then we will run this script before even formatting <<code_disk_code, disks>>; otherwise if it's `0`/`false` then we would run it *inside* the chroot environment as the very last thing
+^m|execution |(see <<script_types, below>>)
 |======================
 
-NOTE: The `bootstrap` attribute is subject to change to something more flexible to allow more flexibility in when the scripts are executed. Expect this to happen soon, so be aware.
+
+[[script_types]]
+There are several script types availabe for `execution`. Currently, these are:
+
+* pre
+* pkg
+* post
+
+*pre* scripts are run (in numerical `order`) before the disks are even formatted. *pkg* scripts are run (in numerical `order`) right before the <<code_package_code, packages>> are installed (this allows you to configure an <<command, alternate packager>> such as https://aur.archlinux.org/packages/apacman/[apacman^]) - these are run *inside* the chroot of the new install. *pre* scripts are run inside the chroot like *pkg*, but are executed very last thing, just before the reboot.
