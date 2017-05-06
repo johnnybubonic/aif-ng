@@ -1,7 +1,7 @@
 run_hook () {
 	msg ":: Starting AIF-NG..."
-	/usr/bin/aifclient &
-	#nohup /usr/bin/aifclient &
+	/usr/bin/aif &
+	#nohup /usr/bin/aif &
 	#disown -h %1
 }
 

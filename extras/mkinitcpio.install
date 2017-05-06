@@ -1,6 +1,6 @@
 buid() {
 	add_binary "/usr/bin/python"
-	add_binary "/usr/bin/aifclient"
+	add_binary "/usr/bin/aif"
 
 	add_runscript
 }
