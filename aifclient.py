@@ -816,8 +816,8 @@ class archInstall(object):
             else:
                 mirror = 'Server = {0}'.format(self.software['repos'][r]['mirror'])
             newentry = ['[{0}]\n'.format(r), '{0}\n'.format(mirror)]
-            if self.software['repos'][r][siglevel] != 'default':
-                newentry.append('Siglevel = {0}\n'.format(self.software['repos'][r][siglevel]))
+            if self.software['repos'][r]['siglevel'] != 'default':
+                newentry.append('Siglevel = {0}\n'.format(self.software['repos'][r]['siglevel']))
             if self.software['repos'][r]['enabled']:
                 pass  # I know, shame on me. We want this because we explicitly want it to be set as True
             else:
