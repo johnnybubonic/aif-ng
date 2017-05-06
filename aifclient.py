@@ -943,7 +943,7 @@ def main():
         with open(logfile, 'a') as log:
             pprint.pprint(instconf, stream = log)
     runInstall(instconf)
-    subprocess.call(['reboot'])
+    #subprocess.run(['reboot'])  # We should probably leave this up to operators?
 
 if __name__ == "__main__":
     main()
