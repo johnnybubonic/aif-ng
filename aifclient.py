@@ -335,7 +335,8 @@ class aif(object):
         if xmlobj.find('scripts') is not None:
             aifdict['scripts']['pre'] = []
             aifdict['scripts']['post'] = []
-            tempscriptdict = {'pre': {}, 'post': {}}
+            aifdict['scripts']['pkg'] = []
+            tempscriptdict = {'pre': {}, 'post': {}, 'pkg': {}}
             for x in xmlobj.find('scripts'):
                 if all(keyname in list(x.attrib.keys()) for keyname in ('user', 'password')):
                     auth = {}
