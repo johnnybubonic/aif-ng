@@ -138,7 +138,7 @@ Configure your bootloader to add the following options as necessary:
 * If `aif_auth` is `digest`, this is the realm we would use (we attempt to "guess" if it isn’t specified); otherwise it is ignored.
 
 == Logging
-Currently, only one method of logging is enabled, and is always enabled. On the building host, it can be found on the host and guest at /root/aif.log.<UNIX epoch timestamp>. Note that after the build finishes successfully, it will remove the host's log (as it's just a broken symlink at that point). You will be able to find the full log in the guest after the install, however.
+Currently, only one method of logging is enabled, and is always enabled. It can be found on the host and guest at */root/aif.log._<UNIX epoch timestamp>_*. Note that after the build finishes successfully, it will remove the host's log (as it's just a broken symlink at that point). You will be able to find the full log in the guest after the install, however.
 
 == Debugging
 Sometimes it's useful to get a little more information, or to start an installation from within an already-booted environment and you didn't remember (or weren't able to) change the kernel parameters. If this is the case, simply export the `DEBUG` environment variable (it can be set to anything, it doesn't matter) -- if this is done, the arguments will be read from /tmp/cmdline instead. e.g.:
