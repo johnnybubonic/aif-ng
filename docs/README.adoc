@@ -137,6 +137,44 @@ Configure your bootloader to add the following options as necessary:
 ** The same behavior applies for `aif_password`.
 * If `aif_auth` is `digest`, this is the realm we would use (we attempt to "guess" if it isn’t specified); otherwise it is ignored.
 
+== Building a compatible LiveCD
+You have two options.
+
+=== Recommended
+The recommended option is to use https://bdisk.square-r00t.net/[BDisk^] (the author should look familiar ;) and per https://bdisk.square-r00t.net/#advanced_customization[the documentation^], you would simply create the following modifications (remember to replace *<BDisk directory>* with your actual BDisk directory):
+
+. `mkdir -p *<BDisk directory>*/overlay/etc/systemd/system/multi-target.wants`
+. `ln -s /etc/systemd/system/aif.service *<BDisk directory>*/overlay/etc/systemd/system/multi-target.wants/aif.service`
+.. (NOTE: This is not a typo; the symlink will resolve to the correct place during the build)
+. `printf '[Unit]\nDescription=AIF-NG Client Service\nAfter=livecdfix.service\n\n[Service]\nType=oneshot\nExecStart=/usr/bin/aif\n\n[Install]\nWantedBy=multi-user.target\n' > *<BDisk directory>*/overlay/etc/systemd/system/aif.service`
+.. (NOTE: This is all one line.)
+.. (NOTE: We use a custom aif.service instead of the AUR package provided one because of how BDisk handles bringing up the network.)
+. If you want automatic root login on TTY1 like the Arch install ISO (optional):
+.. `mkdir -p *<BDisk directory>*/overlay/etc/systemd/system/getty\@tty1.service.d`
+.. `printf '[Service]\nType=idle\nExecStart=\nExecStart=-/usr/bin/agetty --autologin root --noclear %%I 38400 linux\n' > *<BDisk directory>*/overlay/etc/systemd/system/getty\@tty1.service.d`
+... (NOTE: This is all one line.)
+
+Remember to also create a https://bdisk.square-r00t.net/#the_code_build_ini_code_file[build.ini file^]. You can find a compatible one https://git.square-r00t.net/AIF-NG/plain/extras/bdisk.build.ini[here^] (but remember to tailor it to your particular paths and needs first!).
+
+Make any further customizations as you wish, then https://bdisk.square-r00t.net/#building_a_bdisk_iso[start the build^].
+
+=== Quickest
+For convenience, I've already built a LiveCD that will auto-start AIF. Note, however, that it is configured to my personal preferences (it installs https://aif.square-r00t.net/cfgs/scripts/pkg/python.sh[python3^], installs https://aif.square-r00t.net/cfgs/scripts/pkg/apacman.py[apacman^] (and configures it and pacman to my tastes), sets up a more strict https://aif.square-r00t.net/cfgs/scripts/post/sshsecure.py[SSH configuration^], and https://aif.square-r00t.net/cfgs/scripts/post/sshkeys.py[installs my SSH pubkeys^].), so you may want to use the recommended method above instead.
+
+==== The full environment
+A full ISO build is https://aif.square-r00t.net/download/aif.iso[here] (GPG signatures are available in https://aif.square-r00t.net/download/aif.iso.sig[SIG] and https://aif.square-r00t.net/download/aif.iso.asc[ASC^] format; make sure you https://devblog.square-r00t.net/about/my-gpg-public-key-verification-of-identity[verify it^]).
+
+It has a full GNU/Linux environment that you can use, and works on both UEFI and BIOS systems. It boots to a non-passworded root login, but AIF will be running in the background. SSH is installed and configured for key-based authentication only, but is not enabled by default.
+
+==== The iPXE environment
+If you would like to boot over the network, I have an iPXE ISO https://aif.square-r00t.net/download/aif-mini.iso[here] (GPG signatures are available in https://aif.square-r00t.net/download/aif-mini.iso.sig[SIG] and https://aif.square-r00t.net/download/aif-mini.iso.asc[ASC^] format; make sure you https://devblog.square-r00t.net/about/my-gpg-public-key-verification-of-identity[verify it^]).
+
+You will need at least 2GB of RAM, as it loads entirely into memory.
+
+It also boots to a full GNU/Linux environment that you can use, and works on both UEFI and BIOS systems. It boots to a non-passworded root login, but AIF will be running in the background. SSH is installed and configured for key-based authentication only, but is not enabled by default.
+
+
+
 == Logging
 Currently, only one method of logging is enabled, and is always enabled. It can be found on the host and guest at */root/aif.log._<UNIX epoch timestamp>_*. Note that after the build finishes successfully, it will remove the host's log (as it's just a broken symlink at that point). You will be able to find the full log in the guest after the install, however.
 
@@ -352,6 +390,7 @@ The `/aif/system` element is for handling general system configuration. It conta
 ^m|locale |The https://wiki.archlinux.org/index.php/Locale#Setting_the_system_locale[locale^] of the installed system (e.g. `en_US.UTF-8`); if a short version is used (e.g. `en`), then all locales starting with that prefix will be enabled (multiple explicit locale support is in the TODO)
 ^m|chrootpath |The path on the host that will serve as the https://wiki.archlinux.org/index.php/Change_root[chroot^] path. This should be where your new install's / (root filesystem partition) is mounted at in <<code_mount_code, mounts>>
 ^m|kbd |The https://wiki.archlinux.org/index.php/installation_guide#Set_the_keyboard_layout[keyboard layout^] (if not US)
+^m|reboot |If we should reboot the system after the install (in order to boot to the newly-installed system, assuming your boot order is set correctly). Boolean, accepts `1`/`true` or `0`/`false`.
 |======================
 
 ==== `<users>`

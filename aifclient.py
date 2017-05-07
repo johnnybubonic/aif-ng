@@ -286,9 +286,11 @@ class aif(object):
         aifdict['system']['locale'] = False
         aifdict['system']['kbd'] = False
         aifdict['system']['chrootpath'] = False
-        for i in ('locale', 'timezone', 'kbd', 'chrootpath'):
+        aifdict['system']['reboot'] = False
+        for i in ('locale', 'timezone', 'kbd', 'chrootpath', 'reboot'):
             if i in xmlobj.find('system').attrib:
                 aifdict['system'][i] = xmlobj.find('system').attrib[i]
+        aifdict['system']['reboot'] = aifdict['system']['reboot'].lower() in ('true', '1')
         # And now services...
         if xmlobj.find('system/service') is None:
             aifdict['system']['services'] = False
@@ -949,7 +951,8 @@ def main():
         with open(logfile, 'a') as log:
             pprint.pprint(instconf, stream = log)
     runInstall(instconf)
-    #subprocess.run(['reboot'])  # We should probably leave this up to operators?
+    if instconf['system']['reboot']:
+        subprocess.run(['reboot'])
 
 if __name__ == "__main__":
     main()

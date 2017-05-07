@@ -265,6 +265,7 @@
 				<xs:attribute name="locale" type="xs:string" use="required" />
 				<xs:attribute name="chrootpath" type="xs:string" user="required" />
 				<xs:attribute name="kbd" type="xs:token" />
+				<xs:attribute name="reboot" type="xs:boolean" />
 				</xs:complexType>
 			</xs:element>
 <!-- END SYSTEM -->

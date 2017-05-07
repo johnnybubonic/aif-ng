@@ -15,7 +15,7 @@
     <network hostname="aiftest.square-r00t.net">
         <iface device="auto" address="auto" netproto="ipv4" />
     </network>
-    <system timezone="EST5EDT" locale="en_US.UTF-8" chrootpath="/mnt/aif">
+    <system timezone="EST5EDT" locale="en_US.UTF-8" chrootpath="/mnt/aif" reboot="0">
         <!-- note: all password hashes below are "test"; don't waste your time trying to crack. :) -->
         <users rootpass="$6$3YPpiS.l3SQC6ELe$NQ4qMvcDpv5j1cCM6AGNc5Hyg.rsvtzCt2VWlSbuZXCGg2GB21CMUN8TMGS35tdUezZ/n9y3UFGlmLRVWXvZR.">
             <user name="aifusr"
