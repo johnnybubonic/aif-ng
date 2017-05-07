@@ -850,8 +850,7 @@ class archInstall(object):
         if self.software['packages']:
             for p in self.software['packages'].keys():
                 if self.software['packages'][p]['repo']:
-                    pkgname = '{0}/{1}'.format(self.software['packages'][p]['repo'],
-                                               self.software['packages'][p])
+                    pkgname = '{0}/{1}'.format(self.software['packages'][p]['repo'], p)
                 else:
                     pkgname = p
                 pkgr.append(pkgname)
