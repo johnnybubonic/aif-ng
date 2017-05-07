@@ -3,4 +3,5 @@
 use strict;
 use warnings;
 
-print "And this is the second pre (bootstrap) script.\n";
+# because jthan is a baby
+say "And this is the second pre (bootstrap) script.";
