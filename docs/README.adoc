@@ -138,7 +138,7 @@ Configure your bootloader to add the following options as necessary:
 * If `aif_auth` is `digest`, this is the realm we would use (we attempt to "guess" if it isn’t specified); otherwise it is ignored.
 
 == Building a compatible LiveCD
-You have two options.
+The default Arch install CD does not have AIF installed (yet... ;). You have two options of using AIF-NG.
 
 === Recommended
 The recommended option is to use https://bdisk.square-r00t.net/[BDisk^] (the author should look familiar ;) and per https://bdisk.square-r00t.net/#advanced_customization[the documentation^], you would simply create the following modifications (remember to replace *<BDisk directory>* with your actual BDisk directory):
@@ -149,6 +149,7 @@ The recommended option is to use https://bdisk.square-r00t.net/[BDisk^] (the aut
 . `printf '[Unit]\nDescription=AIF-NG Client Service\nAfter=livecdfix.service\n\n[Service]\nType=oneshot\nExecStart=/usr/bin/aif\n\n[Install]\nWantedBy=multi-user.target\n' > *<BDisk directory>*/overlay/etc/systemd/system/aif.service`
 .. (NOTE: This is all one line.)
 .. (NOTE: We use a custom aif.service instead of the AUR package provided one because of how BDisk handles bringing up the network.)
+. `echo "aif-git" > *<BDisk directory>*/extra/pre-build.d/root/packages.both`
 . If you want automatic root login on TTY1 like the Arch install ISO (optional):
 .. `mkdir -p *<BDisk directory>*/overlay/etc/systemd/system/getty\@tty1.service.d`
 .. `printf '[Service]\nType=idle\nExecStart=\nExecStart=-/usr/bin/agetty --autologin root --noclear %%I 38400 linux\n' > *<BDisk directory>*/overlay/etc/systemd/system/getty\@tty1.service.d`
