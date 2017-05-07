@@ -137,6 +137,9 @@ Configure your bootloader to add the following options as necessary:
 ** The same behavior applies for `aif_password`.
 * If `aif_auth` is `digest`, this is the realm we would use (we attempt to "guess" if it isn’t specified); otherwise it is ignored.
 
+== Logging
+Currently, only one method of logging is enabled, and is always enabled. On the building host, it can be found on the host and guest at /root/aif.log.<UNIX epoch timestamp>. Note that after the build finishes successfully, it will remove the host's log (as it's just a broken symlink at that point). You will be able to find the full log in the guest after the install, however.
+
 == Debugging
 Sometimes it's useful to get a little more information, or to start an installation from within an already-booted environment and you didn't remember (or weren't able to) change the kernel parameters. If this is the case, simply export the `DEBUG` environment variable (it can be set to anything, it doesn't matter) -- if this is done, the arguments will be read from /tmp/cmdline instead. e.g.:
 
@@ -146,7 +149,7 @@ Sometimes it's useful to get a little more information, or to start an installat
  chmod 600 /tmp/cmdline
  sed -i -e '1s/$/ aif aif_url=https:\/\/aif.square-r00t.net\/aif.xml/' /tmp/cmdline
 
-It will also write the full configuration (*after* parsing) to `/root/log`.
+It will also write the full configuration (*after* parsing) to the <<logging, logfile>>.
 
 = Writing an XML Configuration File
 I've included a sample `aif.xml` file with the project which is fully functional. However, it's not ideal -- namely because it will add my personal SSH pubkeys to your new install, and you probably don't want that. However, it's fairly complete so it should serve as a good example. If you want to see the full set of supported configuration elements, take a look at the most up-to-date https://aif.square-r00t.net/aif.xsd[aif.xsd^]. For explanation's sake, however, we'll go through it here. The directives are referred to in https://www.w3schools.com/xml/xml_xpath.asp[XPath^] syntax within the documentation text for easier context (but not the titles).
