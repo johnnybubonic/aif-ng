@@ -138,7 +138,7 @@ Configure your bootloader to add the following options as necessary:
 * If `aif_auth` is `digest`, this is the realm we would use (we attempt to "guess" if it isn’t specified); otherwise it is ignored.
 
 == Building a compatible LiveCD
-The default Arch install CD does not have AIF installed (yet... ;). You have two options of using AIF-NG.
+The default Arch install CD does not have AIF installed (hopefully, this will change someday). You have two options for using AIF-NG.
 
 === Recommended
 The recommended option is to use https://bdisk.square-r00t.net/[BDisk^] (the author should look familiar ;) and per https://bdisk.square-r00t.net/#advanced_customization[the documentation^], you would simply create the following modifications (remember to replace *<BDisk directory>* with your actual BDisk directory):
