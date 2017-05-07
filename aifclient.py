@@ -16,6 +16,7 @@ try:
 except ImportError:
     import xml.etree.ElementTree as etree  # https://docs.python.org/3/library/xml.etree.elementtree.html
     lxml_avail = False
+import datetime
 import shlex
 import fileinput
 import os
@@ -31,7 +32,7 @@ import urllib.response as urlresponse
 from ftplib import FTP_TLS
 from io import StringIO
 
-logfile = '/root/log'
+logfile = '/root/aif.log.{0}'.format(int(datetime.datetime.utcnow().timestamp()))
 
 class aif(object):
     
@@ -881,6 +882,9 @@ class archInstall(object):
             scripts = self.scripts
         if not pkgcmds:
             pkgcmds = self.packagecmds()
+        # Switch in the log, and link.
+        os.rename(logfile, '{0}/{1}'.format(self.system['chrootpath'], logfile))
+        os.symlink('{0}/{1}'.format(self.system['chrootpath'], logfile), logfile)
         self.pacmanSetup()  # This needs to be done before the chroot
         # We don't need this currently, but we might down the road.
         #chrootscript = '#!/bin/bash\n# https://aif.square-r00t.net/\n\n'
@@ -922,6 +926,9 @@ class archInstall(object):
     def unmount(self):
         with open(logfile, 'a') as log:
             subprocess.call(['umount', '-lR', self.system['chrootpath']], stdout = log, stderr = subprocess.STDOUT)
+        # We should also remove the (now dead) log symlink.
+        #Note that this does NOT delete the logfile on the installed system.
+        os.remove(logfile)
         return()
                 
 def runInstall(confdict):
