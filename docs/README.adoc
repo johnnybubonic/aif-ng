@@ -560,7 +560,7 @@ If you have any features you'd like to see or you think would help *AIF-NG* beco
 If you have any suggestions on how to improve *this documentation* or feel it's missing information that could be useful, please file a feature request https://bugs.square-r00t.net/index.php?do=newtask&project=10&task_type=2[here^].
 
 === Patches
-I gladly welcome https://www.gnu.org/software/diffutils/manual/html_node/Unified-Format.html[patches^], but I deplore using GitHub (even though I https://github.com/johnnybubonic/aif-ng[have a mirror there^]). For this reason, please follow the same https://www.kernel.org/doc/Documentation/SubmittingPatches[patch/pull request process] for the Linux kernel and email it to bts@square-r00t.net.
+I gladly welcome https://www.gnu.org/software/diffutils/manual/html_node/Unified-Format.html[patches^], but I deplore using GitHub (even though I https://github.com/johnnybubonic/aif-ng[have a mirror there^]). For this reason, please follow the same https://www.kernel.org/doc/Documentation/process/submitting-patches.rst[patch/pull request process] for the Linux kernel and email it to bts@square-r00t.net.
 
 Alternatively, you may attach a patch to a <<bugs,bug report>>/<<feature_requests,feature request>>.
 
