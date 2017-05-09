@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<aif xmlns:aif="https://aif.square-r00t.net"
+     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+     xsi:schemaLocation="https://aif.square-r00t.net aif.xsd">
+    <storage>
+        <disk device="/dev/sda" diskfmt="gpt">
+            <part num="1" start="0%" size="10%" fstype="ef00" />
+            <part num="2" start="10%" size="100%" fstype="8300" />
+        </disk>
+        <mount source="/dev/sda2" target="/mnt/aif" order="1" />
+        <mount source="/dev/sda1" target="/mnt/aif/boot" order="2" />
+    </storage>
+    <network hostname="aiftest.square-r00t.net">
+        <iface device="auto" address="auto" netproto="ipv4" />
+    </network>
+    <system timezone="EST5EDT" locale="en_US.UTF-8" chrootpath="/mnt/aif" reboot="1">
+        <users rootpass="!" />
+        <service name="sshd" status="1" />
+        <service name="cronie" status="1" />
+        <service name="haveged" status="1" />
+    </system>
+    <pacman command="apacman -S">
+        <repos>
+            <repo name="core" enabled="true" siglevel="default" mirror="file:///etc/pacman.d/mirrorlist" />
+            <repo name="extra" enabled="true" siglevel="default" mirror="file:///etc/pacman.d/mirrorlist" />
+            <repo name="community" enabled="true" siglevel="default" mirror="file:///etc/pacman.d/mirrorlist" />
+            <repo name="multilib" enabled="true" siglevel="default" mirror="file:///etc/pacman.d/mirrorlist" />
+            <repo name="testing" enabled="false" siglevel="default" mirror="file:///etc/pacman.d/mirrorlist" />
+            <repo name="multilib-testing" enabled="false" siglevel="default" mirror="file:///etc/pacman.d/mirrorlist" />
+            <repo name="archlinuxfr" enabled="false" siglevel="Optional TrustedOnly" mirror="http://repo.archlinux.fr/$arch" />
+        </repos>
+        <mirrorlist>
+            <mirror>http://mirror.us.leaseweb.net/archlinux/$repo/os/$arch</mirror>
+            <mirror>http://mirrors.advancedhosters.com/archlinux/$repo/os/$arch</mirror>
+            <mirror>http://ftp.osuosl.org/pub/archlinux/$repo/os/$arch</mirror>
+            <mirror>http://arch.mirrors.ionfish.org/$repo/os/$arch</mirror>
+            <mirror>http://mirrors.gigenet.com/archlinux/$repo/os/$arch</mirror>
+            <mirror>http://mirror.jmu.edu/pub/archlinux/$repo/os/$arch</mirror>
+        </mirrorlist>
+        <software>
+            <package name="sed" repo="core" />
+            <package name="python" />
+            <package name="openssh" />
+            <package name="vim" />
+            <package name="vim-plugins" />
+            <package name="haveged" />
+            <package name="byobu" />
+            <package name="etc-update" />
+            <package name="cronie" />
+            <package name="mlocate" />
+            <package name="mtree-git" />
+        </software>
+    </pacman>
+    <bootloader type="grub" target="/boot" efi="true" />
+    <scripts>
+        <script uri="https://aif.square-r00t.net/cfgs/scripts/pkg/python.sh" order="1" execution="pkg" />
+        <script uri="https://aif.square-r00t.net/cfgs/scripts/pkg/apacman.py" order="2" execution="pkg" />
+        <script uri="https://aif.square-r00t.net/cfgs/scripts/post/sshsecure.py" order="1" execution="post" />
+        <script uri="https://aif.square-r00t.net/cfgs/scripts/post/sshkeys.py" order="2" execution="post" />
+        <script uri="https://aif.square-r00t.net/cfgs/scripts/post/configs.py" order="3" execution="post" />
+    </scripts>
+</aif>
