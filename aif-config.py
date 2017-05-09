@@ -13,8 +13,6 @@ import ipaddress
 import os
 import pydoc  # a dirty hack we use for pagination
 import re
-import shlex
-import socket
 import sys
 import urllib.request as urlrequest
 import urllib.parse as urlparse
