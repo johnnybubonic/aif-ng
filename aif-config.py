@@ -32,10 +32,11 @@ class aifgen(object):
         pass
         
     def getOpts(self):
+        # This whole thing is ugly. Really, really ugly. Patches 100% welcome.
         def chkPrompt(prompt, urls):
             txtin = None
             txtin = input(prompt)
-            if txtin in ('wikihelp', ''):
+            if txtin == 'wikihelp':
                 print('\n  Articles/pages that you may find helpful for this option are:')
                 for h in urls:
                     print('  * {0}'.format(h))
@@ -45,16 +46,16 @@ class aifgen(object):
                 return(txtin)
         def sizeChk(startsize):
             try:
-                startn = int(re.sub('[%\-+KMGTP])', '', startsize))
+                startn = int(re.sub('[%\-+KMGTP]', '', startsize))
                 modifier = re.sub('^(\+|-)?.*$', '\g<1>', startsize)
-                if re.match('^(\+|-)?[0-9]+%$', n):
+                if re.match('^(\+|-)?[0-9]+%$', startsize):
                     sizetype = 'percentage'
                 elif re.match('^(\+|-)?[0-9]+[KMGTP]$', n):
                     sizetype = 'fixed'
                 else:
                     exit(' !! ERROR: The input you provided does not match a valid pattern.')
                 if sizetype == 'percentage':
-                    if int(startn) not in range(0, 100):
+                    if not (0 <= startn <= 100):
                         exit(' !! ERROR: You must provide a percentage or a size.')
             except:
                 exit(' !! ERROR: You did not provide a valid size specifier!')
@@ -62,17 +63,19 @@ class aifgen(object):
         def ifacePrompt(nethelp):
             ifaces = {}
             moreIfaces = True
-            print('Please enter the name of the interface you would like to use.\n' +
+            print('\nPlease enter the name of the interface you would like to use.\n' +
                   'Can instead be \'auto\' for automatic configuration of the first found interface\n' +
                   'with an active link. (You can only specify one auto device per system, and all subsequent\n'
                   'interface entries will be ignored.)\n')
             while moreIfaces:
                 ifacein = chkPrompt('Interface device: ', nethelp)
-                addrin = chkPrompt('* Address for {0} in CIDR format (can be an IPv4 or IPv6 address);\n\t' +
-                                   'use\'auto\' for DHCP/DHCPv6): '.format(ifacein), nethelp)
+                addrin = chkPrompt(('* Address for {0} in CIDR format (can be an IPv4 or IPv6 address); ' +
+                                   'use\'auto\' for DHCP/DHCPv6): ').format(ifacein), nethelp)
                 if addrin == 'auto':
-                    addrytpe = 'auto'
-                    continue
+                    addrtype = 'auto'
+                    ipver = (chkPrompt('* Would you like \'ipv4\', \'ipv6\', or \'both\' to be auto-configured? ', nethelp)).lower()
+                    if ipver not in ('ipv4', 'ipv6', 'both'):
+                        exit(' !! ERROR: Must be one of ipv4, ipv6, or both.')
                 else:
                     addrtype = 'static'
                     try:
@@ -80,7 +83,25 @@ class aifgen(object):
                     except ValueError:
                         exit(' !! ERROR: You did not enter a valid IPv4/IPv6 address.')
                 if addrtype == 'static':
-                    
+                    gwin = chkPrompt('* What is the gateway address for {0}? '.format(addrin), nethelp)
+                    try:
+                        ipaddress.ip_address(gwin)
+                    except:
+                        exit(' !! ERROR: You did not enter a valid IPv4/IPv6 address.')
+                    ifaces[ifacein] = {'address': addrin, 'proto': ipver, 'gw': qwin, 'resolvers': []}
+                    resolversin = chkPrompt('* What DNS resolvers should we use? Can accept a comma-separated list: ', nethelp)
+                    for rslv in resolversin.split(','):
+                        rslvaddr = rslv.strip()
+                        ifaces[ifacein]['resolvers'].append(rslvaddr)
+                        try:
+                            ipaddress.ip_address(rslvaddr)
+                        except:
+                            exit(' !! ERROR: {0} is not a valid resolver address.'.format(rslvaddr))
+                else:
+                    ifaces[ifacein] = {'address': 'auto', 'proto': ipver, 'gw': False, 'resolvers': False}
+                moreIfacesin = input('Would you like to add more interfaces? ((y)es/(N)O) ')
+                if not re.match('^y(es)?$', moreIfacesin.lower()):
+                    moreIfaces = False
             return(ifaces)
                             
         conf = {}
@@ -90,7 +111,7 @@ class aifgen(object):
         # https://aif.square-r00t.net/#code_disk_code
         diskhelp = ['https://wiki.archlinux.org/index.php/installation_guide#Partition_the_disks']
         diskin = chkPrompt('\nWhat disk(s) would you like to be configured on the target system?\n' +
-                       'If you have multiple disks, separate with a comma (e.g. \'/dev/sda,/dev/sdb\').\n', diskhelp)
+                       '\tIf you have multiple disks, separate with a comma (e.g. \'/dev/sda,/dev/sdb\'): ', diskhelp)
         # NOTE: the following is a dict of fstype codes to their description.
         fstypes = {'0700': 'Microsoft basic data', '0c01': 'Microsoft reserved', '2700': 'Windows RE', '3000': 'ONIE config', '3900': 'Plan 9', '4100': 'PowerPC PReP boot', '4200': 'Windows LDM data', '4201': 'Windows LDM metadata', '4202': 'Windows Storage Spaces', '7501': 'IBM GPFS', '7f00': 'ChromeOS kernel', '7f01': 'ChromeOS root', '7f02': 'ChromeOS reserved', '8200': 'Linux swap', '8300': 'Linux filesystem', '8301': 'Linux reserved', '8302': 'Linux /home', '8303': 'Linux x86 root (/)', '8304': 'Linux x86-64 root (/', '8305': 'Linux ARM64 root (/)', '8306': 'Linux /srv', '8307': 'Linux ARM32 root (/)', '8400': 'Intel Rapid Start', '8e00': 'Linux LVM', 'a500': 'FreeBSD disklabel', 'a501': 'FreeBSD boot', 'a502': 'FreeBSD swap', 'a503': 'FreeBSD UFS', 'a504': 'FreeBSD ZFS', 'a505': 'FreeBSD Vinum/RAID', 'a580': 'Midnight BSD data', 'a581': 'Midnight BSD boot', 'a582': 'Midnight BSD swap', 'a583': 'Midnight BSD UFS', 'a584': 'Midnight BSD ZFS', 'a585': 'Midnight BSD Vinum', 'a600': 'OpenBSD disklabel', 'a800': 'Apple UFS', 'a901': 'NetBSD swap', 'a902': 'NetBSD FFS', 'a903': 'NetBSD LFS', 'a904': 'NetBSD concatenated', 'a905': 'NetBSD encrypted', 'a906': 'NetBSD RAID', 'ab00': 'Recovery HD', 'af00': 'Apple HFS/HFS+', 'af01': 'Apple RAID', 'af02': 'Apple RAID offline', 'af03': 'Apple label', 'af04': 'AppleTV recovery', 'af05': 'Apple Core Storage', 'bc00': 'Acronis Secure Zone', 'be00': 'Solaris boot', 'bf00': 'Solaris root', 'bf01': 'Solaris /usr & Mac ZFS', 'bf02': 'Solaris swap', 'bf03': 'Solaris backup', 'bf04': 'Solaris /var', 'bf05': 'Solaris /home', 'bf06': 'Solaris alternate sector', 'bf07': 'Solaris Reserved 1', 'bf08': 'Solaris Reserved 2', 'bf09': 'Solaris Reserved 3', 'bf0a': 'Solaris Reserved 4', 'bf0b': 'Solaris Reserved 5', 'c001': 'HP-UX data', 'c002': 'HP-UX service', 'ea00': 'Freedesktop $BOOT', 'eb00': 'Haiku BFS', 'ed00': 'Sony system partition', 'ed01': 'Lenovo system partition', 'ef00': 'EFI System', 'ef01': 'MBR partition scheme', 'ef02': 'BIOS boot partition', 'f800': 'Ceph OSD', 'f801': 'Ceph dm-crypt OSD', 'f802': 'Ceph journal', 'f803': 'Ceph dm-crypt journal', 'f804': 'Ceph disk in creation', 'f805': 'Ceph dm-crypt disk in creation', 'fb00': 'VMWare VMFS', 'fb01': 'VMWare reserved', 'fc00': 'VMWare kcore crash protection', 'fd00': 'Linux RAID'}
         conf['disks'] = {}
@@ -111,15 +132,17 @@ class aifgen(object):
             else:
                 maxpart = '4'  # yeah, extended volumes can do more, but that's not supported in AIF-NG. yet?
             partnumsin = chkPrompt('* How many partitions should this disk have? (Maximum: {0}) '.format(maxpart), diskhelp)
-            if not isinstance(partnumsin, int):
+            try:
+                int(partnumsin)
+            except:
                 exit(' !! ERROR: Must be an integer.')
-            if partnumsin < 1:
+            if int(partnumsin) < 1:
                 exit(' !! ERROR: Must be a positive integer.')
-            if partnumsin > int(maxpart):
+            if int(partnumsin) > int(maxpart):
                 exit(' !! ERROR: Must be less than {0}'.format(maxpart))
             parthelp = diskhelp + ['https://wiki.archlinux.org/index.php/installation_guide#Format_the_partitions',
                                  'https://aif.square-r00t.net/#code_part_code']
-            for partn in range(1, partnumsin + 1):
+            for partn in range(1, int(partnumsin) + 1):
                 # https://aif.square-r00t.net/#code_part_code
                 conf['disks'][disk]['parts'][partn] = {}
                 for s in ('start', 'stop'):
@@ -130,8 +153,8 @@ class aifgen(object):
                 newhelp = 'https://aif.square-r00t.net/#fstypes'
                 if newhelp not in parthelp:
                     parthelp.append(newhelp)
-                fstypein = chkPrompt(('** What filesystem type should {0} be? ' +
-                                      'See wikihelp for valid fstypes: '.format(partn), parthelp))
+                fstypein = chkPrompt(('** What filesystem type should partition {0} be? ' +
+                                      'See wikihelp for valid fstypes: ').format(partn), parthelp)
                 if fstypein not in fstypes.keys():
                     exit(' !! ERROR: {0} is not a valid filesystem type.'.format(fstypein))
                 else:
@@ -139,8 +162,8 @@ class aifgen(object):
         mnthelp = ['https://wiki.archlinux.org/index.php/installation_guide#Mount_the_file_systems',
                    'https://aif.square-r00t.net/#code_mount_code']
         mntin = chkPrompt('\nWhat mountpoint(s) would you like to be configured on the target system?\n' +
-                       'If you have multiple mountpoints, separate with a comma (e.g. \'/mnt/aif,/mnt/aif/boot\').\n' +
-                       'NOTE: Can be \'swap\' for swapspace.', mnthelp)
+                       '\tIf you have multiple mountpoints, separate with a comma (e.g. \'/mnt/aif,/mnt/aif/boot\').\n' +
+                       '\t(NOTE: Can be \'swap\' for swapspace.): ', mnthelp)
         conf['mounts'] = {}
         for m in mntin.split(','):
             mount = m.strip()
@@ -166,19 +189,19 @@ class aifgen(object):
                                'just leave this blank: ', mnthelp)
             if fstypein == '':
                 conf['mounts'][order]['fstype'] = False
-            elif not re.match('^[a-z]+([0-9]+)$', fstypein):  # Not 100%, but should catch most faulty entries
+            elif not re.match('^[a-z]+([0-9]+)?$', fstypein):  # Not 100%, but should catch most faulty entries
                 exit(' !! ERROR: {0} does not seem to be a valid filesystem type.'.format(fstypein))
             else:
                 conf['mounts'][order]['fstype'] = fstypein
             mntoptsin = chkPrompt('* What, if any, mount option(s) (mount\'s -o option) do you require? (Multiple options should be separated\n' +
-                                  'with a comma). If none, leave this blank: ', mnthelp)
+                                  '\twith a comma). If none, leave this blank: ', mnthelp)
             if mntoptsin == '':
                 conf['mounts'][order]['opts'] = False
             elif not re.match('^[A-Za-z0-9_\.\-]+(,[A-Za-z0-9_\.\-]+)*', mntoptsin):
                 exit(' !! ERROR: You seem to have not specified valid mount options.')
             else:
                 conf['mounts'][order]['opts'] = mntoptsin
-        print('Now, let\'s configure the network. Note that at this time, wireless/more exotic networking is not supported by AIF-NG.')
+        print('\nNow, let\'s configure the network. Note that at this time, wireless/more exotic networking is not supported by AIF-NG.\n')
         conf['network'] = {}
         nethelp = ['https://wiki.archlinux.org/index.php/installation_guide#Network_configuration',
                   'https://aif.square-r00t.net/#code_network_code']
@@ -197,9 +220,33 @@ class aifgen(object):
             conf['network']['hostname'] = hostname
         conf['network']['ifaces'] = {}
         nethelp.append('https://aif.square-r00t.net/#code_iface_code')
-        ifaces = ifacePrompt(nethelp)
-
-        if args['verbose']:
+        conf['network']['ifaces'] = ifacePrompt(nethelp)
+        print('\nNow let\'s configure some basic system settings.')
+        syshelp = ['https://aif.square-r00t.net/#code_system_code']
+        syshelp.append('https://wiki.archlinux.org/index.php/installation_guide#Time_zone')
+        tzin = chkPrompt('* What timezone should the newly installed system use? (Default is UTC): ', syshelp)
+        if tzin == '':
+            tzin = 'UTC'
+        syshelp[1] = 'https://wiki.archlinux.org/index.php/installation_guide#Locale'
+        localein = chkPrompt('* What locale should the new system use? (Default is en_US.UTF-8): ', syshelp)
+        if localein == '':
+            localein = 'en_US.UTF-8'
+        syshelp[1] = 'https://aif.square-r00t.net/#code_mount_code'
+        chrootpathin = chkPrompt('* What chroot path should the host use? This should be one of the mounts you specified above: ', syshelp)
+        if not re.match('^/([^/\x00\s]+(/)?)+$', chrootpathin):
+            exit('!! ERROR: Your chroot path does not seem to be a valid path/specifier.')
+        syshelp[1] = 'https://wiki.archlinux.org/index.php/installation_guide#Set_the_keyboard_layout'
+        kbdin = chkPrompt('* What keyboard layout should the newly installed system use? (Default is US): ', syshelp)
+        if kbdin == '':
+            kbdin = 'US'
+        del(syshelp[1])
+        rbtin = chkPrompt('* Would you like to reboot the host system after installation completes? ((Y)ES/(n)o): ', syshelp)
+        if not re.match('^no?$', rbtin.lower()):
+            rebootme = True
+        else:
+            rebootme = False
+        conf['system'] = {'timezone': tzin, 'locale': localein, 'chrootpath': chrootpathin, 'kbd': kbdin, 'reboot': rbtin}
+        if self.args['verbose']:
             import pprint
             pprint.pprint(conf)
         return(conf)
@@ -209,7 +256,7 @@ class aifgen(object):
     
     def main(self):
         if self.args['oper'] == 'create':
-            self.getOpts()
+            conf = self.getOpts()
         if self.args['oper'] in ('create', 'view'):
             self.validateXML()
 
