@@ -550,14 +550,18 @@ Here you will find further info, other resources, and such relating to AIF-NG.
 NOTE: It is possible to submit a bug or feature request without registering in my bugtracker. One of my pet peeves is needing to create an account/register on a bugtracker simply to report a bug! The following links only require an email address to file a bug (which is necessary in case I need any further clarification from you or to keep you updated on the status of the bug/feature request -- so please be sure to use a valid email address).
 
 === Bugs
-If you encounter any bugs in *AIF-NG*, you can file a bug report https://bugs.square-r00t.net/index.php?do=newtask&project=9&task_type=1[here^].
+If you encounter any bugs in *AIF-NG* (for the actual agent), you can file a bug report https://bugs.square-r00t.net/index.php?do=newtask&project=9&task_type=1&https://bugs.square-r00t.net/index.php?do=newtask&project=9&product_category=19[here^].
 
-If you encounter any bugs (inaccurate information, typos, misformatting, etc.) in *this documentation*, you can file a bug report https://bugs.square-r00t.net/index.php?do=newtask&project=10&task_type=1[here^].
+If you encounter any bugs in the *configuration file tool*, you can file a bug report https://bugs.square-r00t.net/index.php?do=newtask&project=9&task_type=1&https://bugs.square-r00t.net/index.php?do=newtask&project=9&product_category=24[here^].
+
+If you encounter any bugs (inaccurate information, typos, misformatting, etc.) in *this documentation*, you can file a bug report https://bugs.square-r00t.net/index.php?do=newtask&project=9&task_type=1&product_category=25[here^].
 
 === Feature Requests
-If you have any features you'd like to see or you think would help *AIF-NG* become even more useful, please file a feature request https://bugs.square-r00t.net/index.php?do=newtask&project=9&task_type=2[here^].
+If you have any features you'd like to see or you think would help *AIF-NG* become even more useful, please file a feature request https://bugs.square-r00t.net/index.php?do=newtask&project=9&task_type=2&product_category=19[here^].
 
-If you have any suggestions on how to improve *this documentation* or feel it's missing information that could be useful, please file a feature request https://bugs.square-r00t.net/index.php?do=newtask&project=10&task_type=2[here^].
+If you have any features you'd like to see in the *configuration file tool*, you can file a feature requests https://bugs.square-r00t.net/index.php?do=newtask&project=9&task_type=1&https://bugs.square-r00t.net/index.php?do=newtask&project=9&task_type=2product_category=25[here^].
+
+If you have any suggestions on how to improve *this documentation* or feel it's missing information that could be useful, please file a feature request https://bugs.square-r00t.net/index.php?do=newtask&project=9&task_type=2&product_category=25[here^].
 
 === Patches
 I gladly welcome https://www.gnu.org/software/diffutils/manual/html_node/Unified-Format.html[patches^], but I deplore using GitHub (even though I https://github.com/johnnybubonic/aif-ng[have a mirror there^]). For this reason, please follow the same https://www.kernel.org/doc/Documentation/process/submitting-patches.rst[patch/pull request process] for the Linux kernel and email it to bts@square-r00t.net.
