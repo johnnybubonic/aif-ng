@@ -24,6 +24,7 @@
 	tmp on /mnt/aif/tmp type tmpfs (rw,nosuid,nodev)
 
 DOCUMENTATION: aif-config.py (and note sample yaml as well)
+also need to add users, xgroups, etc. etc. etc. into the getOpts
 
 also create:
 -create boot media with bdisk since default arch doesn't even have python 3
