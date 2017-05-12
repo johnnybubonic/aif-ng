@@ -1,6 +1,6 @@
 = AIF-NG User Manual
 Brent Saner <bts@square-r00t.net>
-v1.0, 2017-05-05
+v1.1, 2017-05-11
 :doctype: book
 :data-uri:
 :imagesdir: images
