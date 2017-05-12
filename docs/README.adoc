@@ -33,7 +33,7 @@ AIF-NG is not intended to be a complete turnup solution. Instead, it's useful to
 
 Though if you're really gung-ho about it, I suppose you could use the post-script feature to fully turn up a box.
 
-It is also not a magic bullet. It will not make an Arch Linux installation *easier*, nor is it designed to do that. Don't file bug reports for this. It's designed to make it *faster*. I recommend you follow the https://wiki.archlinux.org/index.php/installation_guide[manual installation process^] several times first so you're comfortable with the process and understand what's happening behind the scenes. (If you find it too hard to understand, you may instead be interested in https://antergos.com/[Antergos^] instead.)
+It is also not a magic bullet. It will not make an Arch Linux installation *easier*, nor is it designed to do that. Don't file bug reports for this. It's designed to make it *faster*. I recommend you follow the https://wiki.archlinux.org/index.php/installation_guide[manual installation process^] several times first so you're comfortable with the process and understand what's happening behind the scenes. (If you find it too hard to understand, you may be interested in https://antergos.com/[Antergos^] instead.)
 
 === Copyright/Licensing
 The AIF-NG code is https://www.gnu.org/licenses/gpl-3.0.en.html[GPLv3-licensed^]. This means that you can use it for business reasons, personal reasons, modify it, etc. Please be sure to familiarize yourself with the full set of terms. You can find the full license in `docs/LICENSE`.
