@@ -69,8 +69,8 @@ class aifgen(object):
                   'interface entries will be ignored.)\n')
             while moreIfaces:
                 ifacein = chkPrompt('Interface device: ', nethelp)
-                addrin = chkPrompt(('* Address for {0} in CIDR format (can be an IPv4 or IPv6 address); ' +
-                                   'use\'auto\' for DHCP/DHCPv6): ').format(ifacein), nethelp)
+                addrin = chkPrompt(('* Address for {0} in CIDR format (can be an IPv4 or IPv6 address; ' +
+                                    'use \'auto\' for DHCP/DHCPv6): ').format(ifacein), nethelp)
                 if addrin == 'auto':
                     addrtype = 'auto'
                     ipver = (chkPrompt('* Would you like \'ipv4\', \'ipv6\', or \'both\' to be auto-configured? ', nethelp)).lower()
@@ -79,7 +79,12 @@ class aifgen(object):
                 else:
                     addrtype = 'static'
                     try:
-                        ipver = ipaddress.ip_network(ipaddr, strict = False)
+                        ipaddress.ip_network(addrin, strict = False)
+                        try:
+                            ipaddress.IPv4Address(addrin.split('/')[0])
+                            ipver = 'ipv4'
+                        except ipaddress.AddressValueError:
+                            ipver = 'ipv6'
                     except ValueError:
                         exit(' !! ERROR: You did not enter a valid IPv4/IPv6 address.')
                 if addrtype == 'static':
@@ -88,7 +93,7 @@ class aifgen(object):
                         ipaddress.ip_address(gwin)
                     except:
                         exit(' !! ERROR: You did not enter a valid IPv4/IPv6 address.')
-                    ifaces[ifacein] = {'address': addrin, 'proto': ipver, 'gw': qwin, 'resolvers': []}
+                    ifaces[ifacein] = {'address': addrin, 'proto': ipver, 'gw': gwin, 'resolvers': []}
                     resolversin = chkPrompt('* What DNS resolvers should we use? Can accept a comma-separated list: ', nethelp)
                     for rslv in resolversin.split(','):
                         rslvaddr = rslv.strip()
@@ -197,10 +202,11 @@ class aifgen(object):
                                   '\twith a comma). If none, leave this blank: ', mnthelp)
             if mntoptsin == '':
                 conf['mounts'][order]['opts'] = False
-            elif not re.match('^[A-Za-z0-9_\.\-]+(,[A-Za-z0-9_\.\-]+)*', mntoptsin):
+            elif not re.match('^[A-Za-z0-9_\.\-=]+(,[A-Za-z0-9_\.\-=]+)*', re.sub('\s', '', mntoptsin)):  # TODO: shlex split this instead?
                 exit(' !! ERROR: You seem to have not specified valid mount options.')
             else:
-                conf['mounts'][order]['opts'] = mntoptsin
+                # TODO: slex this instead? is it possible for mount opts to contain whitespace?
+                conf['mounts'][order]['opts'] = re.sub('\s', '', mntoptsin)
         print('\nNow, let\'s configure the network. Note that at this time, wireless/more exotic networking is not supported by AIF-NG.\n')
         conf['network'] = {}
         nethelp = ['https://wiki.archlinux.org/index.php/installation_guide#Network_configuration',
@@ -245,10 +251,18 @@ class aifgen(object):
             rebootme = True
         else:
             rebootme = False
-        conf['system'] = {'timezone': tzin, 'locale': localein, 'chrootpath': chrootpathin, 'kbd': kbdin, 'reboot': rbtin}
+        conf['system'] = {'timezone': tzin, 'locale': localein, 'chrootpath': chrootpathin, 'kbd': kbdin, 'reboot': rebootme}
         if self.args['verbose']:
             import pprint
             pprint.pprint(conf)
+        return(conf)
+    
+    def convertJSON(self):
+        with open(args['inputfile'], 'r') as f:
+            try:
+                conf = json.loads(f.read())
+            except:
+                exit(' !! ERROR: {0} does not seem to be a strict JSON file.'.format(args['inputfile']))
         return(conf)
 
     def validateXML(self):
@@ -257,7 +271,9 @@ class aifgen(object):
     def main(self):
         if self.args['oper'] == 'create':
             conf = self.getOpts()
-        if self.args['oper'] in ('create', 'view'):
+        elif self.args['oper'] == 'convert':
+            conf = self.convertJSON()
+        if self.args['oper'] in ('create', 'view', 'convert'):
             self.validateXML()
 
 def parseArgs():
@@ -281,12 +297,19 @@ def parseArgs():
     viewargs = subparsers.add_parser('view',
                                      help = 'View an AIF-NG XML configuration file.',
                                      parents = [commonargs])
+    convertargs = subparsers.add_parser('convert',
+                                        help = 'Convert a "more" human-readable JSON configuration file to AIF-NG-compatible XML.',
+                                        parents = [commonargs])
     createargs.add_argument('-v',
                             '--verbose',
                             dest = 'verbose',
                             action = 'store_true',
                             help = 'Print the dict of raw values used to create the XML. Mostly/only useful for debugging.')
-    
+    convertargs.add_argument('-i',
+                             '--input',
+                             dest = 'inputfile',
+                             required = True,
+                             help = 'The JSON file to import and convert into XML.')
     return(args)
     
 def verifyArgs(args):
@@ -294,27 +317,17 @@ def verifyArgs(args):
     args['cfgfile'] = re.sub('^/+', '/', args['cfgfile'])
     # Path/file handling - make sure we can create the parent dir if it doesn't exist,
     # check that we can write to the file, etc.
-    if args['oper'] == 'create':
+    if args['oper'] in ('create', 'convert'):
         args['cfgbak'] = '{0}.bak.{1}'.format(args['cfgfile'], int(datetime.datetime.utcnow().timestamp()))
         try:
             temp = True
-            #mtime = None
-            #atime = None
             if os.path.lexists(args['cfgfile']):
                 temp = False
-                #mtime = os.stat(args['cfgfile']).st_mtime
-                #atime = os.stat(args['cfgfile']).st_atime
             os.makedirs(os.path.dirname(args['cfgfile']), exist_ok = True)
             with open(args['cfgfile'], 'a') as f:
                 f.write('')
             if temp:
                 os.remove(args['cfgfile'])
-            #else:
-                # WE WERE NEVER HERE.
-                # I lied; ctime will still be modified, but I think this is playing it safely enough.
-                # Turns out, though, f.write('') does no modifications but WILL throw the perm error we want.
-                # Good.
-                #os.utime(args['cfgfile'], times = (atime, mtime))
         except OSError as e:
             print('\nERROR: {0}: {1}'.format(e.strerror, e.filename))
             exit(('\nWe encountered an error when trying to use path {0}.\n' + 
@@ -327,6 +340,15 @@ def verifyArgs(args):
             print('\nERROR: {0}: {1}'.format(e.strerror, e.filename))
             exit(('\nWe encountered an error when trying to use path {0}.\n' + 
                   'Please review the output and address any issues present.').format(args['cfgfile']))
+    if args['oper'] == 'convert':
+        # And we need to make sure we have read perms to the JSON input file.
+        try:
+            with open(args['inputfile'], 'r') as f:
+                f.read()
+        except OSError as e:
+            print('\nERROR: {0}: {1}'.format(e.strerror, e.filename))
+            exit(('\nWe encountered an error when trying to read path {0}.\n' + 
+                  'Please review the output and address any issues present.').format(args['inputfile']))
     return(args)
 
 def main():
@@ -334,10 +356,13 @@ def main():
     if not args['oper']:
         parseArgs().print_help()
     else:
-    #    verifyArgs(args)
+        # Once aifgen.main() is complete, we only need to call that.
+        # That should handle all the below logic.
         aif = aifgen(verifyArgs(args))
         if args['oper'] == 'create':
             aif.getOpts()
+        elif args['oper'] == 'convert':
+            aif.convertJSON()
 
 if __name__ == '__main__':
     main()

@@ -23,7 +23,7 @@
 	run on /mnt/aif/run type tmpfs (rw,nosuid,nodev,relatime,mode=755)
 	tmp on /mnt/aif/tmp type tmpfs (rw,nosuid,nodev)
 
-DOCUMENTATION: BUG REPORTS/FEATURE REQUESTS!!!!
+DOCUMENTATION: aif-config.py (and note sample yaml as well)
 
 also create:
 -create boot media with bdisk since default arch doesn't even have python 3

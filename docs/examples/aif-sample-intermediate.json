@@ -1,0 +1,97 @@
+{
+"disks":
+	{
+	"/dev/sda":
+		{"fmt": "gpt",
+		 "parts":
+			{
+			"1":
+				{
+				"start": "0%",
+				"stop": "90%"
+				},
+			"2":
+				{
+				"start": "90%",
+				"stop": "100%"
+				}
+			}
+		},
+	"/dev/sdb":
+			{
+			"fmt": "gpt",
+			"parts":
+				{
+				"1":
+					{
+					"start": "0%",
+					"stop": "10%"
+					},
+				"2":
+					{
+					"start": "10%",
+					"stop": "100%"
+					}
+				}
+			}
+	},
+	"mounts":
+			{
+			"1":
+				{
+				"device": "/dev/sda1",
+				"fstype": "ext4",
+				"opts": "rw,noatime,errors=remount-ro",
+				"target": "/mnt/aif"
+				},
+			"2":
+				{
+				"device": "/dev/sda2",
+				"fstype": "vfat",
+				"opts": "rw,relatime,fmask=0022,dmask=0022,codepage=437,iocharset=iso8859-1,shortname=mixed,errors=remount-ro,auto",
+				"target": "/mnt/aif/boot"
+				},
+			"3":
+				{
+				"device": "/dev/sdb1",
+				"fstype": "swap",
+				"opts": false,
+				"target": "swap"},
+			"4":
+				{
+				"device": "/dev/sdb2",
+				"fstype": false,
+				"opts": false,
+				"target": "/mnt/aif/mnt/data"
+				}
+			},
+	"network":
+			{
+			"hostname": "aif.loc.lan",
+			"ifaces":
+				{
+				"ens3":
+					{
+					"address": "auto",
+					"gw": false,
+					"proto": "ipv4",
+					"resolvers": false
+					},
+				"ens4":
+					{
+					"address": "192.168.1.2/24",
+					"gw": "192.168.1.1",
+					"proto": "ipv4",
+					"resolvers": ["4.2.2.1", "4.2.2.2", "8.8.8.8"]
+					}
+				}
+			},
+	"system":
+			{
+			"chrootpath": "/mnt/aif",
+			"kbd": "US",
+			"locale": "en_US.UTF-8",
+			"reboot": true,
+			"timezone": "UTC"
+			}
+}
