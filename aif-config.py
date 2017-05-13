@@ -46,11 +46,58 @@ class aifgen(object):
     def __init__(self, args):
         self.args = args
 
+    def webFetch(self, uri, auth = False):  # TODO: add commandline args support for extra auth?
+        # Sanitize the user specification and find which protocol to use
+        prefix = uri.split(':')[0].lower()
+        if uri.startswith('/'):
+            prefix = 'file'
+        # Use the urllib module
+        if prefix in ('http', 'https', 'file', 'ftp'):
+            if auth:
+                if 'user' in auth.keys() and 'password' in auth.keys():
+                    # Set up Basic or Digest auth.
+                    passman = urlrequest.HTTPPasswordMgrWithDefaultRealm()
+                    if not 'realm' in auth.keys():
+                        passman.add_password(None, uri, auth['user'], auth['password'])
+                    else:
+                        passman.add_password(auth['realm'], uri, auth['user'], auth['password'])
+                    if auth['type'] == 'digest':
+                        httpauth = urlrequest.HTTPDigestAuthHandler(passman)
+                    else:
+                        httpauth = urlrequest.HTTPBasicAuthHandler(passman)
+                    httpopener = urlrequest.build_opener(httpauth)
+                    urlrequest.install_opener(httpopener)
+            with urlrequest.urlopen(uri) as f:
+                data = f.read()
+        elif prefix == 'ftps':
+            if auth:
+                if 'user' in auth.keys():
+                    username = auth['user']
+                else:
+                    username = 'anonymous'
+                if 'password' in auth.keys():
+                    password = auth['password']
+                else:
+                    password = 'anonymous'
+            filepath = '/'.join(uri.split('/')[3:])
+            server = uri.split('/')[2]
+            content = StringIO()
+            ftps = FTP_TLS(server)
+            ftps.login(username, password)
+            ftps.prot_p()
+            ftps.retrlines("RETR " + filepath, content.write)
+            data = content.getvalue()
+        else:
+            exit('{0} is not a recognised URI type specifier. Must be one of http, https, file, ftp, or ftps.'.format(prefix))
+        return(data)
+
     def getXSD(self):
-        pass
+        xsdobj = etree.fromstring(self.webFetch(xsd).decode('utf-8'))
+        return(xsdobj)
     
     def getXML(self):
-        pass
+        xmlobj = etree.fromstring(self.webFetch(self.args['cfgfile']).decode('utf-8'))
+        return(xmlobj)
         
     def getOpts(self):
         # This whole thing is ugly. Really, really ugly. Patches 100% welcome.

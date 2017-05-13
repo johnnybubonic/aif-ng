@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
-           targetNamespace="https://aif.square-r00t.net"
-           xmlns="https://aif.square-r00t.net"
+           targetNamespace="http://aif.square-r00t.net"
+           xmlns="http://aif.square-r00t.net"
            elementFormDefault="qualified">
 <xs:annotation>
 	<xs:documentation>
@@ -9,7 +9,7 @@
 	</xs:documentation>
 </xs:annotation>
 <!-- GLOBAL CUSTOM DATA TYPES -->
-	<xs:simpleType name="diskdev">
+ 	<xs:simpleType name="diskdev">
 		<xs:annotation>
 			<xs:documentation>
 				This element specifies a type to be used for validating storage devices, such as hard disks or mdadm-managed devices.
@@ -104,16 +104,17 @@
 	</xs:simpleType>
 	
 	<xs:simpleType name="pacuri">
-		<xs:restriction base="xs:anyURI">
+		<!-- <xs:restriction base="xs:anyURI"> -->
+		<xs:restriction base="xs:token">
 			<xs:pattern value="(file|https?)://.*" />
 		</xs:restriction>
 	</xs:simpleType>
 
-        <xs:simpleType name="scripttype">
-                <xs:restriction base="xs:token">
-                        <xs:pattern value="(pre|post|pkg)" />
-                </xs:restriction>
-        </xs:simpleType>
+  <xs:simpleType name="scripttype">
+		<xs:restriction base="xs:token">
+			<xs:pattern value="(pre|post|pkg)" />
+		</xs:restriction>
+  </xs:simpleType>
 	
 	<xs:simpleType name="bootloaders">
 		<xs:restriction base="xs:token">
@@ -263,7 +264,7 @@
 				</xs:sequence>
 				<xs:attribute name="timezone" type="xs:string" use="required" />
 				<xs:attribute name="locale" type="xs:string" use="required" />
-				<xs:attribute name="chrootpath" type="xs:string" user="required" />
+				<xs:attribute name="chrootpath" type="xs:string" use="required" />
 				<xs:attribute name="kbd" type="xs:token" />
 				<xs:attribute name="reboot" type="xs:boolean" />
 				</xs:complexType>
@@ -332,7 +333,7 @@
 						<xs:complexType>
 							<xs:attribute name="uri" type="scripturi" use="required" />
 							<xs:attribute name="order" type="xs:integer" use="required" />
-							<xs:attribute name="execution" type="xs:scripttype" use="required" />
+							<xs:attribute name="execution" type="scripttype" use="required" />
 							<xs:attribute name="user" type="xs:string" />
 							<xs:attribute name="password" type="xs:string" />
 							<xs:attribute name="realm" type="xs:string" />
