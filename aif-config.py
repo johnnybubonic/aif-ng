@@ -24,6 +24,11 @@ from ftplib import FTP_TLS
 
 xsd = 'https://aif.square-r00t.net/aif.xsd'
 
+# Before anything else... a disclaimer.
+print('\nWARNING: This tool is not guaranteed to generate a working configuration file,\n' +
+      '\tbut for most basic cases it should work. I strongly encourage you to generate your own\n' +
+      '\tconfiguration file instead by reading the documentation: https://aif.square-r00t.net/#writing_an_xml_configuration_file\n\n')
+
 # Ugh. You kids and your colors and bolds and crap.
 class color(object):
     PURPLE = '\033[95m'
@@ -223,10 +228,155 @@ class aifgen(object):
                             exit(' !! ERROR: The GID must be an integer.')
                     else:
                         users[user]['xgroups'][xgrp]['gid'] = False
-                    moreusersin = input('\nWould you like to add more groups for {0}? (y/{1}n{2}) '.format(user, color.BOLD, color.END))
+                    moreusersin = input('* Would you like to add additional extra groups for {0}? (y/{1}n{2}) '.format(user, color.BOLD, color.END))
                     if not re.match('^y(es)?$', moreusersin.lower()):
                         morexgroups = False
             return(users)
+        def svcsPrompt(svchelp):
+            svcs = {}
+            moresvcs = True
+            while moresvcs:
+                svc = chkPrompt('** What is the name of the service? If it\'s a .service unit, you can leave the .service off: ', svchelp)
+                if not re.match('^[A-Za-z0-9\-@]+(\.(service|timer|target|socket|mount|slice))?$', svc):
+                    exit(' !! ERROR: You seem to have specified an invalid service name.')
+                svcstatusin = chkPrompt('** Should {0} be enabled? ({1}y{2}/n) '.format(svc, color.BOLD, color.END), svchelp)
+                if re.match('^no?$', svcstatusin.lower()):
+                    svcs[svc] = False
+                else:
+                    svcs[svc] - True
+                moreservices = input('* Would you like to manage another service? (y/{0}n{1}) '.format(color.BOLD, color.END))
+                if not re.match('^y(es)?$', moreservices.lower()):
+                    moresvcs = False
+            return(svcs)
+        def repoPrompt(repohelp):
+            # The default pacman.conf's repo setup
+            repos = {'core': {'mirror': 'file:///etc/pacman.d/mirrorlist',
+                              'siglevel': 'default',
+                              'enabled': True},
+                     'extra': {'mirror': 'file:///etc/pacman.d/mirrorlist',
+                               'siglevel': 'default',
+                               'enabled': True},
+                     'community-testing': {'mirror': 'file:///etc/pacman.d/mirrorlist',
+                                           'siglevel': 'default',
+                                           'enabled': False},
+                     'community': {'mirror': 'file:///etc/pacman.d/mirrorlist',
+                                   'siglevel': 'default',
+                                   'enabled': True},
+                     'multilib-testing': {'mirror': 'file:///etc/pacman.d/mirrorlist',
+                                          'siglevel': 'default',
+                                          'enabled': False},
+                     'multilib': {'mirror': 'file:///etc/pacman.d/mirrorlist',
+                                  'siglevel': 'default',
+                                  'enabled': False}}
+            chkdefs = chkPrompt(('Would you like to review the default repository configuration ' +
+                                 '(and possibly edit it)? ({0}y{1}/n) ').format(color.BOLD, color.END), repohelp)
+            fmtstr = '{0} {1:<20} {2:^10} {3:^10} {4}'  # ('#', 'REPO', 'ENABLED', 'SIGLEVEL', 'URI')
+            if not re.match('^no?$', chkdefs.lower()):
+                print('{0}{1}{2}'.format(color.BOLD, fmtstr.format('#', 'REPO', 'ENABLED', 'SIGLEVEL', 'URI'), color.END))
+                rcnt = 1
+                for r in repos.keys():
+                    print(fmtstr.format(rcnt, r, str(repos[r]['enabled']), repos[r]['siglevel'], repos[r]['mirror']))
+                    rcnt += 1
+                editdefs = chkPrompt('Would you like to edit any of this? (y/{0}n{1}) '.format(color.BOLD, color.END), repohelp)
+                if re.match('^y(es)?$', editdefs.lower()):
+                    repokeys = list(repos.keys())
+                    moreedits = True
+                    while moreedits:
+                        rnum = input('* What repository # would you like to edit? ')
+                        try:
+                            rnum = int(rnum)
+                            rname = repokeys[rnum - 1]
+                        except:
+                            exit(' !! ERROR: You did not specify a valid repository #.')
+                        enableedit = chkPrompt('** Should {0} be enabled? (y/n/{1}nochange{2}) '.format(rname, color.BOLD, color.END), repohelp)
+                        if re.match('^y(es)?$', enableedit.lower()):
+                            repos[rname]['enabled'] = True
+                        elif re.match('^no?$', enableedit.lower()):
+                            repos[rname]['enabled'] = False
+                        siglvledit = chkPrompt('** What siglevel should {0} use? Leave blank for no change: ', repohelp)
+                        if siglvledit != '':
+                            grp1 = re.compile('^((Package|Database)?(Never|Optional|Required)|default)$')
+                            grp2 = re.compile('^(Package|Database)?Trust(edOnly|All)$')
+                            siglst = siglvledit.split()
+                            if len(siglist) > 2:
+                                exit(' !! ERROR: That is not a valid SigLevel string. See the manpage for pacman.conf ' +
+                                     '(\'PACKAGE AND DATABASE SIGNATURE CHECKING\').')
+                            if not grp1.match(siglist[0]):
+                                exit((' !! ERROR: {0} is not valid. See the manpage for pacman.conf ' +
+                                      '(\'PACKAGE AND DATABASE SIGNATURE CHECKING\').').format(siglist[0]))
+                            if len(siglist) == 1:
+                                if not grp2.match(siglist[1]):
+                                    exit((' !! ERROR: {0} is not valid. See the manpage for pacman.conf ' +
+                                          '(\'PACKAGE AND DATABASE SIGNATURE CHECKING\').').format(siglist[1]))
+                            repos[rname]['siglevel'] = siglvledit
+                        uriedit = chkPrompt('** What should the URI be?\n' +
+                                            '\tUse a file:///absolute/path/to/file to use an Include, or leave blank for no change: ', repohelp)
+                        if uriedit != '':
+                            repos[rname]['mirror'] = uriedit
+                        moreeditsin = chkPrompt(('** Would you like to edit another ' +
+                                                 'repository? (y/{0}n{1}) ').format(color.BOLD, color.END), repohelp)
+                        if not re.match('^y(es)?$', moreeditsin.lower()):
+                            moreedits = False
+            addreposin = chkPrompt('* Would you like to add any additional repositories? (y/{0}n{1}) '.format(color.BOLD, color.END), repohelp)
+            if re.match('^y(es)?$', addreposin.lower()):
+                addrepos = True
+                while addrepos:
+                    reponamein = chkPrompt('** What should this repository be named? (Must match the repository name on the mirror): ', repohelp)
+                    reponame = re.sub('(^\[|]$)', '', reponamein)
+                    if not re.match('^[a-z0-9]', reponame.lower()):
+                        exit(' !! ERROR: That is not a valid repository name.')
+                    repos[reponame] = {}
+                    enablein = chkPrompt('** Should {0} be enabled? ({1}y{2}/n) '.format(reponame, color.BOLD, color.END), repohelp)
+                    if not re.match('^no?$', enablein.lower()):
+                        repos[reponame]['enabled'] = True
+                    else:
+                        repos[reponame]['enabled'] = False
+                    siglvlin = chkPrompt('** What SigLevel string should we use for {0}? Leave blank for default: '.format(reponame), repohelp)
+                    if siglvlin != '':
+                        grp1 = re.compile('^((Package|Database)?(Never|Optional|Required)|default)$')
+                        grp2 = re.compile('^(Package|Database)?Trust(edOnly|All)$')
+                        siglst = siglvlin.split()
+                        if len(siglist) > 2:
+                            exit(' !! ERROR: That is not a valid SigLevel string. See the manpage for pacman.conf ' +
+                                 '(\'PACKAGE AND DATABASE SIGNATURE CHECKING\').')
+                        if not grp1.match(siglist[0]):
+                            exit((' !! ERROR: {0} is not valid. See the manpage for pacman.conf ' +
+                                  '(\'PACKAGE AND DATABASE SIGNATURE CHECKING\').').format(siglist[0]))
+                        if len(siglist) == 1:
+                            if not grp2.match(siglist[1]):
+                                exit((' !! ERROR: {0} is not valid. See the manpage for pacman.conf ' +
+                                      '(\'PACKAGE AND DATABASE SIGNATURE CHECKING\').').format(siglist[1]))
+                        repos[reponame]['siglevel'] = siglvlin
+                    else:
+                        repos[reponame]['siglevel'] = 'default'
+                    uriin = chkPrompt(('** What URI should be used for {0}?\n' +
+                                       '\tUse a file:///absolute/path/to/file to use an Include: ').format(reponame), repohelp)
+                    if uriin == '':
+                        exit(' !! ERROR: You cannot specify a blank repository URI.')
+                    else:
+                        repos[reponame]['mirror'] = uriin
+                    morereposin = chkPrompt('* Would you like to add another repository? (y/{0}n{1}) '.format(color.BOLD, color.END), repohelp)
+                    if not re.match('^y(es)?$', morereposin.lower()):
+                        addrepos = False
+            return(repos)
+        def pkgsPrompt(repohelp):
+            pkgs = {}
+            morepkgs = True
+            while morepkgs:
+                pkgname = chkPrompt('** What is the name of the package? ', repohelp)
+                if pkgname == '':
+                    exit(' !! ERROR: You must specify a package name.')
+                reponame = chkPrompt(('** What repository should we install {0} from? ' +
+                                      '({1}optional{2}, leave blank to skip) ').format(pkgname, color.BOLD, color.END), repohelp)
+                if reponame == '':
+                    pkgs[pkgname] = None
+                else:
+                    pkgs[pkgname] = reponame
+                morepkgsin = chkPrompt('** Would you like to add another package? (y/{0}n{1}) '.format(color.BOLD, color.END), repohelp)
+                if not re.match('^y(es)?$', morepkgsin.lower()):
+                    morepkgs = False
+            return(pkgs)
+        
         conf = {}
         print('[{0}] Beginning configuration...'.format(datetime.datetime.now()))
         print('You may reply with \'wikihelp\' on the first prompt of a question for the relevant link(s) in the Arch wiki ' +
@@ -376,12 +526,70 @@ class aifgen(object):
               '(which is HIGHLY not recommended - it means anyone can login by just pressing enter at the login!)\n')
         print('Let\'s configure the root user.')
         conf['system']['rootpass'] = genPassHash(root)
-        moreusers = input('Would you like to add one or more regular user(s)? (y/{0}n{1}) '.format(color.BOLD, color.END)
+        moreusers = input('Would you like to add one or more regular user(s)? (y/{0}n{1}) '.format(color.BOLD, color.END))
         if re.match('^y(es)?$', moreusers.lower()):
             syshelp.append('https://aif.square-r00t.net/#code_user_code')
             conf['system']['users'] = userPrompt(syshelp)
         else:
             conf['system']['users'] = False
+        svchelp = ['https://wiki.archlinux.org/index.php/Systemd',
+                   'https://aif.square-r00t.net/#code_service_code']
+        svcin = chkPrompt('Would you like to configure (enable/disable) services? (y/{0}n{1}) '.format(color.BOLD, color.END), svchelp)
+        if re.match('^y(es)?$', svcin.lower()):
+            conf['system']['services'] = svcsPrompt(svchelp)
+        else:
+            conf['system']['services'] = False
+        print('\nNow let\'s configure the package management.')
+        conf['software'] = {}
+        pkgrhelp = ['https://wiki.archlinux.org/index.php/Pacman',
+                    'https://wiki.archlinux.org/index.php/AUR_helpers',
+                    'https://aif.square-r00t.net/#code_pacman_code']
+        pkgrcmd = chkPrompt('If you won\'t be using pacman for a package manager, what command should be used to install packages?\n' +
+                            '\t(Remember that you would need to install/configure it in a \'pkg\' hook script.)\n' +
+                            '\tLeave blank if you\'ll only be using pacman: ', pkgrhelp)
+        if pkgrcmd == '':
+            conf['software']['pkgr'] = False
+        else:
+            conf['software']['pkgr'] = pkgrcmd
+        print('\nWe need to configure the repositories for pacman and other software options.')
+        repohelp = ['https://aif.square-r00t.net/#code_repos_code']
+        conf['software']['repos'] = repoPrompt(repohelp)
+        pkgsin = chkPrompt(('* Would you like to have extra packages installed?\n' +
+                            '\t(Note that they must be available in your configured repositories or\n' +
+                            '\tinstallable via "{0} <package name>".) (y/{0}n{1}) ').format(conf['software']['pkgr'],
+                                                                                              color.BOLD,
+                                                                                              color.END), repohelp)
+        if re.match('^y(es)?$', pkgsin.lower()):
+            repohelp.append('https://aif.square-r00t.net/#code_package_code')
+            conf['software']['packages'] = pkgsPrompt(repohelp)
+        else:
+            conf['software']['packages'] = False
+        btldrhelp = ['https://wiki.archlinux.org/index.php/installation_guide#Boot_loader',
+                     'https://aif.square-r00t.net/#code_bootloader_code']
+        conf['boot'] = {}
+        btldrin = chkPrompt('* Almost done! Please choose a bootloader. ({0}grub{1}/systemd) '.format(color.BOLD, color.END), btldrhelp)
+        if not re.match('^(grub|systemd)$', btldrin.lower()):
+            exit(' !! ERROR: You must choose a bootloader between grub or systemd.')
+        else:
+            conf['boot']['bootloader'] = btldrin.lower()
+        bttgtstr = 'boot partition/disk'
+        btrgx = re.compile('^/dev/[A-Za-z0]+')
+        if btldrin.lower() == 'grub':
+            efienable = chkPrompt('** Is this system (U)EFI-capable? ({0}y{1}/n) '.format(color.BOLD, color.END), btldrhelp)
+            if re.match('^no?$', efienable.lower()):
+                conf['boot']['efi'] = False
+            else:
+                conf['boot']['efi'] = True
+                bttgtstr = 'ESP (EFI System Partition)'
+                btrgx = re.compile('^/([^/\x00\s]+(/)?)+$')
+        bttgtin = chkPrompt('** What is the target for {0}? That is, the path to the {1}: '.format(btldrin.lower(), bttgtstr), btldrhelp)
+        if not btrgx.match(bttgtin):
+            exit(' !! ERROR: That doesn\'t seem to be a valid {0}.'.format(bttgtstr))
+        else:
+            conf['boot']['target'] = bttgtin
+        scrpthlp = ['https://aif.square-r00t.net/#code_script_code']
+        scrptsin = chkPrompt('* Last one! Do you have any hook scripts you\'d like to add? (y/{0}n{1}) '.format(color.BOLD, color.END), scrpthlp)
+        
         if self.args['verbose']:
             import pprint
             pprint.pprint(conf)
