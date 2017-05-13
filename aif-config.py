@@ -376,7 +376,55 @@ class aifgen(object):
                 if not re.match('^y(es)?$', morepkgsin.lower()):
                     morepkgs = False
             return(pkgs)
-        
+        def scrptPrompt(scrpthlp):
+            scrpts = {'pre': False, 'pkg': False, 'post': False}
+            morescrpts = True
+            while morescrpts:
+                hookin = chkPrompt('** What type of script is this? (pre/pkg/post) ', scrpthlp)
+                if not re.match('^p(re|kg|ost)$', hookin.lower()):
+                    exit(' !! ERROR: The hook must be one of pre, pkg, or post.')
+                else:
+                    hook = hookin.lower()
+                if not scrpts[hook]:
+                    scrpts[hook] = {}
+                scrptin = chkPrompt('** What is the URI for this script? Can be an http://, https://, ftp://, ftps://, or file:// URI: ', scrpthlp)
+                if not re.match('^(https?|ftps?|file)://', scrptin.lower()):
+                    exit(' !! ERROR: That is not a valid URI.')
+                orderin = chkPrompt(('** What order should this script be executed in during the {0} hook?\n' +
+                                     '\tMust be a unique integer ' +
+                                     '(lower numbers execute before higher numbers): ').format(hook), scrpthlp)
+                try:
+                    order = int(ordrin)
+                except:
+                    exit(' !! ERROR: Must be an integer')
+                if order in scrpts[hook].keys():
+                    exit(' !! ERROR: You already have a {0} script at that order number.'.format(order))
+                scrpts[hook][order] = {'uri': scrptin}
+                if re.match('^(https?|ftps?)://', scriptin.lower()):
+                    authin = chkPrompt('** Does this script URI require auth? (y/{0}n{1}) '.format(color.BOLD, color.END), scrpthlp)
+                    if re.match('^y(es)?$', authin.lower()):
+                        if re.match('^https?://', scriptin.lower()):
+                            authtype = chkPrompt(('*** What type of auth does this URI require? ' +
+                                                  '({0}basic{1}/digest) ').format(color.BOLD, color.END), scrpthlp)
+                            if authtype == '':
+                                scrpts[hook][order]['auth'] = 'basic'
+                            elif not re.match('^(basic|digest)$', authtype.lower()):
+                                scrpts[hook][order]['auth'] = authtype.lower()
+                            else:
+                                exit(' !! ERROR: That is not a valid auth type.')
+                            if authtype.lower() == 'digest':
+                                realmin = chkPrompt('*** Do you know the realm needed for authentication?\n' +
+                                                    '\tIf not, just leave this blank and AIF-NG will try to guess: ', scrpthlp)
+                                if realmin != '':
+                                    scrpts[hook][order]['realm'] = realmin
+                        scrpts[hook][order]['user'] = chkPrompt('*** What user should we use for auth? ', scrpthlp)
+                        scrpts[hook][order]['password'] = chkPrompt('*** What password should we use for auth? ', scrpthlp)
+                    else:
+                        scrpts[hook][order][auth] = False
+                morescrptsin = chkPrompt('* Would you like to add another hook script? (y/{0}n{1}) '.format(color.BOLD, color.END), scrpthlp)
+                if not re.match('^y(es)?$', morescrptsin.lower()):
+                    morescrpts = False
+            return(scrpts)
         conf = {}
         print('[{0}] Beginning configuration...'.format(datetime.datetime.now()))
         print('You may reply with \'wikihelp\' on the first prompt of a question for the relevant link(s) in the Arch wiki ' +
@@ -589,7 +637,12 @@ class aifgen(object):
             conf['boot']['target'] = bttgtin
         scrpthlp = ['https://aif.square-r00t.net/#code_script_code']
         scrptsin = chkPrompt('* Last one! Do you have any hook scripts you\'d like to add? (y/{0}n{1}) '.format(color.BOLD, color.END), scrpthlp)
-        
+        if re.match('^y(es)?$', scrptsin.lower()):
+            conf['scripts'] = scrptPrompt(scrpthlp)
+        print('\n\n{0}ALL DONE!{1} Whew. You can find your configuration file at: {2}{3}{1}\n'.format(color.BOLD,
+                                                                                                      color.END,
+                                                                                                      color.BLUE,
+                                                                                                      self.args['cfgfile']))
         if self.args['verbose']:
             import pprint
             pprint.pprint(conf)
