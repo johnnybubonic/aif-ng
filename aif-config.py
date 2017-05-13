@@ -7,12 +7,15 @@ except ImportError:
     import xml.etree.ElementTree as etree  # https://docs.python.org/3/library/xml.etree.elementtree.html
     lxml_avail = False
 import argparse
+import crypt
 import datetime
 import errno
 import ipaddress
+import getpass
 import os
 import pydoc  # a dirty hack we use for pagination
 import re
+import readline
 import sys
 import urllib.request as urlrequest
 import urllib.parse as urlparse
@@ -20,6 +23,19 @@ import urllib.response as urlresponse
 from ftplib import FTP_TLS
 
 xsd = 'https://aif.square-r00t.net/aif.xsd'
+
+# Ugh. You kids and your colors and bolds and crap.
+class color(object):
+    PURPLE = '\033[95m'
+    CYAN = '\033[96m'
+    DARKCYAN = '\033[36m'
+    BLUE = '\033[94m'
+    GREEN = '\033[92m'
+    YELLOW = '\033[93m'
+    RED = '\033[91m'
+    BOLD = '\033[1m'
+    UNDERLINE = '\033[4m'
+    END = '\033[0m'
 
 class aifgen(object):
     def __init__(self, args):
@@ -104,11 +120,113 @@ class aifgen(object):
                             exit(' !! ERROR: {0} is not a valid resolver address.'.format(rslvaddr))
                 else:
                     ifaces[ifacein] = {'address': 'auto', 'proto': ipver, 'gw': False, 'resolvers': False}
-                moreIfacesin = input('Would you like to add more interfaces? ((y)es/(N)O) ')
+                moreIfacesin = input('Would you like to add more interfaces? (y/{0}n{1}) '.format(color.BOLD, color.END))
                 if not re.match('^y(es)?$', moreIfacesin.lower()):
                     moreIfaces = False
             return(ifaces)
-                            
+        def genPassHash(user):
+            passin = getpass.getpass('* Please enter the password you want to use for {0} (will not echo back): '.format(user))
+            if passin not in ('', '!'):
+                salt = crypt.mksalt(crypt.METHOD_SHA512)
+                salthash = crypt.crypt(passin, salt)
+            else:
+                salthash = passin
+            return(salthash)
+        def userPrompt(syshelp):
+            users = {}
+            moreUsers = True
+            while moreUsers:
+                user = chkPrompt('What username would you like to add? ', syshelp)
+                if len(user) > 32:
+                    exit(' !! ERROR: Usernames must be less than 32 characters.')
+                if not re.match('^[a-z_][a-z0-9_-]*[$]?$', user):
+                    exit(' !! ERROR: Your username does not match a valid pattern. See the man page for useradd (\'CAVEATS\').')
+                users[user] = {}
+                sudoin = chkPrompt('* Should {0} have (full!) sudo access? (y/{0}n{1}) '.format(user, color.BOLD, color.END), syshelp)
+                if re.match('^y(es)?$', sudoin.lower()):
+                    users[user]['sudo'] = True
+                else:
+                    users[user]['sudo'] = False
+                users[user]['password'] = genPassHash(user)
+                users[user]['comment'] = chkPrompt(('* What comment should {0} have? ' +
+                                                    '(Typically this is the user\'s full name) ').format(user), syshelp)
+                uidin = chkPrompt(('* What UID should {0} have? Leave this blank if you don\'t care ' +
+                                   '(should be fine for most cases): ').format(user), syshelp)
+                if uidin != '':
+                    try:
+                        users[user]['uid'] = int(uidin)
+                    except:
+                        exit(' !! ERROR: The UID must be an integer.')
+                else:
+                    users[user]['uid'] = False
+                grpin = chkPrompt(('* What group name would you like to use for {0}\'s primary group? ' +
+                                   '(You\'ll be able to add additional groups in a moment.)\n' +
+                                   '\tThe default, if left blank, is to simply create a group named {0} ' +
+                                   '(which is what you probably want): ').format(user), syshelp)
+                if len(grpin) > 32:
+                    exit(' !! ERROR: Group names must be less than 32 characters.')
+                if not re.match('^[a-z_][a-z0-9_-]*[$]?$', grpin):
+                    exit(' !! ERROR: Your group name does not match a valid pattern. See the man page for groupadd (\'CAVEATS\').')
+                users[user]['group'] = grpin
+                gidin = chkPrompt(('* What GID should {0} have? Leave this blank if you don\'t care ' +
+                                   '(should be fine for most cases): ').format(grpin), syshelp)
+                if gidin != '':
+                    try:
+                        users[user]['gid'] = int(gidin)
+                    except:
+                        exit(' !! ERROR: The GID must be an integer.')
+                else:
+                    users[user]['gid'] = False
+                syshelp.append('https://aif.square-r00t.net/#code_home_code')
+                homein = chkPrompt(('* What directory should {0} use for its home? Leave blank if you don\'t care ' +
+                                    '(should be fine for most cases): ').format(user), syshelp)
+                if homein != '':
+                    if not re.match('^/([^/\x00\s]+(/)?)+)$', homein):
+                        exit('!! ERROR: Path {0} does not seem to be valid.'.format(homein))
+                    users[user]['home'] = homein
+                else:
+                    users[user]['home'] = False
+                homecrt = chkPrompt('* Do we need to create {0}? (y/{1}n{2}) '.format(homein, color.BOLD, color.END), syshelp)
+                if re.match('^y(es)?$', homecrt):
+                    users[user]['homecreate'] = True
+                else:
+                    users[user]['homecreate'] = False
+                del(syshelp[-1])
+                xgrouphelp = 'https://aif.square-r00t.net/#code_xgroup_code'
+                if xgrouphelp not in syshelp:
+                    syshelp.append(xgrouphelp)
+                xgroupin = chkPrompt('* Would you like to add extra groups for {0}? (y/{1}n{2}) '.format(user, color.BOLD, color.END), syshelp)
+                if re.match('^y(es)?$', xgroupin.lower()):
+                    morexgroups = True
+                    users[user]['xgroups'] = {}
+                else:
+                    morexgroups = False
+                    users[user]['xgroups'] = False
+                while morexgroups:
+                    xgrp = chkPrompt('** What is the name of the group you would like to add? ', syshelp)
+                    if len(xgrp) > 32:
+                        exit(' !! ERROR: Group names must be less than 32 characters.')
+                    if not re.match('^[a-z_][a-z0-9_-]*[$]?$', xgrp):
+                        exit(' !! ERROR: Your group name does not match a valid pattern. See the man page for groupadd (\'CAVEATS\').')
+                    users[user]['xgroups'][xgrp] = {}
+                    xgrpcrt = chkPrompt('** Does {0} need to be created? (y/{1}n{2} '.format(xgrp, color.BOLD, color.END), syshelp)
+                    if re.match('^y(es)?$', xgrpcrt.lower()):
+                        users[user]['xgroups'][xgrp]['create'] = True
+                    else:
+                        users[user]['xgroups'][xgrp]['create'] = False
+                    xgrpgid = chkPrompt(('** What GID should {0} be? If the group will already exist on the new system or ' +
+                                        'don\'t care,\nleave this blank (should be fine for most cases): ').format(xgrp), syshelp)
+                    if xrpgid != '':
+                        try:
+                            users[user]['xgroups'][xgrp]['gid'] = int(xgrpid)
+                        except:
+                            exit(' !! ERROR: The GID must be an integer.')
+                    else:
+                        users[user]['xgroups'][xgrp]['gid'] = False
+                    moreusersin = input('\nWould you like to add more groups for {0}? (y/{1}n{2}) '.format(user, color.BOLD, color.END))
+                    if not re.match('^y(es)?$', moreusersin.lower()):
+                        morexgroups = False
+            return(users)
         conf = {}
         print('[{0}] Beginning configuration...'.format(datetime.datetime.now()))
         print('You may reply with \'wikihelp\' on the first prompt of a question for the relevant link(s) in the Arch wiki ' +
@@ -246,12 +364,24 @@ class aifgen(object):
         if kbdin == '':
             kbdin = 'US'
         del(syshelp[1])
-        rbtin = chkPrompt('* Would you like to reboot the host system after installation completes? ((Y)ES/(n)o): ', syshelp)
+        rbtin = chkPrompt('* Would you like to reboot the host system after installation completes? ({0}y{1}/n): '.format(color.BOLD, color.END), syshelp)
         if not re.match('^no?$', rbtin.lower()):
             rebootme = True
         else:
             rebootme = False
         conf['system'] = {'timezone': tzin, 'locale': localein, 'chrootpath': chrootpathin, 'kbd': kbdin, 'reboot': rebootme}
+        syshelp[1] = 'https://aif.square-r00t.net/#code_users_code'
+        print('\nNow let\'s handle some user accounts. For passwords, you can either enter the password you want to use,\n' +
+              'a \'!\' (in which case TTY login will be disabled but e.g. SSH will still work), or just hit enter to leave it blank\n' +
+              '(which is HIGHLY not recommended - it means anyone can login by just pressing enter at the login!)\n')
+        print('Let\'s configure the root user.')
+        conf['system']['rootpass'] = genPassHash(root)
+        moreusers = input('Would you like to add one or more regular user(s)? (y/{0}n{1}) '.format(color.BOLD, color.END)
+        if re.match('^y(es)?$', moreusers.lower()):
+            syshelp.append('https://aif.square-r00t.net/#code_user_code')
+            conf['system']['users'] = userPrompt(syshelp)
+        else:
+            conf['system']['users'] = False
         if self.args['verbose']:
             import pprint
             pprint.pprint(conf)
