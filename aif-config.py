@@ -13,7 +13,6 @@ import errno
 import ipaddress
 import getpass
 import os
-import pydoc  # a dirty hack we use for pagination
 import re
 import readline
 import sys
@@ -23,11 +22,6 @@ import urllib.response as urlresponse
 from ftplib import FTP_TLS
 
 xsd = 'https://aif.square-r00t.net/aif.xsd'
-
-# Before anything else... a disclaimer.
-print('\nWARNING: This tool is not guaranteed to generate a working configuration file,\n' +
-      '\tbut for most basic cases it should work. I strongly encourage you to generate your own\n' +
-      '\tconfiguration file instead by reading the documentation: https://aif.square-r00t.net/#writing_an_xml_configuration_file\n\n')
 
 # Ugh. You kids and your colors and bolds and crap.
 class color(object):
@@ -50,6 +44,7 @@ class aifgen(object):
         # Sanitize the user specification and find which protocol to use
         prefix = uri.split(':')[0].lower()
         if uri.startswith('/'):
+            uri = 'file://{0}'.format(uri)
             prefix = 'file'
         # Use the urllib module
         if prefix in ('http', 'https', 'file', 'ftp'):
@@ -92,14 +87,18 @@ class aifgen(object):
         return(data)
 
     def getXSD(self):
-        xsdobj = etree.fromstring(self.webFetch(xsd).decode('utf-8'))
+        xsdobj = etree.fromstring(self.webFetch(xsd))
         return(xsdobj)
     
     def getXML(self):
-        xmlobj = etree.fromstring(self.webFetch(self.args['cfgfile']).decode('utf-8'))
+        xmlobj = etree.fromstring(self.webFetch(self.args['cfgfile']))
         return(xmlobj)
         
     def getOpts(self):
+        # Before anything else... a disclaimer.
+        print('\nWARNING: This tool is not guaranteed to generate a working configuration file,\n' +
+              '\t but for most basic cases it should work. I strongly encourage you to generate your own\n' +
+              '\t configuration file instead by reading the documentation: https://aif.square-r00t.net/#writing_an_xml_configuration_file\n\n')
         # This whole thing is ugly. Really, really ugly. Patches 100% welcome.
         def chkPrompt(prompt, urls):
             txtin = None
@@ -704,14 +703,27 @@ class aifgen(object):
         return(conf)
 
     def validateXML(self):
-        pass
+        # First we validate the XSD.
+        if not lxml_avail:
+            exit('\nXML validation is only supported by LXML.\nIf you want to validate the XML, install the lxml python module (python-lxml) and try again.\n')
+        try:
+            xsd = etree.XMLSchema(self.getXSD())
+            print('\nXSD: {0}PASSED{1}'.format(color.BOLD, color.END))
+        except Exception as e:
+            exit('\nXSD: {0}FAILED{1}: {2}'.format(color.BOLD, color.END, e))
+        # Then we can validate the XML.
+        try:
+            xml = xsd.validate(self.getXML())
+            print('XML: {0}PASSED{1}\n'.format(color.BOLD, color.END))
+        except Exception as e:
+            print('XML: {0}FAILED{1}: {2}\n'.format(color.BOLD, color.END, e))
     
     def main(self):
         if self.args['oper'] == 'create':
             conf = self.getOpts()
         elif self.args['oper'] == 'convert':
             conf = self.convertJSON()
-        if self.args['oper'] in ('create', 'view', 'convert'):
+        if self.args['oper'] in ('create', 'convert'):
             self.validateXML()
 
 def parseArgs():
@@ -722,7 +734,7 @@ def parseArgs():
     commonargs.add_argument('-f',
                             '--file',
                             dest = 'cfgfile',
-                            help = 'The file to create/validate/view. If not specified, defaults to ./aif.xml',
+                            help = 'The file to create/validate. If not specified, defaults to ./aif.xml',
                             default = '{0}/aif.xml'.format(os.getcwd()))
     subparsers = args.add_subparsers(help = 'Operation to perform',
                                      dest = 'oper')
@@ -732,9 +744,6 @@ def parseArgs():
     validateargs = subparsers.add_parser('validate',
                                          help = 'Validate an AIF-NG XML configuration file.',
                                          parents = [commonargs])
-    viewargs = subparsers.add_parser('view',
-                                     help = 'View an AIF-NG XML configuration file.',
-                                     parents = [commonargs])
     convertargs = subparsers.add_parser('convert',
                                         help = 'Convert a "more" human-readable JSON configuration file to AIF-NG-compatible XML.',
                                         parents = [commonargs])
@@ -770,14 +779,6 @@ def verifyArgs(args):
             print('\nERROR: {0}: {1}'.format(e.strerror, e.filename))
             exit(('\nWe encountered an error when trying to use path {0}.\n' + 
                   'Please review the output and address any issues present.').format(args['cfgfile']))
-    elif args['oper'] == 'view':
-        try:
-            with open(args['cfgfile'], 'r') as f:
-                f.read()
-        except OSError as e:
-            print('\nERROR: {0}: {1}'.format(e.strerror, e.filename))
-            exit(('\nWe encountered an error when trying to use path {0}.\n' + 
-                  'Please review the output and address any issues present.').format(args['cfgfile']))
     if args['oper'] == 'convert':
         # And we need to make sure we have read perms to the JSON input file.
         try:
@@ -799,6 +800,8 @@ def main():
         aif = aifgen(verifyArgs(args))
         if args['oper'] == 'create':
             aif.getOpts()
+        if args['oper'] == 'validate':
+            aif.validateXML()
         elif args['oper'] == 'convert':
             aif.convertJSON()
 
