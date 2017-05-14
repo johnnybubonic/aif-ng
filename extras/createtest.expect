@@ -11,7 +11,7 @@ if {$force_conservative} {
 	}
 }
 
-set send_slow {10 .001}
+#set send_slow {10 .001}
 
 set timeout -1
 spawn ./aif-config.py create -v:r -f /tmp/aif.xml
@@ -96,7 +96,10 @@ send -- "\r"
 # reboot host after install? default is yes
 send -- "\r"
 # root password
+sleep 2
 send -- "test\r"
+sleep 2
+expect *
 # add user?
 send -- "y\r"
 # user
@@ -104,7 +107,9 @@ send -- "aifusr\r"
 # sudo access
 send -- "y\r"
 # password
+sleep 2
 send -- "test\r"
+sleep 2
 send -- "A Test User\r"
 # uid (default is autogen)
 send -- "\r"

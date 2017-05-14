@@ -30,7 +30,6 @@ also create:
 -create boot media with bdisk since default arch doesn't even have python 3
 -- this is.. sort of? done. but iPXE/mini build is failing, need to investigate why
 
-
 docs:
 http://lxml.de/parsing.html
 https://www.w3.org/2001/XMLSchema.xsd
