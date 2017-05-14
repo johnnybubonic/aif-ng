@@ -11,6 +11,7 @@ import crypt
 import datetime
 import errno
 import ipaddress
+import json
 import getpass
 import os
 import re
@@ -176,7 +177,9 @@ class aifgen(object):
                     moreIfaces = False
             return(ifaces)
         def genPassHash(user):
-            passin = getpass.getpass('* Please enter the password you want to use for {0} (will not echo back): '.format(user))
+            # https://bugs.python.org/issue30360 - keep this disabled until we're ready for primetime.
+            #passin = getpass.getpass('* Please enter the password you want to use for {0} (will not echo back): '.format(user))
+            passin = input('* Please enter the password you want to use for {0}: '.format(user))
             if passin not in ('', '!'):
                 salt = crypt.mksalt(crypt.METHOD_SHA512)
                 salthash = crypt.crypt(passin, salt)
@@ -185,15 +188,15 @@ class aifgen(object):
             return(salthash)
         def userPrompt(syshelp):
             users = {}
-            moreUsers = True
-            while moreUsers:
+            moreusers = True
+            while moreusers:
                 user = chkPrompt('What username would you like to add? ', syshelp)
                 if len(user) > 32:
                     exit(' !! ERROR: Usernames must be less than 32 characters.')
                 if not re.match('^[a-z_][a-z0-9_-]*[$]?$', user):
                     exit(' !! ERROR: Your username does not match a valid pattern. See the man page for useradd (\'CAVEATS\').')
                 users[user] = {}
-                sudoin = chkPrompt('* Should {0} have (full!) sudo access? (y/{0}n{1}) '.format(user, color.BOLD, color.END), syshelp)
+                sudoin = chkPrompt('* Should {0} have (full!) sudo access? (y/{1}n{2}) '.format(user, color.BOLD, color.END), syshelp)
                 if re.match('^y(es)?$', sudoin.lower()):
                     users[user]['sudo'] = True
                 else:
@@ -214,18 +217,24 @@ class aifgen(object):
                                    '(You\'ll be able to add additional groups in a moment.)\n' +
                                    '\tThe default, if left blank, is to simply create a group named {0} ' +
                                    '(which is what you probably want): ').format(user), syshelp)
-                if len(grpin) > 32:
-                    exit(' !! ERROR: Group names must be less than 32 characters.')
-                if not re.match('^[a-z_][a-z0-9_-]*[$]?$', grpin):
-                    exit(' !! ERROR: Your group name does not match a valid pattern. See the man page for groupadd (\'CAVEATS\').')
-                users[user]['group'] = grpin
-                gidin = chkPrompt(('* What GID should {0} have? Leave this blank if you don\'t care ' +
-                                   '(should be fine for most cases): ').format(grpin), syshelp)
-                if gidin != '':
-                    try:
-                        users[user]['gid'] = int(gidin)
-                    except:
-                        exit(' !! ERROR: The GID must be an integer.')
+                if grpin != '':
+                    if len(grpin) > 32:
+                        exit(' !! ERROR: Group names must be less than 32 characters.')
+                    if not re.match('^[a-z_][a-z0-9_-]*[$]?$', grpin):
+                        exit(' !! ERROR: Your group name does not match a valid pattern. See the man page for groupadd (\'CAVEATS\').')
+                    users[user]['group'] = grpin
+                else:
+                    users[user]['group'] = False
+                if grpin != '':
+                    gidin = chkPrompt(('* What GID should {0} have? Leave this blank if you don\'t care ' +
+                                       '(should be fine for most cases): ').format(grpin), syshelp)
+                    if gidin != '':
+                        try:
+                            users[user]['gid'] = int(gidin)
+                        except:
+                            exit(' !! ERROR: The GID must be an integer.')
+                    else:
+                        users[user]['gid'] = False
                 else:
                     users[user]['gid'] = False
                 syshelp.append('https://aif.square-r00t.net/#code_home_code')
@@ -235,13 +244,13 @@ class aifgen(object):
                     if not re.match('^/([^/\x00\s]+(/)?)+)$', homein):
                         exit('!! ERROR: Path {0} does not seem to be valid.'.format(homein))
                     users[user]['home'] = homein
+                    homecrt = chkPrompt('* Do we need to create {0}? (y/{1}n{2}) '.format(homein, color.BOLD, color.END), syshelp)
+                    if re.match('^y(es)?$', homecrt):
+                        users[user]['homecreate'] = True
+                    else:
+                        users[user]['homecreate'] = False
                 else:
                     users[user]['home'] = False
-                homecrt = chkPrompt('* Do we need to create {0}? (y/{1}n{2}) '.format(homein, color.BOLD, color.END), syshelp)
-                if re.match('^y(es)?$', homecrt):
-                    users[user]['homecreate'] = True
-                else:
-                    users[user]['homecreate'] = False
                 del(syshelp[-1])
                 xgrouphelp = 'https://aif.square-r00t.net/#code_xgroup_code'
                 if xgrouphelp not in syshelp:
@@ -254,29 +263,35 @@ class aifgen(object):
                     morexgroups = False
                     users[user]['xgroups'] = False
                 while morexgroups:
-                    xgrp = chkPrompt('** What is the name of the group you would like to add? ', syshelp)
+                    xgrp = chkPrompt('** What is the name of the group you would like to add to {0}? '.format(user), syshelp)
                     if len(xgrp) > 32:
                         exit(' !! ERROR: Group names must be less than 32 characters.')
                     if not re.match('^[a-z_][a-z0-9_-]*[$]?$', xgrp):
                         exit(' !! ERROR: Your group name does not match a valid pattern. See the man page for groupadd (\'CAVEATS\').')
                     users[user]['xgroups'][xgrp] = {}
-                    xgrpcrt = chkPrompt('** Does {0} need to be created? (y/{1}n{2} '.format(xgrp, color.BOLD, color.END), syshelp)
+                    xgrpcrt = chkPrompt('** Does the group \'{0}\' need to be created? (y/{1}n{2}) '.format(xgrp, color.BOLD, color.END), syshelp)
                     if re.match('^y(es)?$', xgrpcrt.lower()):
                         users[user]['xgroups'][xgrp]['create'] = True
+                        xgrpgid = chkPrompt(('** What GID should {0} be? If the group will already exist on the new system or ' +
+                                            'don\'t care,\nleave this blank (should be fine for most cases): ').format(xgrp), syshelp)
+                        if xgrpgid != '':
+                            try:
+                                users[user]['xgroups'][xgrp]['gid'] = int(xgrpgid)
+                            except:
+                                exit(' !! ERROR: The GID must be an integer.')
+                        else:
+                            users[user]['xgroups'][xgrp]['gid'] = False
                     else:
                         users[user]['xgroups'][xgrp]['create'] = False
-                    xgrpgid = chkPrompt(('** What GID should {0} be? If the group will already exist on the new system or ' +
-                                        'don\'t care,\nleave this blank (should be fine for most cases): ').format(xgrp), syshelp)
-                    if xrpgid != '':
-                        try:
-                            users[user]['xgroups'][xgrp]['gid'] = int(xgrpid)
-                        except:
-                            exit(' !! ERROR: The GID must be an integer.')
-                    else:
                         users[user]['xgroups'][xgrp]['gid'] = False
-                    moreusersin = input('* Would you like to add additional extra groups for {0}? (y/{1}n{2}) '.format(user, color.BOLD, color.END))
-                    if not re.match('^y(es)?$', moreusersin.lower()):
+                    morexgrpsin = input('* Would you like to add additional extra groups for {0}? (y/{1}n{2}) '.format(user,
+                                                                                                                       color.BOLD,
+                                                                                                                       color.END))
+                    if not re.match('^y(es)?$', morexgrpsin.lower()):
                         morexgroups = False
+                moreusersin = chkPrompt('* Would you like to add additional users? (y/{0}n{1}) '.format(color.BOLD, color.END), syshelp)
+                if not re.match('^y(es)?$', moreusersin.lower()):
+                    moreusers = False
             return(users)
         def svcsPrompt(svchelp):
             svcs = {}
@@ -289,7 +304,7 @@ class aifgen(object):
                 if re.match('^no?$', svcstatusin.lower()):
                     svcs[svc] = False
                 else:
-                    svcs[svc] - True
+                    svcs[svc] = True
                 moreservices = input('* Would you like to manage another service? (y/{0}n{1}) '.format(color.BOLD, color.END))
                 if not re.match('^y(es)?$', moreservices.lower()):
                     moresvcs = False
@@ -474,10 +489,10 @@ class aifgen(object):
         conf = {}
         print('[{0}] Beginning configuration...'.format(datetime.datetime.now()))
         print('You may reply with \'wikihelp\' on the first prompt of a question for the relevant link(s) in the Arch wiki ' +
-              '(and other resources).\n')
+              '(and other resources).')
         # https://aif.square-r00t.net/#code_disk_code
         diskhelp = ['https://wiki.archlinux.org/index.php/installation_guide#Partition_the_disks']
-        diskin = chkPrompt('\nWhat disk(s) would you like to be configured on the target system?\n' +
+        diskin = chkPrompt('\n* What disk(s) would you like to be configured on the target system?\n' +
                        '\tIf you have multiple disks, separate with a comma (e.g. \'/dev/sda,/dev/sdb\'): ', diskhelp)
         # NOTE: the following is a dict of fstype codes to their description.
         fstypes = {'0700': 'Microsoft basic data', '0c01': 'Microsoft reserved', '2700': 'Windows RE', '3000': 'ONIE config', '3900': 'Plan 9', '4100': 'PowerPC PReP boot', '4200': 'Windows LDM data', '4201': 'Windows LDM metadata', '4202': 'Windows Storage Spaces', '7501': 'IBM GPFS', '7f00': 'ChromeOS kernel', '7f01': 'ChromeOS root', '7f02': 'ChromeOS reserved', '8200': 'Linux swap', '8300': 'Linux filesystem', '8301': 'Linux reserved', '8302': 'Linux /home', '8303': 'Linux x86 root (/)', '8304': 'Linux x86-64 root (/', '8305': 'Linux ARM64 root (/)', '8306': 'Linux /srv', '8307': 'Linux ARM32 root (/)', '8400': 'Intel Rapid Start', '8e00': 'Linux LVM', 'a500': 'FreeBSD disklabel', 'a501': 'FreeBSD boot', 'a502': 'FreeBSD swap', 'a503': 'FreeBSD UFS', 'a504': 'FreeBSD ZFS', 'a505': 'FreeBSD Vinum/RAID', 'a580': 'Midnight BSD data', 'a581': 'Midnight BSD boot', 'a582': 'Midnight BSD swap', 'a583': 'Midnight BSD UFS', 'a584': 'Midnight BSD ZFS', 'a585': 'Midnight BSD Vinum', 'a600': 'OpenBSD disklabel', 'a800': 'Apple UFS', 'a901': 'NetBSD swap', 'a902': 'NetBSD FFS', 'a903': 'NetBSD LFS', 'a904': 'NetBSD concatenated', 'a905': 'NetBSD encrypted', 'a906': 'NetBSD RAID', 'ab00': 'Recovery HD', 'af00': 'Apple HFS/HFS+', 'af01': 'Apple RAID', 'af02': 'Apple RAID offline', 'af03': 'Apple label', 'af04': 'AppleTV recovery', 'af05': 'Apple Core Storage', 'bc00': 'Acronis Secure Zone', 'be00': 'Solaris boot', 'bf00': 'Solaris root', 'bf01': 'Solaris /usr & Mac ZFS', 'bf02': 'Solaris swap', 'bf03': 'Solaris backup', 'bf04': 'Solaris /var', 'bf05': 'Solaris /home', 'bf06': 'Solaris alternate sector', 'bf07': 'Solaris Reserved 1', 'bf08': 'Solaris Reserved 2', 'bf09': 'Solaris Reserved 3', 'bf0a': 'Solaris Reserved 4', 'bf0b': 'Solaris Reserved 5', 'c001': 'HP-UX data', 'c002': 'HP-UX service', 'ea00': 'Freedesktop $BOOT', 'eb00': 'Haiku BFS', 'ed00': 'Sony system partition', 'ed01': 'Lenovo system partition', 'ef00': 'EFI System', 'ef01': 'MBR partition scheme', 'ef02': 'BIOS boot partition', 'f800': 'Ceph OSD', 'f801': 'Ceph dm-crypt OSD', 'f802': 'Ceph journal', 'f803': 'Ceph dm-crypt journal', 'f804': 'Ceph disk in creation', 'f805': 'Ceph dm-crypt disk in creation', 'fb00': 'VMWare VMFS', 'fb01': 'VMWare reserved', 'fc00': 'VMWare kcore crash protection', 'fd00': 'Linux RAID'}
@@ -487,8 +502,8 @@ class aifgen(object):
             if not re.match('^/dev/[A-Za-z0]+', disk):
                 exit('!! ERROR: Disk {0} does not seem to be a valid device path.'.format(disk))
             conf['disks'][disk] = {}
-            print('\nConfiguring disk {0} ...'.format(disk))
-            fmtin = chkPrompt('* What format should this disk use (gpt/bios)? ', diskhelp)
+            print('\n* Configuring disk {0} ...'.format(disk))
+            fmtin = chkPrompt('** What format should this disk use (gpt/bios)? ', diskhelp)
             fmt = fmtin.lower()
             if fmt not in ('gpt', 'bios'):
                 exit('  !! ERROR: Must be one of \'gpt\' or \'bios\'.')
@@ -498,7 +513,7 @@ class aifgen(object):
                 maxpart = '256'
             else:
                 maxpart = '4'  # yeah, extended volumes can do more, but that's not supported in AIF-NG. yet?
-            partnumsin = chkPrompt('* How many partitions should this disk have? (Maximum: {0}) '.format(maxpart), diskhelp)
+            partnumsin = chkPrompt('** How many partitions should this disk have? (Maximum: {0}) '.format(maxpart), diskhelp)
             try:
                 int(partnumsin)
             except:
@@ -525,10 +540,10 @@ class aifgen(object):
                 if fstypein not in fstypes.keys():
                     exit(' !! ERROR: {0} is not a valid filesystem type.'.format(fstypein))
                 else:
-                    print('\tSelected {0}'.format(fstypes[fstypein]))
+                    print('\t(Selected {0})'.format(fstypes[fstypein]))
         mnthelp = ['https://wiki.archlinux.org/index.php/installation_guide#Mount_the_file_systems',
                    'https://aif.square-r00t.net/#code_mount_code']
-        mntin = chkPrompt('\nWhat mountpoint(s) would you like to be configured on the target system?\n' +
+        mntin = chkPrompt('\n* What mountpoint(s) would you like to be configured on the target system?\n' +
                        '\tIf you have multiple mountpoints, separate with a comma (e.g. \'/mnt/aif,/mnt/aif/boot\').\n' +
                        '\t(NOTE: Can be \'swap\' for swapspace.): ', mnthelp)
         conf['mounts'] = {}
@@ -536,11 +551,11 @@ class aifgen(object):
             mount = m.strip()
             if not re.match('^(/([^/\x00\s]+(/)?)+|swap)$', mount):
                 exit('!! ERROR: Mountpoint {0} does not seem to be a valid path/specifier.'.format(mount))
-            print('\nConfiguring mountpoint {0} ...'.format(mount))
-            dvcin = chkPrompt('* What device/partition should be mounted here? ', mnthelp)
+            print('\n* Configuring mountpoint {0} ...'.format(mount))
+            dvcin = chkPrompt('** What device/partition should be mounted here? ', mnthelp)
             if not re.match('^/dev/[A-Za-z0]+', dvcin):
                 exit('  !! ERROR: Must be a full path to a device/partition.')
-            ordrin = chkPrompt('* What order should this mount occur in relation to others?\n\t'+
+            ordrin = chkPrompt('** What order should this mount occur in relation to others?\n\t'+
                                'Must be a unique integer (lower numbers mount before higher numbers): ', mnthelp)
             try:
                 order = int(ordrin)
@@ -551,30 +566,35 @@ class aifgen(object):
             conf['mounts'][order] = {}
             conf['mounts'][order]['target'] = mount
             conf['mounts'][order]['device'] = dvcin
-            fstypein = chkPrompt('* What filesystem type should this be mounted as (i.e. mount\'s -t option)? This is optional,\n\t' +
-                               'but may be required for more exotic filesystem types. If you don\'t have to specify one,\n\t' +
-                               'just leave this blank: ', mnthelp)
-            if fstypein == '':
+            if mount  != 'swap':
+                fstypein = chkPrompt('** What filesystem type should this be mounted as (i.e. mount\'s -t option)? This is optional,\n\t' +
+                                     'but may be required for more exotic filesystem types. If you don\'t have to specify one,\n\t' +
+                                     'just leave this blank: ', mnthelp)
+                if fstypein == '':
+                    conf['mounts'][order]['fstype'] = False
+                elif not re.match('^[a-z]+([0-9]+)?$', fstypein):  # Not 100%, but should catch most faulty entries
+                    exit(' !! ERROR: {0} does not seem to be a valid filesystem type.'.format(fstypein))
+                else:
+                    conf['mounts'][order]['fstype'] = fstypein
+                mntoptsin = chkPrompt('** What, if any, mount option(s) (mount\'s -o option) do you require? (Multiple options should be separated\n' +
+                                      '\twith a comma). If none, leave this blank: ', mnthelp)
+                if mntoptsin == '':
+                    conf['mounts'][order]['opts'] = False
+                elif not re.match('^[A-Za-z0-9_\.\-=]+(,[A-Za-z0-9_\.\-=]+)*', re.sub('\s', '', mntoptsin)):  # TODO: shlex split this instead?
+                    exit(' !! ERROR: You seem to have not specified valid mount options.')
+                else:
+                    # TODO: slex this instead? is it possible for mount opts to contain whitespace?
+                    conf['mounts'][order]['opts'] = re.sub('\s', '', mntoptsin)
+            else:
                 conf['mounts'][order]['fstype'] = False
-            elif not re.match('^[a-z]+([0-9]+)?$', fstypein):  # Not 100%, but should catch most faulty entries
-                exit(' !! ERROR: {0} does not seem to be a valid filesystem type.'.format(fstypein))
-            else:
-                conf['mounts'][order]['fstype'] = fstypein
-            mntoptsin = chkPrompt('* What, if any, mount option(s) (mount\'s -o option) do you require? (Multiple options should be separated\n' +
-                                  '\twith a comma). If none, leave this blank: ', mnthelp)
-            if mntoptsin == '':
                 conf['mounts'][order]['opts'] = False
-            elif not re.match('^[A-Za-z0-9_\.\-=]+(,[A-Za-z0-9_\.\-=]+)*', re.sub('\s', '', mntoptsin)):  # TODO: shlex split this instead?
-                exit(' !! ERROR: You seem to have not specified valid mount options.')
-            else:
-                # TODO: slex this instead? is it possible for mount opts to contain whitespace?
-                conf['mounts'][order]['opts'] = re.sub('\s', '', mntoptsin)
-        print('\nNow, let\'s configure the network. Note that at this time, wireless/more exotic networking is not supported by AIF-NG.\n')
+        print('\nNow, let\'s configure the network. Note that at this time,' +
+              '\twireless/more exotic networking is not supported by AIF-NG.\n')
         conf['network'] = {}
         nethelp = ['https://wiki.archlinux.org/index.php/installation_guide#Network_configuration',
                   'https://aif.square-r00t.net/#code_network_code']
-        hostnamein = chkPrompt('What should the newly-installed system\'s hostname be?\n\t' +
-                               'It must be in FQDN format, but can be a non-existent domain: ', nethelp)
+        hostnamein = chkPrompt('* What should the newly-installed system\'s hostname be?\n' +
+                               '\tIt must be in FQDN format, but can be a non-existent domain: ', nethelp)
         hostname = hostnamein.lower()
         if len(hostname) > 253:
             exit(' !! ERROR: A FQDN cannot be more than 253 characters (RFC 1035, 2.3.4)')
@@ -614,12 +634,12 @@ class aifgen(object):
         else:
             rebootme = False
         conf['system'] = {'timezone': tzin, 'locale': localein, 'chrootpath': chrootpathin, 'kbd': kbdin, 'reboot': rebootme}
-        syshelp[1] = 'https://aif.square-r00t.net/#code_users_code'
+        syshelp.append('https://aif.square-r00t.net/#code_users_code')
         print('\nNow let\'s handle some user accounts. For passwords, you can either enter the password you want to use,\n' +
               'a \'!\' (in which case TTY login will be disabled but e.g. SSH will still work), or just hit enter to leave it blank\n' +
               '(which is HIGHLY not recommended - it means anyone can login by just pressing enter at the login!)\n')
         print('Let\'s configure the root user.')
-        conf['system']['rootpass'] = genPassHash(root)
+        conf['system']['rootpass'] = genPassHash('root')
         moreusers = input('Would you like to add one or more regular user(s)? (y/{0}n{1}) '.format(color.BOLD, color.END))
         if re.match('^y(es)?$', moreusers.lower()):
             syshelp.append('https://aif.square-r00t.net/#code_user_code')
@@ -662,7 +682,9 @@ class aifgen(object):
                      'https://aif.square-r00t.net/#code_bootloader_code']
         conf['boot'] = {}
         btldrin = chkPrompt('* Almost done! Please choose a bootloader. ({0}grub{1}/systemd) '.format(color.BOLD, color.END), btldrhelp)
-        if not re.match('^(grub|systemd)$', btldrin.lower()):
+        if btldrin == '':
+            btldrin = 'grub'
+        elif not re.match('^(grub|systemd)$', btldrin.lower()):
             exit(' !! ERROR: You must choose a bootloader between grub or systemd.')
         else:
             conf['boot']['bootloader'] = btldrin.lower()
@@ -676,7 +698,7 @@ class aifgen(object):
                 conf['boot']['efi'] = True
                 bttgtstr = 'ESP (EFI System Partition)'
                 btrgx = re.compile('^/([^/\x00\s]+(/)?)+$')
-        bttgtin = chkPrompt('** What is the target for {0}? That is, the path to the {1}: '.format(btldrin.lower(), bttgtstr), btldrhelp)
+        bttgtin = chkPrompt('** What is the target for {0}? That is, the path to the {1} (within the chroot): '.format(btldrin.lower(), bttgtstr), btldrhelp)
         if not btrgx.match(bttgtin):
             exit(' !! ERROR: That doesn\'t seem to be a valid {0}.'.format(bttgtstr))
         else:
@@ -692,12 +714,14 @@ class aifgen(object):
         if self.args['verbose']:
             import pprint
             pprint.pprint(conf)
+        if self.args['verbose_raw']:
+            print(conf)
         return(conf)
     
     def convertJSON(self):
-        with open(args['inputfile'], 'r') as f:
+        with open(self.args['inputfile'], 'r') as f:
             try:
-                conf = json.loads(f.read())
+                conf = json.load(f)
             except:
                 exit(' !! ERROR: {0} does not seem to be a strict JSON file.'.format(args['inputfile']))
         return(conf)
@@ -723,7 +747,7 @@ class aifgen(object):
             conf = self.getOpts()
         elif self.args['oper'] == 'convert':
             conf = self.convertJSON()
-        if self.args['oper'] in ('create', 'convert'):
+        if self.args['oper'] in ('create', 'convert', 'validate'):
             self.validateXML()
 
 def parseArgs():
@@ -752,6 +776,11 @@ def parseArgs():
                             dest = 'verbose',
                             action = 'store_true',
                             help = 'Print the dict of raw values used to create the XML. Mostly/only useful for debugging.')
+    createargs.add_argument('-v:r',
+                            '--verbose-raw',
+                            dest = 'verbose_raw',
+                            action = 'store_true',
+                            help = 'Like -v, but prints the unformatted dict.')
     convertargs.add_argument('-i',
                              '--input',
                              dest = 'inputfile',
@@ -798,12 +827,7 @@ def main():
         # Once aifgen.main() is complete, we only need to call that.
         # That should handle all the below logic.
         aif = aifgen(verifyArgs(args))
-        if args['oper'] == 'create':
-            aif.getOpts()
-        if args['oper'] == 'validate':
-            aif.validateXML()
-        elif args['oper'] == 'convert':
-            aif.convertJSON()
+        aif.main()
 
 if __name__ == '__main__':
     main()
