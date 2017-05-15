@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 
-xmldebug = True
+xmldebug = False
+stdlibxmldebug = False
 
-if not xmldebug:
+if not stdlibxmldebug:
     try:
         from lxml import etree
         lxml_avail = True
@@ -431,6 +432,26 @@ class aifgen(object):
                     if not re.match('^y(es)?$', morereposin.lower()):
                         addrepos = False
             return(repos)
+        def mirrorPrompt(mirrorhelp):
+            moremirrors = False
+            mirrors = False
+            mirrorchk = chkPrompt('* Would you like to replace the default mirrorlist? (y/{0}n{1}) '.format(color.BOLD, color.END), mirrorhelp)
+            if re.match('^y(es)?$', mirrorchk.lower()):
+                moremirrors = True
+            while moremirrors:
+                if not isinstance(mirrors, list):
+                    mirrors = []
+                mirrorin = chkPrompt('** What is the URI for the mirror you would like to add?\n' +
+                                     '\tCan be one of the following types of URIs:\n' +
+                                     '\thttp://, https://, or file:// (for directories on the newly-installed system): ', mirrorhelp)
+                if mirrorin == '':
+                    exit(' !! ERROR: You cannot specify a blank mirror URI.')
+                else:
+                    mirrors.append(mirrorin)
+                moremirrorschk = chkPrompt('* Would you like to add another mirror? (y/{0}n{1}) '.format(color.BOLD, color.END), mirrorhelp)
+                if not re.match('^y(es)?$', moremirrorschk.lower()):
+                    moremirrors = False
+            return(mirrors)
         def pkgsPrompt(repohelp):
             pkgs = {}
             morepkgs = True
@@ -466,33 +487,33 @@ class aifgen(object):
                                      '\tMust be a unique integer ' +
                                      '(lower numbers execute before higher numbers): ').format(hook), scrpthlp)
                 try:
-                    order = int(ordrin)
+                    orderint = int(orderin)
                 except:
                     exit(' !! ERROR: Must be an integer')
                 if order in scrpts[hook].keys():
-                    exit(' !! ERROR: You already have a {0} script at that order number.'.format(order))
-                scrpts[hook][order] = {'uri': scrptin}
-                if re.match('^(https?|ftps?)://', scriptin.lower()):
+                    exit(' !! ERROR: You already have a {0} script at that order number.'.format(hook))
+                scrpts[hook][orderint] = {'uri': scrptin}
+                if re.match('^(https?|ftps?)://', scrptin.lower()):
                     authin = chkPrompt('** Does this script URI require auth? (y/{0}n{1}) '.format(color.BOLD, color.END), scrpthlp)
                     if re.match('^y(es)?$', authin.lower()):
-                        if re.match('^https?://', scriptin.lower()):
+                        if re.match('^https?://', scrptin.lower()):
                             authtype = chkPrompt(('*** What type of auth does this URI require? ' +
                                                   '({0}basic{1}/digest) ').format(color.BOLD, color.END), scrpthlp)
                             if authtype == '':
-                                scrpts[hook][order]['auth'] = 'basic'
-                            elif not re.match('^(basic|digest)$', authtype.lower()):
-                                scrpts[hook][order]['auth'] = authtype.lower()
+                                scrpts[hook][orderint]['auth'] = 'basic'
+                            elif re.match('^(basic|digest)$', authtype.lower()):
+                                scrpts[hook][orderint]['auth'] = authtype.lower()
                             else:
                                 exit(' !! ERROR: That is not a valid auth type.')
                             if authtype.lower() == 'digest':
                                 realmin = chkPrompt('*** Do you know the realm needed for authentication?\n' +
                                                     '\tIf not, just leave this blank and AIF-NG will try to guess: ', scrpthlp)
                                 if realmin != '':
-                                    scrpts[hook][order]['realm'] = realmin
-                        scrpts[hook][order]['user'] = chkPrompt('*** What user should we use for auth? ', scrpthlp)
-                        scrpts[hook][order]['password'] = chkPrompt('*** What password should we use for auth? ', scrpthlp)
+                                    scrpts[hook][orderint]['realm'] = realmin
+                        scrpts[hook][orderint]['user'] = chkPrompt('*** What user should we use for auth? ', scrpthlp)
+                        scrpts[hook][orderint]['password'] = chkPrompt('*** What password should we use for auth? ', scrpthlp)
                     else:
-                        scrpts[hook][order][auth] = False
+                        scrpts[hook][orderint][auth] = False
                 morescrptsin = chkPrompt('* Would you like to add another hook script? (y/{0}n{1}) '.format(color.BOLD, color.END), scrpthlp)
                 if not re.match('^y(es)?$', morescrptsin.lower()):
                     morescrpts = False
@@ -685,6 +706,10 @@ class aifgen(object):
         print('\n{0}=== REPOSITORIES/PACKAGES ==={1}'.format(color.BOLD, color.END))
         repohelp = ['https://aif.square-r00t.net/#code_repos_code']
         conf['software']['repos'] = repoPrompt(repohelp)
+        mirrorhelp = ['https://wiki.archlinux.org/index.php/installation_guide#Select_the_mirrors',
+                      'https://aif.square-r00t.net/#code_mirrorlist_code',
+                      'https://aif.square-r00t.net/#code_mirror_code']
+        conf['software']['mirrors'] = mirrorPrompt(mirrorhelp)
         if pkgrcmd == '':
             pkgrcmd = 'pacman --needed --noconfirm -S'
         pkgsin = chkPrompt(('* Would you like to install extra packages?\n' +
@@ -704,8 +729,8 @@ class aifgen(object):
             btldrin = 'grub'
         elif not re.match('^(grub|systemd)$', btldrin.lower()):
             exit(' !! ERROR: You must choose a bootloader between grub or systemd.')
-        else:
-            conf['boot']['bootloader'] = btldrin.lower()
+        
+        conf['boot']['bootloader'] = btldrin.lower()
         bttgtstr = 'boot partition/disk'
         btrgx = re.compile('^/dev/[A-Za-z0]+')
         if btldrin.lower() == 'grub':
@@ -790,7 +815,7 @@ class aifgen(object):
         for e in ('storage', 'network', 'system', 'pacman', 'bootloader'):
             root.append(etree.Element(e))
         # /aif/ optional sections
-        if conf['scripts']:
+        if 'scripts' in conf.keys() and conf['scripts']:
             root.append(etree.Element('scripts'))
         # /aif/storage
         strg = root.find('storage')
@@ -905,13 +930,86 @@ class aifgen(object):
             repo = etree.Element('repo', **o)
             repos.append(repo)
         pcmn.append(repos)
+        # /aif/pacman/mirrorlist
+        if 'mirrors' in conf['software'].keys() and conf['software']['mirrors']:
+            mrlst = etree.Element('mirrorlist')
+            for m in conf['software']['mirrors']:
+                # /aif/pacman/mirrorlist/mirror
+                mirror = etree.Element('mirror')
+                mirror.text = m
+                mrlst.append(mirror)
+            pcmn.append(mrlst)
+        # /aif/pacman/software
+        if 'packages' in conf['software'].keys() and conf['software']['packages']:
+            sftwr = etree.Element('software')
+            for p in conf['software']['packages'].keys():
+                # /aif/pacman/software/package
+                pkg = etree.Element('package')
+                pkg.set('name', p)
+                if conf['software']['packages'][p]:
+                    if conf['software']['packages'][p] not in (None, 'None'):  # fix JSON not parsing "None"
+                        pkg.set('repo', conf['software']['packages'][p])
+                sftwr.append(pkg)
+            pcmn.append(sftwr)
+        # /aif/bootloader
+        btldr = root.find('bootloader')
+        optmap = {'bttype': 'type', 'efi': 'efi', 'bttgt': 'target'}
+        opts = {}
+        opts['bttype'] = conf['boot']['bootloader']
+        opts['efi'] = str(conf['boot']['efi']).lower()
+        opts['bttgt'] = conf['boot']['target']
+        for k in optmap.keys():
+            btldr.set(optmap[k], opts[k])
+        # /aif/scripts
+        if 'scripts' in conf.keys() and conf['scripts']:
+            scrpts = root.find('scripts')
+            # /aif/scripts/script@execution
+            for t in ('pre', 'pkg', 'post'):
+                # /aif/scripts/script@order
+                if t in conf['scripts'].keys() and conf['scripts'][t]:
+                    for n in conf['scripts'][t].keys():
+                        # /aif/scripts/script@uri
+                        uri = conf['scripts'][t][n]['uri']
+                        scrpt = etree.Element('script', execution = t, order = n, uri = uri)
+                        # /aif/scripts/script@authtype
+                        if 'auth' in conf['scripts'][t][n].keys() and conf['scripts'][t][n]['auth']:
+                            scrpt.set('authtype', conf['scripts'][t][n]['auth'])
+                            # /aif/scripts/script@realm
+                            if conf['scripts'][t][n]['auth'] == 'digest':
+                                if 'realm' in conf['scripts'][t][n].keys():
+                                    scrpt.set('realm', conf['scripts'][t][n]['realm'])
+                            # /aif/scripts/script@user
+                            scrpt.set('user', conf['scripts'][t][n]['user'])
+                            # /aif/scripts/script@password
+                            scrpt.set('password', conf['scripts'][t][n]['password'])
+                        scrpts.append(scrpt)
         # debugging
+        if xmldebug:
+            if lxml_avail:
+                # LXML
+                print(etree.tostring(root, xml_declaration = True, encoding = 'utf-8', pretty_print = True).decode('utf-8'))
+            else:
+                # XML
+                import xml.dom.minidom
+                xmlstr = etree.tostring(root, encoding = 'utf-8')
+                # holy cats, the xml module sucks.
+                nsstr = ''
+                for ns in namespaces.keys():
+                    nsstr += ' xmlns:{0}="{1}"'.format(ns, namespaces[ns])
+                for x in xsi.keys():
+                    xsiname = x.split('}')[1]
+                    nsstr += ' xsi:{0}="{1}"'.format(xsiname, xsi[x])
+                outstr = xml.dom.minidom.parseString(xmlstr).toprettyxml(indent = '  ').splitlines()
+                outstr[0] = '<?xml version=\'1.0\' encoding=\'utf-8\'?>'
+                outstr[1] = '<aif{0}>'.format(nsstr)
+                print('\n'.join(outstr))
+            # end debugging
+        # https://stackoverflow.com/questions/4886189/python-namespaces-in-xml-elementtree-or-lxml
         if lxml_avail:
-            # LXML
-            #print(etree.tostring(root).decode('utf-8'))
-            print(etree.tostring(root, xml_declaration = True, encoding = 'utf-8', pretty_print = True).decode('utf-8'))
+            xml = etree.ElementTree(root)
+            with open(self.args['cfgfile'], 'wb') as f:
+                xml.write(f, xml_declaration = True, encoding='utf-8', pretty_print = True)
         else:
-            # XML
             import xml.dom.minidom
             xmlstr = etree.tostring(root, encoding = 'utf-8')
             # holy cats, the xml module sucks.
@@ -924,17 +1022,9 @@ class aifgen(object):
             outstr = xml.dom.minidom.parseString(xmlstr).toprettyxml(indent = '  ').splitlines()
             outstr[0] = '<?xml version=\'1.0\' encoding=\'utf-8\'?>'
             outstr[1] = '<aif{0}>'.format(nsstr)
-            print('\n'.join(outstr))
-        # end debugging
-        # https://stackoverflow.com/questions/4886189/python-namespaces-in-xml-elementtree-or-lxml
-        #if lxml_avail:
-            #xml.write(..., xml_declaration = True, encoding='utf-8')
-        #else:
-            #import xml.dom.minidom
-            #xmlstr = etree.tostring(root, encoding = 'utf-8')
-            #with open(self.args['cfgfile'], 'w') as f:  # TODO: test this. print() wrap it necessary?
-                #f.write(xml.dom.minidom.parseString(xmlstr).toprettyxml(indent = '  '))
-        return()
+            with open(self.args['cfgfile'], 'w') as f:  # TODO: test this. print() wrap it necessary?
+                f.write('\n'.join(outstr))
+        return(root)
 
     def main(self):
         if self.args['oper'] == 'create':

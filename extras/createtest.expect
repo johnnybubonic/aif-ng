@@ -154,6 +154,22 @@ send -- "\r"
 send -- "\r"
 # add additional repositories? default is no
 send -- "\r"
+# modify default mirrorlist?
+send -- "y\r"
+# URI for mirror
+send -- "http://mirrors.advancedhosters.com/archlinux/\$repo/os/\$arch\r"
+# add another?
+send -- "y\r"
+send -- "http://mirror.us.leaseweb.net/archlinux/\$repo/os/\$arch\r"
+send -- "y\r"
+send -- "http://arch.mirror.constant.com/\$repo/os/\$arch\r"
+send -- "y\r"
+send -- "http://mirror.vtti.vt.edu/archlinux/\$repo/os/\$arch\r"
+send -- "y\r"
+send -- "http://arch.mirrors.pair.com/\$repo/os/\$arch\r"
+send -- "y\r"
+send -- "http://mirror.yellowfiber.net/archlinux/\$repo/os/\$arch\r"
+send -- "\r"
 # install extra software?
 send -- "y\r"
 # software
@@ -169,5 +185,24 @@ send -- "\r"
 # ESP/EFI system partition
 send -- "/boot\r"
 # any hook scripts? default is no
+send -- "y\r"
+# pre, pkg, or post
+send -- "post\r"
+# script URI
+send -- "https://aif.square-r00t.net/sample-scripts/post/first.sh\r"
+# order for the execution run
+send -- "1\r"
+# auth required?
+send -- "y\r"
+# basic/digest? default is basic
+send -- "digest\r"
+# if digest, realm
+send -- "realmname\r"
+# user
+send -- "test\r"
+# password
+send -- "password\r"
+# would you like to add another script? default is no
 send -- "\r"
+interact
 expect eof

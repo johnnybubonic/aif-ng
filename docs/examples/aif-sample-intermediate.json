@@ -1,5 +1,6 @@
 {
     "boot": {
+        "bootloader": "grub",
         "efi": true,
         "target": "/boot"
     },
@@ -92,8 +93,28 @@
             }
         }
     },
-    "scripts": false,
+    "scripts": {
+        "pkg": false,
+        "post": {
+            "1": {
+                "auth": "digest",
+                "password": "password",
+                "realm": "realmname",
+                "uri": "https://aif.square-r00t.net/sample-scripts/post/first.sh",
+                "user": "test"
+            }
+        },
+        "pre": false
+    },
     "software": {
+        "mirrors": [
+            "http://mirrors.advancedhosters.com/archlinux/$repo/os/$arch",
+            "http://mirror.us.leaseweb.net/archlinux/$repo/os/$arch",
+            "http://arch.mirror.constant.com/$repo/os/$arch",
+            "http://mirror.vtti.vt.edu/archlinux/$repo/os/$arch",
+            "http://arch.mirrors.pair.com/$repo/os/$arch",
+            "http://mirror.yellowfiber.net/archlinux/$repo/os/$arch"
+        ],
         "packages": {
             "openssh": "None"
         },
@@ -136,7 +157,7 @@
         "kbd": "US",
         "locale": "en_US.UTF-8",
         "reboot": true,
-        "rootpass": "$6$OeSE5pp4BLWZUn6H$9Y.NO/2cUliOr.apu8qSmgmL4EbGei0u22cw1IANs0h6ek45t8bpHveY7rlHAlljd8PKIxvIRtY9bRCzV24h50",
+        "rootpass": "$6$aIK0xvxLa/9BTEDu$xFskR0cQcEi273I8dgUtyO7WjjhHUZOfyS6NemelPgfMJORxbjgI6QCW6wEcCh7NVA1qGDpS0Lyg9vDCaRnA9/",
         "services": {
             "sshd": true
         },
@@ -147,7 +168,7 @@
                 "gid": false,
                 "group": false,
                 "home": false,
-                "password": "$6$RCL/E8zPTHoYjITS$MsBQ9DXibdRvjE8a0ak8F2OCzShcRg3vKXSyLAipokaIJvTwFWwlLda1MQr6zTzUxlFui.9Ep4k3B8vdRyBX6.",
+                "password": "$6$arRyKn/VsusyJNQo$huX4aa1aJPzRMyyqeEw6IxC1KC1EKKJ8RXdQp6W68Yt7SVdHjwU/fEDvPb3xD3lUHOQ6ysLKWLkEXFNYxLpMf1",
                 "sudo": true,
                 "uid": false,
                 "xgroups": {
