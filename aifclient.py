@@ -404,7 +404,7 @@ class archInstall(object):
             disksize['max'] = subprocess.check_output(['sgdisk', '-E', d])
             for p in partnums:
                 # Need to do some mathz to get the actual sectors if we're using percentages.
-                for s in ('start', 'size'):
+                for s in ('start', 'stop'):
                     val = self.disk[d]['parts'][str(p)][s]
                     if '%' in val:
                         stripped = val.replace('%', '')
@@ -419,7 +419,7 @@ class archInstall(object):
                 for p in partnums:
                     size = {}
                     size['start'] = self.disk[d]['parts'][str(p)]['start']
-                    size['end'] = self.disk[d]['parts'][str(p)]['size']
+                    size['end'] = self.disk[d]['parts'][str(p)]['stop']
                     fstype = self.disk[d]['parts'][str(p)]['fstype'].lower()
                     if fstype not in fstypes.keys():
                         print('Filesystem type {0} is not valid. Must be a code from:\nCODE:FILESYSTEM'.format(fstype))
@@ -429,7 +429,7 @@ class archInstall(object):
                     cmds.append(['sgdisk',
                                  '-n', '{0}:{1}:{2}'.format(str(p),
                                                             self.disk[d]['parts'][str(p)]['start'],
-                                                            self.disk[d]['parts'][str(p)]['size']),
+                                                            self.disk[d]['parts'][str(p)]['stop']),
                                  #'-c', '{0}:"{1}"'.format(str(p), self.disk[d]['parts'][str(p)]['label']),  # TODO: add support for partition labels
                                  '-t', '{0}:{1}'.format(str(p), fstype),
                                  d])

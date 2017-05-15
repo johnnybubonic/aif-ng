@@ -217,12 +217,12 @@ The `/aif/storage/disk/part` element holds information on partitioning that it's
 ^|Attribute ^|Value
 ^m|num |The partition number (positive integer)
 ^m|start |The amount of the *total disk size* to _start_ the partition at (see <<specialsize, below>>)
-^m|size |The amount of the *total disk size* to _end_ the partition at (see <<specialsize, below>>)
+^m|stop |The amount of the *total disk size* to _end_ the partition at (see <<specialsize, below>>)
 ^m|fstype |The partition type. Must be in http://www.rodsbooks.com/gdisk/cgdisk-walkthrough.html[gdisk format^] (see <<fstypes, below>>)
 |======================
 
 [[specialsize]]
-The `start` and `size` attributes can be in the form of:
+The `start` and `stop` attributes can be in the form of:
 
 * A percentage, indicated by a percentage sign (`"10%"`)
 * A size, indicated by the abbreviation (`"300K"`, `"30G"`, etc.)

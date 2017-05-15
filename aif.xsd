@@ -144,7 +144,7 @@
 								<xs:complexType>
 									<xs:attribute name="num" type="xs:positiveInteger" use="required" />
 									<xs:attribute name="start" type="disksize" use="required" />
-									<xs:attribute name="size" type="disksize" use="required" />
+									<xs:attribute name="stop" type="disksize" use="required" />
 									<xs:attribute name="fstype" type="fstype" use="required" />
 								</xs:complexType>
 								<xs:unique name="unique-partnum">
