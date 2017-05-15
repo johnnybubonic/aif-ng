@@ -14,7 +14,8 @@ if {$force_conservative} {
 #set send_slow {10 .001}
 
 set timeout -1
-spawn ./aif-config.py create -v:r -f /tmp/aif.xml
+#spawn ./aif-config.py create -v:r -f /tmp/aif.xml
+spawn ./aif-config.py create -v -f /tmp/aif.xml
 ## disks
 send -- "/dev/sda,/dev/sdb\r"
 # sda

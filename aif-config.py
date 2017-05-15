@@ -1,11 +1,19 @@
 #!/usr/bin/env python3
 
-try:
-    from lxml import etree
-    lxml_avail = True
-except ImportError:
-    import xml.etree.ElementTree as etree  # https://docs.python.org/3/library/xml.etree.elementtree.html
+xmldebug = True
+
+if not xmldebug:
+    try:
+        from lxml import etree
+        lxml_avail = True
+    except ImportError:
+        import xml.etree.ElementTree as etree  # https://docs.python.org/3/library/xml.etree.elementtree.html
+        lxml_avail = False
+else:
+    # debugging
+    import xml.etree.ElementTree as etree
     lxml_avail = False
+    # end debugging
 import argparse
 import crypt
 import datetime
@@ -131,10 +139,10 @@ class aifgen(object):
         def ifacePrompt(nethelp):
             ifaces = {}
             moreIfaces = True
-            print('\nPlease enter the name of the interface you would like to use.\n' +
-                  '\tCan instead be \'auto\' for automatic configuration of the first found interface\n' +
-                  '\twith an active link. (You can only specify one auto device per system, and all subsequent\n'
-                  '\tinterface entries will be ignored.)\n')
+            print('\tNOTE: You must specify the "persistent device naming" name of the device when configuring.\n' +
+                  '\tYou can instead specify \'auto\' for automatic configuration of the first found interface\n' +
+                  '\twith an active link. (You can only specify one auto device per system, and all other\n'
+                  '\tinterface entries will be ignored by AIF-NG.)\n')
             while moreIfaces:
                 ifacein = chkPrompt('* Interface device: ', nethelp)
                 addrin = chkPrompt(('** Address for {0} in CIDR format (can be an IPv4 or IPv6 address; ' +
@@ -331,7 +339,7 @@ class aifgen(object):
                                   'enabled': False}}
             chkdefs = chkPrompt(('* Would you like to review the default repository configuration ' +
                                  '(and possibly edit it)? ({0}y{1}/n) ').format(color.BOLD, color.END), repohelp)
-            fmtstr = '{0} {1:<20} {2:^10} {3:^10} {4}'  # ('#', 'REPO', 'ENABLED', 'SIGLEVEL', 'URI')
+            fmtstr = '\t{0} {1:<20} {2:^10} {3:^10} {4}'  # ('#', 'REPO', 'ENABLED', 'SIGLEVEL', 'URI')
             if not re.match('^no?$', chkdefs.lower()):
                 print('{0}{1}{2}'.format(color.BOLD, fmtstr.format('#', 'REPO', 'ENABLED', 'SIGLEVEL', 'URI'), color.END))
                 rcnt = 1
@@ -491,12 +499,12 @@ class aifgen(object):
             return(scrpts)
         conf = {}
         print('[{0}] Beginning configuration...'.format(datetime.datetime.now()))
-        print('You may reply with \'wikihelp\' on the first prompt of a question for the relevant link(s) in the Arch wiki ' +
+        print('\n\tYou may reply with \'wikihelp\' on the first prompt of a question for the relevant link(s) in the Arch wiki ' +
               '(and other resources).')
         # https://aif.square-r00t.net/#code_disk_code
         diskhelp = ['https://wiki.archlinux.org/index.php/installation_guide#Partition_the_disks']
         print('{0}= DISKS ={1}'.format(color.BOLD, color.END))
-        diskin = chkPrompt('\n* What disk(s) would you like to be configured on the target system?\n' +
+        diskin = chkPrompt('* What disk(s) would you like to be configured on the target system?\n' +
                            '\tIf you have multiple disks, separate with a comma (e.g. \'/dev/sda,/dev/sdb\'): ', diskhelp)
         # NOTE: the following is a dict of fstype codes to their description.
         fstypes = {'0700': 'Microsoft basic data', '0c01': 'Microsoft reserved', '2700': 'Windows RE', '3000': 'ONIE config', '3900': 'Plan 9', '4100': 'PowerPC PReP boot', '4200': 'Windows LDM data', '4201': 'Windows LDM metadata', '4202': 'Windows Storage Spaces', '7501': 'IBM GPFS', '7f00': 'ChromeOS kernel', '7f01': 'ChromeOS root', '7f02': 'ChromeOS reserved', '8200': 'Linux swap', '8300': 'Linux filesystem', '8301': 'Linux reserved', '8302': 'Linux /home', '8303': 'Linux x86 root (/)', '8304': 'Linux x86-64 root (/', '8305': 'Linux ARM64 root (/)', '8306': 'Linux /srv', '8307': 'Linux ARM32 root (/)', '8400': 'Intel Rapid Start', '8e00': 'Linux LVM', 'a500': 'FreeBSD disklabel', 'a501': 'FreeBSD boot', 'a502': 'FreeBSD swap', 'a503': 'FreeBSD UFS', 'a504': 'FreeBSD ZFS', 'a505': 'FreeBSD Vinum/RAID', 'a580': 'Midnight BSD data', 'a581': 'Midnight BSD boot', 'a582': 'Midnight BSD swap', 'a583': 'Midnight BSD UFS', 'a584': 'Midnight BSD ZFS', 'a585': 'Midnight BSD Vinum', 'a600': 'OpenBSD disklabel', 'a800': 'Apple UFS', 'a901': 'NetBSD swap', 'a902': 'NetBSD FFS', 'a903': 'NetBSD LFS', 'a904': 'NetBSD concatenated', 'a905': 'NetBSD encrypted', 'a906': 'NetBSD RAID', 'ab00': 'Recovery HD', 'af00': 'Apple HFS/HFS+', 'af01': 'Apple RAID', 'af02': 'Apple RAID offline', 'af03': 'Apple label', 'af04': 'AppleTV recovery', 'af05': 'Apple Core Storage', 'bc00': 'Acronis Secure Zone', 'be00': 'Solaris boot', 'bf00': 'Solaris root', 'bf01': 'Solaris /usr & Mac ZFS', 'bf02': 'Solaris swap', 'bf03': 'Solaris backup', 'bf04': 'Solaris /var', 'bf05': 'Solaris /home', 'bf06': 'Solaris alternate sector', 'bf07': 'Solaris Reserved 1', 'bf08': 'Solaris Reserved 2', 'bf09': 'Solaris Reserved 3', 'bf0a': 'Solaris Reserved 4', 'bf0b': 'Solaris Reserved 5', 'c001': 'HP-UX data', 'c002': 'HP-UX service', 'ea00': 'Freedesktop $BOOT', 'eb00': 'Haiku BFS', 'ed00': 'Sony system partition', 'ed01': 'Lenovo system partition', 'ef00': 'EFI System', 'ef01': 'MBR partition scheme', 'ef02': 'BIOS boot partition', 'f800': 'Ceph OSD', 'f801': 'Ceph dm-crypt OSD', 'f802': 'Ceph journal', 'f803': 'Ceph dm-crypt journal', 'f804': 'Ceph disk in creation', 'f805': 'Ceph dm-crypt disk in creation', 'fb00': 'VMWare VMFS', 'fb01': 'VMWare reserved', 'fc00': 'VMWare kcore crash protection', 'fd00': 'Linux RAID'}
@@ -546,18 +554,19 @@ class aifgen(object):
                     exit(' !! ERROR: {0} is not a valid filesystem type.'.format(fstypein))
                 else:
                     print('\t(Selected {0})'.format(fstypes[fstypein]))
+                    conf['disks'][disk]['parts'][partn]['fstype'] = fstypein
         mnthelp = ['https://wiki.archlinux.org/index.php/installation_guide#Mount_the_file_systems',
                    'https://aif.square-r00t.net/#code_mount_code']
-        print('{0}= MOUNTS ={1}'.format(color.BOLD, color.END))
-        mntin = chkPrompt('\n* What mountpoint(s) would you like to be configured on the target system?\n' +
-                       '\tIf you have multiple mountpoints, separate with a comma (e.g. \'/mnt/aif,/mnt/aif/boot\').\n' +
-                       '\t(NOTE: Can be \'swap\' for swapspace.): ', mnthelp)
+        print('\n{0}= MOUNTS ={1}'.format(color.BOLD, color.END))
+        mntin = chkPrompt('* What mountpoint(s) would you like to be configured on the target system?\n' +
+                          '\tIf you have multiple mountpoints, separate with a comma (e.g. \'/mnt/aif,/mnt/aif/boot\').\n' +
+                          '\t(NOTE: Can be \'swap\' for swapspace.): ', mnthelp)
         conf['mounts'] = {}
         for m in mntin.split(','):
             mount = m.strip()
             if not re.match('^(/([^/\x00\s]+(/)?)+|swap)$', mount):
                 exit('!! ERROR: Mountpoint {0} does not seem to be a valid path/specifier.'.format(mount))
-            print('\n{0}==MOUNT {1}=={2}'.format(color.BOLD, mount, color.END))
+            print('\n{0}== MOUNT: {1} =={2}'.format(color.BOLD, mount, color.END))
             dvcin = chkPrompt('* What device/partition should be mounted here? ', mnthelp)
             if not re.match('^/dev/[A-Za-z0]+', dvcin):
                 exit('  !! ERROR: Must be a full path to a device/partition.')
@@ -717,10 +726,13 @@ class aifgen(object):
         scrptsin = chkPrompt('* Do you have any hook scripts you\'d like to add? (y/{0}n{1}) '.format(color.BOLD, color.END), scrpthlp)
         if re.match('^y(es)?$', scrptsin.lower()):
             conf['scripts'] = scrptPrompt(scrpthlp)
-        print('\n\n{0}ALL DONE!{1} Whew. You can find your configuration file at: {2}{3}{1}\n'.format(color.BOLD,
-                                                                                                      color.END,
-                                                                                                      color.BLUE,
-                                                                                                      self.args['cfgfile']))
+        else:
+            conf['scripts'] = False
+        print('\n\n[{0}] {1}ALL DONE!{2} Whew. You can find your configuration file at: {3}{4}{2}\n'.format(datetime.datetime.now(),
+                                                                                                            color.BOLD,
+                                                                                                            color.END,
+                                                                                                            color.BLUE,
+                                                                                                            self.args['cfgfile']))
         if self.args['verbose']:
             import pprint
             pprint.pprint(conf)
@@ -739,7 +751,9 @@ class aifgen(object):
     def validateXML(self):
         # First we validate the XSD.
         if not lxml_avail:
-            exit('\nXML validation is only supported by LXML.\nIf you want to validate the XML, install the lxml python module (python-lxml) and try again.\n')
+            exit('\nXML validation is only supported by LXML.\n' +
+                 'If you want to validate the XML, install the lxml python module (python-lxml) ' +
+                 'and run:\n\t{0} validate -f {1}.\n'.format(sys.argv[0], self.args['cfgfile']))
         try:
             xsd = etree.XMLSchema(self.getXSD())
             print('\nXSD: {0}PASSED{1}'.format(color.BOLD, color.END))
@@ -753,11 +767,174 @@ class aifgen(object):
             print('XML: {0}FAILED{1}: {2}\n'.format(color.BOLD, color.END, e))
 
     def genXMLFile(self, conf):
+        namespaces = {'aif': 'http://aif.square-r00t.net/', 'xsi': 'http://www.w3.org/2001/XMLSchema-instance'}
+        xsi = {'{http://www.w3.org/2001/XMLSchema-instance}schemaLocation' : 'http://aif.square-r00t.net aif.xsd'}
+        #for ns in namespaces.keys():
+        #    etree.register_namespace(ns, namespaces[ns])
         if lxml_avail:
-            root = etree.Element('aif')
+            genname = 'LXML (http://lxml.de/)'
+            root = etree.Element('aif', nsmap = namespaces, attrib = xsi)
+            #xml = etree.ElementTree(root)
         else:
-            root = etree.ElementTree.Element('aif')
-        pass
+            genname = 'Python stdlib "xml" module'
+            for ns in namespaces.keys():
+                etree.register_namespace(ns, namespaces[ns])
+            root = etree.Element('aif')
+        if self.args['oper'] == 'convert':
+            fromstr = self.args['inputfile']
+        else:
+            fromstr = 'interactive commandline'
+        root.append(etree.Comment('Generated by {0} on {1} from {2} via {3}'.format(sys.argv[0], datetime.datetime.now(), fromstr, genname)))
+        root.append(etree.Comment('THIS FILE CONTAINS SENSITIVE INFORMATION. SHARE/SCRUB WISELY.'))
+        # /aif/ required sections
+        for e in ('storage', 'network', 'system', 'pacman', 'bootloader'):
+            root.append(etree.Element(e))
+        # /aif/ optional sections
+        if conf['scripts']:
+            root.append(etree.Element('scripts'))
+        # /aif/storage
+        strg = root.find('storage')
+        for d in conf['disks'].keys():
+            # /aif/storage/disk
+            disk = etree.Element('disk', device = d, diskfmt = conf['disks'][d]['fmt'])
+            for p in conf['disks'][d]['parts'].keys():
+                # /aif/storage/disk/part
+                start = conf['disks'][d]['parts'][p]['start']
+                stop = conf['disks'][d]['parts'][p]['stop']
+                fstype = conf['disks'][d]['parts'][p]['fstype']
+                disk.append(etree.Element('part', num = p, start = start, stop = stop, fstype = fstype))
+            strg.append(disk)
+        # /aif/storage/mount
+        for m in conf['mounts'].keys():
+            mnt = {}
+            mnt['order'] = m
+            mnt['source'] = conf['mounts'][m]['device']
+            mnt['target'] = conf['mounts'][m]['target']
+            # These are optional, hence the splat and mnt dict.
+            for o in ('fstype', 'opts'):
+                if o in conf['mounts'][m].keys() and conf['mounts'][m][o]:
+                    mnt[o] = conf['mounts'][m][o]
+            mount = etree.Element('mount', **mnt)
+            strg.append(mount)
+        # /aif/network
+        ntwk = root.find('network')
+        ntwk.set('hostname', conf['network']['hostname'])
+        for i in conf['network']['ifaces'].keys():
+            # /aif/network/iface
+            optmap = {'gw': 'gateway', 'proto': 'netproto', 'resolvers': 'resolvers'}
+            iface = {}
+            iface['device'] = i
+            iface['address'] = conf['network']['ifaces'][i]['address']
+            for o in optmap.keys():
+                if conf['network']['ifaces'][i][o]:
+                    if o == 'resolvers':
+                        iface[optmap[o]] = ','.join(conf['network']['ifaces'][i][o])
+                    else:
+                        iface[optmap[o]] = conf['network']['ifaces'][i][o]
+            interface = etree.Element('iface', **iface)
+            ntwk.append(interface)
+        # /aif/system
+        systm = root.find('system')
+        for a in ('timezone', 'locale', 'chrootpath', 'kbd', 'reboot'):
+            if isinstance(conf['system'][a], bool):
+                val = str(conf['system'][a]).lower()
+            else:
+                val = conf['system'][a]
+            systm.set(a, val)
+        # /aif/system/users
+        usrs = etree.Element('users', rootpass = conf['system']['rootpass'])
+        subs = ('home', 'xgroups')
+        optional = ('uid', 'group', 'gid')
+        if conf['system']['users']:
+            for u in conf['system']['users'].keys():
+                # /aif/system/users/user
+                o = {}
+                o['name'] = u
+                for i in conf['system']['users'][u].keys():
+                    if isinstance(conf['system']['users'][u][i], bool):
+                        val = str(conf['system']['users'][u][i]).lower()
+                    else:
+                        val = conf['system']['users'][u][i]
+                    if i not in subs:  # we handle "subs" as subelements
+                        if i in optional:  # and we only add optional attribs if they're populated
+                            if conf['system']['users'][u][i]:
+                                o[i] = val
+                        else:
+                            o[i] = val
+                user = etree.Element('user', **o)
+                # /aif/system/users/user/home
+                if conf['system']['users'][u]['home']:
+                    o = {}
+                    o['create'] = str(conf['system']['users'][u]['home']['create']).lower()
+                    if 'path' in conf['system']['users'][u]['home'].keys():
+                        o['path'] = conf['system']['users'][u]['home']['path']
+                    home = etree.Element('home', **o)
+                    user.append(home)
+                # /aig/system/users/user/xgroup
+                if conf['system']['users'][u]['xgroups']:
+                    for g in conf['system']['users'][u]['xgroups'].keys():
+                        o = {}
+                        o['name'] = g
+                        o['create'] = str(conf['system']['users'][u]['xgroups'][g]['create']).lower()
+                        if 'gid' in conf['system']['users'][u]['xgroups'][g].keys() and conf['system']['users'][u]['xgroups'][g]['gid']:
+                            o['gid'] = conf['system']['users'][u]['xgroups'][g]['gid']
+                        xgrp = etree.Element('xgroup', **o)
+                        user.append(xgrp)
+                usrs.append(user)
+        systm.append(usrs)
+        # /aif/system/service
+        if conf['system']['services']:
+            for s in conf['system']['services'].keys():
+                o = {}
+                o['name'] = s
+                o['status'] = str(conf['system']['services'][s]).lower()
+                svc = etree.Element('service', **o)
+                systm.append(svc)
+        # /aif/pacman
+        pcmn = root.find('pacman')
+        if conf['software']['pkgr']:
+            pcmn.set('command', conf['software']['pkgr'])
+        # /aif/pacman/repo
+        repos = etree.Element('repos')
+        for r in conf['software']['repos'].keys():
+            o = {}
+            o['name'] = r
+            o['enabled'] = str(conf['software']['repos'][r]['enabled']).lower()
+            o['siglevel'] = conf['software']['repos'][r]['siglevel']
+            o['mirror'] = conf['software']['repos'][r]['mirror']
+            repo = etree.Element('repo', **o)
+            repos.append(repo)
+        pcmn.append(repos)
+        # debugging
+        if lxml_avail:
+            # LXML
+            #print(etree.tostring(root).decode('utf-8'))
+            print(etree.tostring(root, xml_declaration = True, encoding = 'utf-8', pretty_print = True).decode('utf-8'))
+        else:
+            # XML
+            import xml.dom.minidom
+            xmlstr = etree.tostring(root, encoding = 'utf-8')
+            # holy cats, the xml module sucks.
+            nsstr = ''
+            for ns in namespaces.keys():
+                nsstr += ' xmlns:{0}="{1}"'.format(ns, namespaces[ns])
+            for x in xsi.keys():
+                xsiname = x.split('}')[1]
+                nsstr += ' xsi:{0}="{1}"'.format(xsiname, xsi[x])
+            outstr = xml.dom.minidom.parseString(xmlstr).toprettyxml(indent = '  ').splitlines()
+            outstr[0] = '<?xml version=\'1.0\' encoding=\'utf-8\'?>'
+            outstr[1] = '<aif{0}>'.format(nsstr)
+            print('\n'.join(outstr))
+        # end debugging
+        # https://stackoverflow.com/questions/4886189/python-namespaces-in-xml-elementtree-or-lxml
+        #if lxml_avail:
+            #xml.write(..., xml_declaration = True, encoding='utf-8')
+        #else:
+            #import xml.dom.minidom
+            #xmlstr = etree.tostring(root, encoding = 'utf-8')
+            #with open(self.args['cfgfile'], 'w') as f:  # TODO: test this. print() wrap it necessary?
+                #f.write(xml.dom.minidom.parseString(xmlstr).toprettyxml(indent = '  '))
+        return()
 
     def main(self):
         if self.args['oper'] == 'create':

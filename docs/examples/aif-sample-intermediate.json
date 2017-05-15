@@ -8,10 +8,12 @@
             "fmt": "gpt",
             "parts": {
                 "1": {
+                    "fstype": "8300",
                     "start": "0%",
                     "stop": "95%"
                 },
                 "2": {
+                    "fstype": "ef00",
                     "start": "95%",
                     "stop": "100%"
                 }
@@ -21,14 +23,17 @@
             "fmt": "gpt",
             "parts": {
                 "1": {
+                    "fstype": "8300",
                     "start": "0%",
                     "stop": "47%"
                 },
                 "2": {
+                    "fstype": "8300",
                     "start": "47%",
                     "stop": "95%"
                 },
                 "3": {
+                    "fstype": "8200",
                     "start": "95%",
                     "stop": "100%"
                 }
@@ -87,6 +92,7 @@
             }
         }
     },
+    "scripts": false,
     "software": {
         "packages": {
             "openssh": "None"
@@ -130,7 +136,7 @@
         "kbd": "US",
         "locale": "en_US.UTF-8",
         "reboot": true,
-        "rootpass": "$6$0jk/xhwahQHTi5QP$VWTgGlHNdSBDbQmJXUwJPZqajfL3JqYYF7Ghxk3ZSKi12WWXb49KsjR7q0bigvgBBBk5A/mvYES3/qareytFS0",
+        "rootpass": "$6$OeSE5pp4BLWZUn6H$9Y.NO/2cUliOr.apu8qSmgmL4EbGei0u22cw1IANs0h6ek45t8bpHveY7rlHAlljd8PKIxvIRtY9bRCzV24h50",
         "services": {
             "sshd": true
         },
@@ -141,7 +147,7 @@
                 "gid": false,
                 "group": false,
                 "home": false,
-                "password": "$6$IlEwDkNmZRuTrT97$vKHjREGspspApBd8aQ/y1S43yRmGMjAzqOmdjNRLWaZyNKqGPrIjMHV9CJc7BzQgU12pRz3cwC6yyc8BDFARu/",
+                "password": "$6$RCL/E8zPTHoYjITS$MsBQ9DXibdRvjE8a0ak8F2OCzShcRg3vKXSyLAipokaIJvTwFWwlLda1MQr6zTzUxlFui.9Ep4k3B8vdRyBX6.",
                 "sudo": true,
                 "uid": false,
                 "xgroups": {

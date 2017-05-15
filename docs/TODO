@@ -5,8 +5,8 @@
 - how to support mdadm, lvm?
 - support serverside "autoconfig"- a mechanism to let servers automatically generate xml build configs. e.g.:
 	kernel ... aif_url="https://build.domain.tld/aif-ng.php" auto=yes
-  would yield the *client* sending info via URL params, e.g.
-	https://build.domain.tld/aif-ng.php?disk[]=sda&disk[]=sdb&disk[sda]=300GB&disk[sdb]=500GB
+  would yield the *client* sending info via URL params (actually, this might be better as a JSON POST, since we already have a way to generate JSON. sort of.),
+		e.g. https://build.domain.tld/aif-ng.php?disk[]=sda&disk[]=sdb&disk[sda]=300GB&disk[sdb]=500GB (can have it so that the autoconfig is only supported clientside if pyyaml is installed)
   or something like that.
 - parser: make sure to use https://mikeknoop.com/lxml-xxe-exploit/ fix
 - convert use of confobj or whatever to maybe be suitable to use webFetch instead. LOTS of duplicated code there.
@@ -23,13 +23,14 @@
 	run on /mnt/aif/run type tmpfs (rw,nosuid,nodev,relatime,mode=755)
 	tmp on /mnt/aif/tmp type tmpfs (rw,nosuid,nodev)
 
-DOCUMENTATION: aif-config.py (and note sample yaml as well)
-also need to add users, xgroups, etc. etc. etc. into the getOpts
+DOCUMENTATION: aif-config.py (and note sample json as well)
+-finish genXML() or whatever i call it
+-add <mirrorlist><mirror><mirror/><mirrorlist/> support- to both the config run and the XML generator
 
 also create:
 -create boot media with bdisk since default arch doesn't even have python 3
 -- this is.. sort of? done. but iPXE/mini build is failing, need to investigate why
-
+-- i tihnk i fixed iPXE but i need to generate another one once 1.5 is released
 docs:
 http://lxml.de/parsing.html
 https://www.w3.org/2001/XMLSchema.xsd
