@@ -182,7 +182,6 @@ Currently, only one method of logging is enabled, and is always enabled. It can 
 == Debugging
 Sometimes it's useful to get a little more information, or to start an installation from within an already-booted environment and you didn't remember (or weren't able to) change the kernel parameters. If this is the case, simply export the `DEBUG` environment variable (it can be set to anything, it doesn't matter) -- if this is done, the arguments will be read from /tmp/cmdline instead. e.g.:
 
- rm -f *
  export DEBUG=true
  cp /proc/cmdline /tmp/.
  chmod 600 /tmp/cmdline
