@@ -540,7 +540,7 @@ There are several script types availabe for `execution`. Currently, these are:
 * pkg
 * post
 
-*pre* scripts are run (in numerical `order`) before the disks are even formatted. *pkg* scripts are run (in numerical `order`) right before the <<code_package_code, packages>> are installed (this allows you to configure an <<command, alternate packager>> such as https://aur.archlinux.org/packages/apacman/[apacman^]) -- these are run *inside* the chroot of the new install. *pre* scripts are run inside the chroot like *pkg*, but are executed very last thing, just before the reboot.
+*pre* scripts are run (in numerical `order`) before the disks are even formatted. *pkg* scripts are run (in numerical `order`) right before the <<code_package_code, packages>> are installed (this allows you to configure an <<command, alternate packager>> such as https://aur.archlinux.org/packages/apacman/[apacman^]) -- these are run *inside* the chroot of the new install. *post* scripts are run inside the chroot like *pkg*, but are executed very last thing, just before the reboot.
 
 = Further Information
 Here you will find further info, other resources, and such relating to AIF-NG.
