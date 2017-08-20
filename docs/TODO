@@ -1,3 +1,4 @@
+- support Arch Linux ARM?
 - support multiple explicit locales via comma-separated list (see how i handle resolvers)
 - config layout
 -- need to apply defaults and annotate/document
@@ -24,8 +25,8 @@
 	tmp on /mnt/aif/tmp type tmpfs (rw,nosuid,nodev)
 
 DOCUMENTATION: aif-config.py (and note sample json as well)
--finish genXML() or whatever i call it
--add <mirrorlist><mirror><mirror/><mirrorlist/> support- to both the config run and the XML generator
+
+for network configuration, add in support for using a device's MAC address instead of interface name
 
 also create:
 -create boot media with bdisk since default arch doesn't even have python 3
