@@ -152,7 +152,7 @@ The recommended option is to use https://bdisk.square-r00t.net/[BDisk^] (the aut
 . `echo "aif-git" > *<BDisk directory>*/extra/pre-build.d/root/packages.both`
 . If you want automatic root login on TTY1 like the Arch install ISO (optional):
 .. `mkdir -p *<BDisk directory>*/overlay/etc/systemd/system/getty\@tty1.service.d`
-.. `printf '[Service]\nType=idle\nExecStart=\nExecStart=-/usr/bin/agetty --autologin root --noclear %%I 38400 linux\n' > *<BDisk directory>*/overlay/etc/systemd/system/getty\@tty1.service.d`
+.. `printf '[Service]\nType=idle\nExecStart=\nExecStart=-/usr/bin/agetty --autologin root --noclear %%I 38400 linux\n' > *<BDisk directory>*/overlay/etc/systemd/system/getty\@tty1.service.d/autologin.conf`
 ... (NOTE: This is all one line.)
 
 Remember to also create a https://bdisk.square-r00t.net/#the_code_build_ini_code_file[build.ini file^]. You can find a compatible one https://git.square-r00t.net/AIF-NG/plain/extras/bdisk.build.ini[here^] (but remember to tailor it to your particular paths and needs first!).
