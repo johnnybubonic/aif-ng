@@ -3,352 +3,358 @@
            targetNamespace="http://aif.square-r00t.net"
            xmlns="http://aif.square-r00t.net"
            elementFormDefault="qualified">
-<xs:annotation>
-	<xs:documentation>
-		See https://aif.square-r00t.net/ for more information about this project.
-	</xs:documentation>
-</xs:annotation>
-<!-- GLOBAL CUSTOM DATA TYPES -->
- 	<xs:simpleType name="diskdev">
-		<xs:annotation>
-			<xs:documentation>
-				This element specifies a type to be used for validating storage devices, such as hard disks or mdadm-managed devices.
-			</xs:documentation>
-		</xs:annotation>
-		<xs:restriction base="xs:string">
-			<xs:pattern value="/dev/([A-Za-z0-9_]+/)?[A-Za-z0-9_]+[0-9]?" />
-		</xs:restriction>
-	</xs:simpleType>
+    <xs:annotation>
+        <xs:documentation>
+            See https://aif.square-r00t.net/ for more information about this project.
+        </xs:documentation>
+    </xs:annotation>
+    <!-- GLOBAL CUSTOM DATA TYPES -->
+    <xs:simpleType name="diskdev">
+        <xs:annotation>
+            <xs:documentation>
+                This element specifies a type to be used for validating storage devices, such as hard disks or
+                mdadm-managed devices.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:restriction base="xs:string">
+            <xs:pattern value="/dev/([A-Za-z0-9_]+/)?[A-Za-z0-9_]+[0-9]?"/>
+        </xs:restriction>
+    </xs:simpleType>
 
-	<xs:simpleType name="diskfmt">
-		<xs:annotation>
-			<xs:documentation>
-				This element specifies a type to validate what kind of disk formatting. Accepts either GPT or BIOS (for MBR systems) only.
-			</xs:documentation>
-		</xs:annotation>
-		<xs:restriction base="xs:string">
-			<xs:pattern value="([Gg][Pp][Tt]|[Bb][Ii][Oo][Ss])" />
-		</xs:restriction>
-	</xs:simpleType>
+    <xs:simpleType name="diskfmt">
+        <xs:annotation>
+            <xs:documentation>
+                This element specifies a type to validate what kind of disk formatting. Accepts either GPT or BIOS (for
+                MBR systems) only.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:restriction base="xs:string">
+            <xs:pattern value="([Gg][Pp][Tt]|[Bb][Ii][Oo][Ss])"/>
+        </xs:restriction>
+    </xs:simpleType>
 
-	<xs:simpleType name="disksize">
-		<xs:annotation>
-			<xs:documentation>
-				This element validates a disk size specification for a partition. Same rules apply as those in parted's size specification.
-			</xs:documentation>
-		</xs:annotation>
-		<xs:restriction base="xs:string">
-			<xs:pattern value="(\+|\-)?[0-9]+([KMGTP]|%)" />
-		</xs:restriction>
-	</xs:simpleType>
+    <xs:simpleType name="disksize">
+        <xs:annotation>
+            <xs:documentation>
+                This element validates a disk size specification for a partition. Same rules apply as those in parted's
+                size specification.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:restriction base="xs:string">
+            <xs:pattern value="(\+|\-)?[0-9]+([KMGTP]|%)"/>
+        </xs:restriction>
+    </xs:simpleType>
 
-  <xs:simpleType name="fstype">
-		<xs:annotation>
-			<xs:documentation>
-				This element validates a filesystem type to be specified for formatting a partition. See sgdisk -L (or the table at http://www.rodsbooks.com/gdisk/walkthrough.html) for valid filesystem codes.
-			</xs:documentation>
-		</xs:annotation>
-		<xs:restriction base="xs:token">
-			<xs:pattern value="[a-z0-9]+" />
-		</xs:restriction>
-	</xs:simpleType>
-	
-	<xs:simpleType name="mntopts">
-		<xs:restriction base="xs:token">
-			<xs:pattern value="[A-Za-z0-9_\.\-]+(,[A-Za-z0-9_\.\-]+)*" />
-		</xs:restriction>
-	</xs:simpleType>
+    <xs:simpleType name="fstype">
+        <xs:annotation>
+            <xs:documentation>
+                This element validates a filesystem type to be specified for formatting a partition. See sgdisk -L (or
+                the table at http://www.rodsbooks.com/gdisk/walkthrough.html) for valid filesystem codes.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:restriction base="xs:token">
+            <xs:pattern value="[a-z0-9]+"/>
+        </xs:restriction>
+    </xs:simpleType>
 
-	<xs:simpleType name="iface">
-		<xs:restriction base="xs:token">
-			<!-- https://github.com/systemd/systemd/blob/master/src/udev/udev-builtin-net_id.c#L20 lines 30-47. i have no idea if this will work. TODO: simplify, validate in-code. -->
-			<xs:pattern value="(auto|((en|sl|wl|ww)(b[0-9]+|c[a-z0-9]|o[0-9]+(n.*(d.*)?)?|s[0-9]+(f.*)?((n|d).*)?|x([A-Fa-f0-9]:){5}[A-Fa-f0-9]|(P.*)?p[0-9]+s[0-9]+(((f|n|d).*)|u.*)?)))" />
-		</xs:restriction>
-	</xs:simpleType>
-	
-	<xs:simpleType name="netaddress">
-		<xs:restriction base="xs:string">
-			<!-- this is a REALLY LAZY regex. matching IPv4 and IPv6 in regex is ugly as heck, so we do that in-code. this is just a gatekeeper. -->
-			<xs:pattern value="(auto|[0-9\.]+/[0-9]{,2}|([A-Za-z0-9:]+)/[0-9]+)" />
-		</xs:restriction>
-	</xs:simpleType>
-	
-	<xs:simpleType name="netproto">
-		<xs:restriction base="xs:token">
-			<xs:pattern value="(both|ipv4|ipv6)" />
-		</xs:restriction>
-	</xs:simpleType>
-	
-	<xs:simpleType name="scripturi">
-		<xs:restriction base="xs:anyURI">
-			<xs:pattern value="(https?|ftps?|file)://" />
-		</xs:restriction>
-	</xs:simpleType>
-	
-	<xs:simpleType name="devlang">
-		<xs:restriction base="xs:token">
-			<xs:pattern value="/(usr/)?s?bin/[A-Za-z0-9][A-Za-z\.\-]?" />
-		</xs:restriction>
-	</xs:simpleType>
-	
-	<xs:simpleType name="nixgroup">
-		<xs:restriction base="xs:token">
-			<xs:pattern value="[_a-z][-0-9_a-z]*$?" />
-		</xs:restriction>
-	</xs:simpleType>
-	
-	<xs:simpleType name="nixpass">
-		<xs:restriction base="xs:token">
-			<xs:pattern value="$(6$[A-Za-z0-9\./\+=]{8,16}$[A-Za-z0-9\./\+=]{86}|1$[A-Za-z0-9\./\+=]{8,16}$[A-Za-z0-9\./\+=]{22}|5$[A-Za-z0-9\./\+=]{8,16}$[A-Za-z0-9\./\+=]{43})" />
-		</xs:restriction>
-	</xs:simpleType>
-	
-	<xs:simpleType name="pacuri">
-		<!-- <xs:restriction base="xs:anyURI"> -->
-		<xs:restriction base="xs:token">
-			<xs:pattern value="(file|https?)://.*" />
-		</xs:restriction>
-	</xs:simpleType>
+    <xs:simpleType name="mntopts">
+        <xs:restriction base="xs:token">
+            <xs:pattern value="[A-Za-z0-9_\.\-]+(,[A-Za-z0-9_\.\-]+)*"/>
+        </xs:restriction>
+    </xs:simpleType>
 
-  <xs:simpleType name="scripttype">
-		<xs:restriction base="xs:token">
-			<xs:pattern value="(pre|post|pkg)" />
-		</xs:restriction>
-  </xs:simpleType>
-	
-	<xs:simpleType name="bootloaders">
-		<xs:restriction base="xs:token">
-			<xs:pattern value="(grub|systemd|syslinux)" />
-		</xs:restriction>
-	</xs:simpleType>
+    <xs:simpleType name="iface">
+        <xs:restriction base="xs:token">
+            <!-- https://github.com/systemd/systemd/blob/master/src/udev/udev-builtin-net_id.c#L20 lines 30-47. i have no idea if this will work. TODO: simplify, validate in-code. -->
+            <xs:pattern
+                    value="(auto|((en|sl|wl|ww)(b[0-9]+|c[a-z0-9]|o[0-9]+(n.*(d.*)?)?|s[0-9]+(f.*)?((n|d).*)?|x([A-Fa-f0-9]:){5}[A-Fa-f0-9]|(P.*)?p[0-9]+s[0-9]+(((f|n|d).*)|u.*)?)))"/>
+        </xs:restriction>
+    </xs:simpleType>
 
-	<xs:simpleType name="authselect">
-		<xs:restriction base="xs:token">
-			<xs:pattern value="(basic|digest)" />
-		</xs:restriction>
-	</xs:simpleType>
-	
-<!-- ROOT -->
-	<xs:element name="aif">
-		<xs:complexType>
-		<xs:all>
-<!-- BEGIN STORAGE -->
-			<xs:element name="storage" minOccurs="1" maxOccurs="1">
-				<xs:complexType>
-				<xs:sequence>
-<!-- BEGIN DISK -->
-					<xs:element name="disk" maxOccurs="unbounded" minOccurs="1">
-						<xs:complexType>
-						<xs:sequence>
-							<xs:element name="part" minOccurs="1" maxOccurs="unbounded">
-								<xs:complexType>
-									<xs:attribute name="num" type="xs:positiveInteger" use="required" />
-									<xs:attribute name="start" type="disksize" use="required" />
-									<xs:attribute name="stop" type="disksize" use="required" />
-									<xs:attribute name="fstype" type="fstype" use="required" />
-								</xs:complexType>
-								<xs:unique name="unique-partnum">
-      						<xs:selector xpath="part" />
-      						<xs:field xpath="@num" />
-   							</xs:unique>
-							</xs:element>
-							</xs:sequence>
-							<xs:attribute name="device" type="diskdev" use="required" />
-							<xs:attribute name="diskfmt" type="diskfmt" use="required" />
-						</xs:complexType>
-						<xs:unique name="unique-diskdev">
-      				<xs:selector xpath="disk" />
-      				<xs:field xpath="@device" />
-   					</xs:unique>
-					</xs:element>
-<!-- BEGIN MOUNT -->
-				<xs:element name="mount" minOccurs="1" maxOccurs="unbounded">
-					<xs:complexType>
-						<xs:attribute name="order" type="xs:integer" use="required" />
-						<xs:attribute name="source" type="diskdev" use="required" />
-						<xs:attribute name="target" type="xs:token" use="required" />
-						<xs:attribute name="fstype" type="fstype" />
-						<xs:attribute name="opts" type="mntopts" />
-					</xs:complexType>
-					<xs:unique name="unique-mnts">
-						<xs:selector xpath="mount" />
-						<xs:field xpath="@order" />
-						<xs:field xpath="@source" />
-						<xs:field xpath="@target" />
-					</xs:unique>
-				</xs:element>
-				</xs:sequence>
-				</xs:complexType>
-			</xs:element>
-<!-- END MOUNT -->
-<!-- END STORAGE -->
-<!-- BEGIN NETWORK -->
-			<xs:element name="network" minOccurs="1" maxOccurs="1">
-				<xs:complexType>
-				<xs:sequence>
-					<xs:element name="iface" minOccurs="1" maxOccurs="unbounded">
-						<xs:complexType>
-							<xs:attribute name="device" type="iface" use="required" />
-							<xs:attribute name="address" type="netaddress" use="required" />
-							<xs:attribute name="netproto" type="netproto" use="required" />
-							<xs:attribute name="gateway" type="netaddress" />
-							<xs:attribute name="resolvers" type="xs:string" />
-						</xs:complexType>
-					</xs:element>
-				</xs:sequence>
-				<xs:attribute name="hostname" type="xs:token" use="required" />
-				</xs:complexType>
-				<xs:unique name="unique-iface">
-					<xs:selector xpath="iface" />
-					<xs:field xpath="@address" />
-					<xs:field xpath="@netproto" />
-				</xs:unique>
-			</xs:element>
-<!-- END NETWORK -->
-<!-- BEGIN SYSTEM -->
-			<xs:element name="system" maxOccurs="1" minOccurs="1">
-				<xs:complexType>
-				<xs:sequence>
-					<xs:element name="users" minOccurs="1" maxOccurs="1">
-						<xs:complexType>
-						<xs:sequence>
-							<xs:element name="user" minOccurs="0" maxOccurs="unbounded">
-								<xs:complexType>
-								<xs:sequence>
-									<xs:element name="home" minOccurs="0" maxOccurs="1">
-										<xs:complexType>
-											<xs:attribute name="path" type="xs:token" />
-											<xs:attribute name="create" type="xs:boolean" />
-										</xs:complexType>
-									</xs:element>
-									<xs:element name="xgroup" minOccurs="0" maxOccurs="unbounded">
-										<xs:complexType>
-											<xs:attribute name="name" type="nixgroup" use="required" />
-											<xs:attribute name="create" type="xs:boolean" />
-											<xs:attribute name="gid" type="xs:boolean" />
-										</xs:complexType>
-										<xs:unique name="unique-grp">
-											<xs:selector xpath="xgroup" />
-											<xs:field xpath="@name" />
-										</xs:unique>
-									</xs:element>
-									</xs:sequence>
-									<xs:attribute name="name" type="xs:token" use="required" />
-									<xs:attribute name="uid" type="xs:token" />
-									<xs:attribute name="group" type="nixgroup" />
-									<xs:attribute name="gid" type="xs:token" />
-									<xs:attribute name="password" type="nixpass" />
-									<xs:attribute name="comment" type="xs:token" />
-									<xs:attribute name="sudo" type="xs:boolean" />
-								</xs:complexType>
-							</xs:element>
-						</xs:sequence>
-						<xs:attribute name="rootpass" type="nixpass" />
-						</xs:complexType>
-							<xs:unique name="unique-usr">
-									<xs:selector xpath="user" />
-									<xs:field xpath="@name" />
-							</xs:unique>
-						</xs:element>
-					<xs:element name="service" minOccurs="0" maxOccurs="unbounded">
-						<xs:complexType>
-							<xs:attribute name="name" type="xs:token" use="required" />
-							<xs:attribute name="status" type="xs:boolean" use="required" />
-						</xs:complexType>
-						<xs:unique name="unique-svc">
-							<xs:selector xpath="service" />
-							<xs:field xpath="@name" />
-							<xs:field xpath="@status" />
-						</xs:unique>
-					</xs:element>
-				</xs:sequence>
-				<xs:attribute name="timezone" type="xs:string" use="required" />
-				<xs:attribute name="locale" type="xs:string" use="required" />
-				<xs:attribute name="chrootpath" type="xs:string" use="required" />
-				<xs:attribute name="kbd" type="xs:token" />
-				<xs:attribute name="reboot" type="xs:boolean" />
-				</xs:complexType>
-			</xs:element>
-<!-- END SYSTEM -->
-<!-- BEGIN PACMAN -->
-			<xs:element name="pacman" maxOccurs="1" minOccurs="1">
-				<xs:complexType>
-				<xs:sequence>
-					<xs:element name="repos" maxOccurs="1" minOccurs="1">
-						<xs:complexType>
-							<xs:sequence>
-								<xs:element name="repo" maxOccurs="unbounded" minOccurs="1">
-									<xs:complexType>
-										<xs:attribute name="name" type="xs:token" use="required" />
-										<xs:attribute name="enabled" type="xs:boolean" use="required" />
-										<xs:attribute name="siglevel" type="xs:token" use="required" />
-										<xs:attribute name="mirror" type="pacuri" use="required" />
-									</xs:complexType>
-								</xs:element>
-							</xs:sequence>
-						</xs:complexType>
-					</xs:element>
-					<xs:element name="mirrorlist" maxOccurs="1" minOccurs="0">
-						<xs:complexType>
-							<xs:sequence>
-								<xs:element name="mirror" type="pacuri" maxOccurs="unbounded" minOccurs="1" />
-							</xs:sequence>
-						</xs:complexType>
-						<xs:unique name="unique-mirrors">
-							<xs:selector xpath="mirror" />
-							<xs:field xpath="." />
-						</xs:unique>
-					</xs:element>
-					<xs:element name="software" maxOccurs="1" minOccurs="0">
-						<xs:complexType>
-							<xs:sequence>
-								<xs:element name="package" maxOccurs="unbounded" minOccurs="1">
-									<xs:complexType>
-										<xs:attribute name="name" type="xs:token" use="required" />
-										<xs:attribute name="repo" type="xs:token" />
-									</xs:complexType>
-								</xs:element>
-							</xs:sequence>
-						</xs:complexType>
-					</xs:element>
-				</xs:sequence>
-				<xs:attribute name="command" type="xs:string" />
-				</xs:complexType>
-			</xs:element>
-<!-- END PACMAN -->
-<!-- BEGIN BOOTLOADER -->
-			<xs:element name="bootloader" maxOccurs="1" minOccurs="1">
-				<xs:complexType>
-					<xs:attribute name="type" type="bootloaders" use="required" />
-					<xs:attribute name="target" type="xs:token" use="required" />
-					<xs:attribute name="efi" type="xs:boolean" />
-				</xs:complexType>
-			</xs:element>
-<!-- END BOOTLOADER -->
-<!--- BEGIN SCRIPTS -->
-			<xs:element name="scripts" maxOccurs="1" minOccurs="0">
-				<xs:complexType>
-				<xs:sequence>
-					<xs:element name="script" minOccurs="1" maxOccurs="unbounded">
-						<xs:complexType>
-							<xs:attribute name="uri" type="scripturi" use="required" />
-							<xs:attribute name="order" type="xs:integer" use="required" />
-							<xs:attribute name="execution" type="scripttype" use="required" />
-							<xs:attribute name="user" type="xs:string" />
-							<xs:attribute name="password" type="xs:string" />
-							<xs:attribute name="realm" type="xs:string" />
-							<xs:attribute name="authtype" type="authselect" />
-						</xs:complexType>
-					</xs:element>
-				</xs:sequence>
-				</xs:complexType>
-				<xs:unique name="unique-script">
-					<xs:selector xpath="script" />
-					<xs:field xpath="@order" />
-				</xs:unique>
-			</xs:element>
-<!-- END SCRIPTS -->
-		</xs:all>
-		</xs:complexType>
-	</xs:element>
+    <xs:simpleType name="netaddress">
+        <xs:restriction base="xs:string">
+            <!-- this is a REALLY LAZY regex. matching IPv4 and IPv6 in regex is ugly as heck, so we do that in-code. this is just a gatekeeper. -->
+            <xs:pattern value="(auto|[0-9\.]+/[0-9]{,2}|([A-Za-z0-9:]+)/[0-9]+)"/>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:simpleType name="netproto">
+        <xs:restriction base="xs:token">
+            <xs:pattern value="(both|ipv4|ipv6)"/>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:simpleType name="scripturi">
+        <xs:restriction base="xs:anyURI">
+            <xs:pattern value="(https?|ftps?|file)://"/>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:simpleType name="devlang">
+        <xs:restriction base="xs:token">
+            <xs:pattern value="/(usr/)?s?bin/[A-Za-z0-9][A-Za-z\.\-]?"/>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:simpleType name="nixgroup">
+        <xs:restriction base="xs:token">
+            <xs:pattern value="[_a-z][-0-9_a-z]*$?"/>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:simpleType name="nixpass">
+        <xs:restriction base="xs:token">
+            <xs:pattern
+                    value="$(6$[A-Za-z0-9\./\+=]{8,16}$[A-Za-z0-9\./\+=]{86}|1$[A-Za-z0-9\./\+=]{8,16}$[A-Za-z0-9\./\+=]{22}|5$[A-Za-z0-9\./\+=]{8,16}$[A-Za-z0-9\./\+=]{43})"/>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:simpleType name="pacuri">
+        <!-- <xs:restriction base="xs:anyURI"> -->
+        <xs:restriction base="xs:token">
+            <xs:pattern value="(file|https?)://.*"/>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:simpleType name="scripttype">
+        <xs:restriction base="xs:token">
+            <xs:pattern value="(pre|post|pkg)"/>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:simpleType name="bootloaders">
+        <xs:restriction base="xs:token">
+            <xs:pattern value="(grub|systemd|syslinux)"/>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:simpleType name="authselect">
+        <xs:restriction base="xs:token">
+            <xs:pattern value="(basic|digest)"/>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <!-- ROOT -->
+    <xs:element name="aif">
+        <xs:complexType>
+            <xs:all>
+                <!-- BEGIN STORAGE -->
+                <xs:element name="storage" minOccurs="1" maxOccurs="1">
+                    <xs:complexType>
+                        <xs:sequence>
+                            <!-- BEGIN DISK -->
+                            <xs:element name="disk" maxOccurs="unbounded" minOccurs="1">
+                                <xs:complexType>
+                                    <xs:sequence>
+                                        <xs:element name="part" minOccurs="1" maxOccurs="unbounded">
+                                            <xs:complexType>
+                                                <xs:attribute name="num" type="xs:positiveInteger" use="required"/>
+                                                <xs:attribute name="start" type="disksize" use="required"/>
+                                                <xs:attribute name="stop" type="disksize" use="required"/>
+                                                <xs:attribute name="fstype" type="fstype" use="required"/>
+                                            </xs:complexType>
+                                            <xs:unique name="unique-partnum">
+                                                <xs:selector xpath="part"/>
+                                                <xs:field xpath="@num"/>
+                                            </xs:unique>
+                                        </xs:element>
+                                    </xs:sequence>
+                                    <xs:attribute name="device" type="diskdev" use="required"/>
+                                    <xs:attribute name="diskfmt" type="diskfmt" use="required"/>
+                                </xs:complexType>
+                                <xs:unique name="unique-diskdev">
+                                    <xs:selector xpath="disk"/>
+                                    <xs:field xpath="@device"/>
+                                </xs:unique>
+                            </xs:element>
+                            <!-- BEGIN MOUNT -->
+                            <xs:element name="mount" minOccurs="1" maxOccurs="unbounded">
+                                <xs:complexType>
+                                    <xs:attribute name="order" type="xs:integer" use="required"/>
+                                    <xs:attribute name="source" type="diskdev" use="required"/>
+                                    <xs:attribute name="target" type="xs:token" use="required"/>
+                                    <xs:attribute name="fstype" type="fstype"/>
+                                    <xs:attribute name="opts" type="mntopts"/>
+                                </xs:complexType>
+                                <xs:unique name="unique-mnts">
+                                    <xs:selector xpath="mount"/>
+                                    <xs:field xpath="@order"/>
+                                    <xs:field xpath="@source"/>
+                                    <xs:field xpath="@target"/>
+                                </xs:unique>
+                            </xs:element>
+                        </xs:sequence>
+                    </xs:complexType>
+                </xs:element>
+                <!-- END MOUNT -->
+                <!-- END STORAGE -->
+                <!-- BEGIN NETWORK -->
+                <xs:element name="network" minOccurs="1" maxOccurs="1">
+                    <xs:complexType>
+                        <xs:sequence>
+                            <xs:element name="iface" minOccurs="1" maxOccurs="unbounded">
+                                <xs:complexType>
+                                    <xs:attribute name="device" type="iface" use="required"/>
+                                    <xs:attribute name="address" type="netaddress" use="required"/>
+                                    <xs:attribute name="netproto" type="netproto" use="required"/>
+                                    <xs:attribute name="gateway" type="netaddress"/>
+                                    <xs:attribute name="resolvers" type="xs:string"/>
+                                </xs:complexType>
+                            </xs:element>
+                        </xs:sequence>
+                        <xs:attribute name="hostname" type="xs:token" use="required"/>
+                    </xs:complexType>
+                    <xs:unique name="unique-iface">
+                        <xs:selector xpath="iface"/>
+                        <xs:field xpath="@address"/>
+                        <xs:field xpath="@netproto"/>
+                    </xs:unique>
+                </xs:element>
+                <!-- END NETWORK -->
+                <!-- BEGIN SYSTEM -->
+                <xs:element name="system" maxOccurs="1" minOccurs="1">
+                    <xs:complexType>
+                        <xs:sequence>
+                            <xs:element name="users" minOccurs="1" maxOccurs="1">
+                                <xs:complexType>
+                                    <xs:sequence>
+                                        <xs:element name="user" minOccurs="0" maxOccurs="unbounded">
+                                            <xs:complexType>
+                                                <xs:sequence>
+                                                    <xs:element name="home" minOccurs="0" maxOccurs="1">
+                                                        <xs:complexType>
+                                                            <xs:attribute name="path" type="xs:token"/>
+                                                            <xs:attribute name="create" type="xs:boolean"/>
+                                                        </xs:complexType>
+                                                    </xs:element>
+                                                    <xs:element name="xgroup" minOccurs="0" maxOccurs="unbounded">
+                                                        <xs:complexType>
+                                                            <xs:attribute name="name" type="nixgroup" use="required"/>
+                                                            <xs:attribute name="create" type="xs:boolean"/>
+                                                            <xs:attribute name="gid" type="xs:boolean"/>
+                                                        </xs:complexType>
+                                                        <xs:unique name="unique-grp">
+                                                            <xs:selector xpath="xgroup"/>
+                                                            <xs:field xpath="@name"/>
+                                                        </xs:unique>
+                                                    </xs:element>
+                                                </xs:sequence>
+                                                <xs:attribute name="name" type="xs:token" use="required"/>
+                                                <xs:attribute name="uid" type="xs:token"/>
+                                                <xs:attribute name="group" type="nixgroup"/>
+                                                <xs:attribute name="gid" type="xs:token"/>
+                                                <xs:attribute name="password" type="nixpass"/>
+                                                <xs:attribute name="comment" type="xs:token"/>
+                                                <xs:attribute name="sudo" type="xs:boolean"/>
+                                            </xs:complexType>
+                                        </xs:element>
+                                    </xs:sequence>
+                                    <xs:attribute name="rootpass" type="nixpass"/>
+                                </xs:complexType>
+                                <xs:unique name="unique-usr">
+                                    <xs:selector xpath="user"/>
+                                    <xs:field xpath="@name"/>
+                                </xs:unique>
+                            </xs:element>
+                            <xs:element name="service" minOccurs="0" maxOccurs="unbounded">
+                                <xs:complexType>
+                                    <xs:attribute name="name" type="xs:token" use="required"/>
+                                    <xs:attribute name="status" type="xs:boolean" use="required"/>
+                                </xs:complexType>
+                                <xs:unique name="unique-svc">
+                                    <xs:selector xpath="service"/>
+                                    <xs:field xpath="@name"/>
+                                    <xs:field xpath="@status"/>
+                                </xs:unique>
+                            </xs:element>
+                        </xs:sequence>
+                        <xs:attribute name="timezone" type="xs:string" use="required"/>
+                        <xs:attribute name="locale" type="xs:string" use="required"/>
+                        <xs:attribute name="chrootpath" type="xs:string" use="required"/>
+                        <xs:attribute name="kbd" type="xs:token"/>
+                        <xs:attribute name="reboot" type="xs:boolean"/>
+                    </xs:complexType>
+                </xs:element>
+                <!-- END SYSTEM -->
+                <!-- BEGIN PACMAN -->
+                <xs:element name="pacman" maxOccurs="1" minOccurs="1">
+                    <xs:complexType>
+                        <xs:sequence>
+                            <xs:element name="repos" maxOccurs="1" minOccurs="1">
+                                <xs:complexType>
+                                    <xs:sequence>
+                                        <xs:element name="repo" maxOccurs="unbounded" minOccurs="1">
+                                            <xs:complexType>
+                                                <xs:attribute name="name" type="xs:token" use="required"/>
+                                                <xs:attribute name="enabled" type="xs:boolean" use="required"/>
+                                                <xs:attribute name="siglevel" type="xs:token" use="required"/>
+                                                <xs:attribute name="mirror" type="pacuri" use="required"/>
+                                            </xs:complexType>
+                                        </xs:element>
+                                    </xs:sequence>
+                                </xs:complexType>
+                            </xs:element>
+                            <xs:element name="mirrorlist" maxOccurs="1" minOccurs="0">
+                                <xs:complexType>
+                                    <xs:sequence>
+                                        <xs:element name="mirror" type="pacuri" maxOccurs="unbounded" minOccurs="1"/>
+                                    </xs:sequence>
+                                </xs:complexType>
+                                <xs:unique name="unique-mirrors">
+                                    <xs:selector xpath="mirror"/>
+                                    <xs:field xpath="."/>
+                                </xs:unique>
+                            </xs:element>
+                            <xs:element name="software" maxOccurs="1" minOccurs="0">
+                                <xs:complexType>
+                                    <xs:sequence>
+                                        <xs:element name="package" maxOccurs="unbounded" minOccurs="1">
+                                            <xs:complexType>
+                                                <xs:attribute name="name" type="xs:token" use="required"/>
+                                                <xs:attribute name="repo" type="xs:token"/>
+                                            </xs:complexType>
+                                        </xs:element>
+                                    </xs:sequence>
+                                </xs:complexType>
+                            </xs:element>
+                        </xs:sequence>
+                        <xs:attribute name="command" type="xs:string"/>
+                    </xs:complexType>
+                </xs:element>
+                <!-- END PACMAN -->
+                <!-- BEGIN BOOTLOADER -->
+                <xs:element name="bootloader" maxOccurs="1" minOccurs="1">
+                    <xs:complexType>
+                        <xs:attribute name="type" type="bootloaders" use="required"/>
+                        <xs:attribute name="target" type="xs:token" use="required"/>
+                        <xs:attribute name="efi" type="xs:boolean"/>
+                    </xs:complexType>
+                </xs:element>
+                <!-- END BOOTLOADER -->
+                <!--- BEGIN SCRIPTS -->
+                <xs:element name="scripts" maxOccurs="1" minOccurs="0">
+                    <xs:complexType>
+                        <xs:sequence>
+                            <xs:element name="script" minOccurs="1" maxOccurs="unbounded">
+                                <xs:complexType>
+                                    <xs:attribute name="uri" type="scripturi" use="required"/>
+                                    <xs:attribute name="order" type="xs:integer" use="required"/>
+                                    <xs:attribute name="execution" type="scripttype" use="required"/>
+                                    <xs:attribute name="user" type="xs:string"/>
+                                    <xs:attribute name="password" type="xs:string"/>
+                                    <xs:attribute name="realm" type="xs:string"/>
+                                    <xs:attribute name="authtype" type="authselect"/>
+                                </xs:complexType>
+                            </xs:element>
+                        </xs:sequence>
+                    </xs:complexType>
+                    <xs:unique name="unique-script">
+                        <xs:selector xpath="script"/>
+                        <xs:field xpath="@order"/>
+                    </xs:unique>
+                </xs:element>
+                <!-- END SCRIPTS -->
+            </xs:all>
+        </xs:complexType>
+    </xs:element>
 </xs:schema>

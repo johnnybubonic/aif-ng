@@ -1,13 +1,20 @@
+*.7z
 *.bak
-
-# We don't need these in git.
-screenlog*
-*.swp
-*.lck
-*~
-.~lock.*
+*.deb
+*.jar
+*.pkg.tar.xz
+*.rar
+*.run
+*.sig
+*.tar
+*.tar.bz2
+*.tar.gz
+*.tar.xz
+*.tbz
+*.tbz2
+*.tgz
+*.txz
+*.zip
+.*.swp
 .editix
-
-# and we DEFINITELY don't need these.
 __pycache__/
-*.pyc

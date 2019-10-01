@@ -3,7 +3,8 @@
 - config layout
 -- need to apply defaults and annotate/document
 --- is this necessary since i doc with asciidoctor now?
-- how to support mdadm, lvm?
+- how to support mdadm, lvm, LUKS FDE?
+-- cryptsetup support- use new child type, "cryptPart", under storage/disk/ and new mount attrib, "isLUKS"?
 - support serverside "autoconfig"- a mechanism to let servers automatically generate xml build configs. e.g.:
 	kernel ... aif_url="https://build.domain.tld/aif-ng.php" auto=yes
   would yield the *client* sending info via URL params (actually, this might be better as a JSON POST, since we already have a way to generate JSON. sort of.),
@@ -11,6 +12,7 @@
   or something like that.
 - parser: make sure to use https://mikeknoop.com/lxml-xxe-exploit/ fix
 - convert use of confobj or whatever to maybe be suitable to use webFetch instead. LOTS of duplicated code there.
+- support XInclude
 - can i install packages the way pacstrap does, without a chroot? i still need to do it, unfortunately, for setting up efibootmgr etc. but..:
 	pacman -r /mnt/aif -Sy base --cachedir=/mnt/aif/var/cache/pacman/pkg --noconfirm
 	/dev/sda2 on /mnt/aif type ext4 (rw,relatime,data=ordered)
@@ -28,10 +30,11 @@ DOCUMENTATION: aif-config.py (and note sample json as well)
 
 for network configuration, add in support for using a device's MAC address instead of interface name
 
-also create:
+also:
 -create boot media with bdisk since default arch doesn't even have python 3
 -- this is.. sort of? done. but iPXE/mini build is failing, need to investigate why
 -- i tihnk i fixed iPXE but i need to generate another one once 1.5 is released
+-- PENDING BDISK REWRITE
 docs:
 http://lxml.de/parsing.html
 https://www.w3.org/2001/XMLSchema.xsd
