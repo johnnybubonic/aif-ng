@@ -7,13 +7,14 @@
 import ensurepip
 import json
 import os
-import tempfile
 import subprocess
 import sys
+import tempfile
 import venv
 
 # TODO: a more consistent way of managing deps?
-depmods = ['gpg', 'requests', 'lxml', 'psutil', 'pyparted', 'pytz', 'passlib', 'validators']
+depmods = ['blkinfo', 'gpg', 'lxml', 'passlib', 'psutil',
+           'pyparted', 'pytz', 'requests', 'validators']
 
 class EnvBuilder(object):
     def __init__(self):

@@ -31,5 +31,6 @@ setuptools.setup(
         project_urls = {'Documentation': 'https://aif-ng.io/',
                         'Source': 'https://git.square-r00t.net/AIF-NG/',
                         'Tracker': 'https://bugs.square-r00t.net/index.php?project=9'},
-        install_requires = ['gpg', 'requests', 'lxml', 'psutil', 'pyparted', 'pytz', 'passlib', 'validators']
+        install_requires = ['blkinfo', 'gpg', 'lxml', 'passlib', 'psutil',
+                            'pyparted', 'pytz', 'requests', 'validators']
         )

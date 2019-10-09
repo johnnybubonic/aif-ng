@@ -1,8 +1,10 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
-           targetNamespace="http://aif.square-r00t.net"
-           xmlns="http://aif.square-r00t.net"
-           elementFormDefault="qualified">
+           targetNamespace="http://aif-ng.io/"
+           xmlns="http://aif-ng.io/"
+           xmlns:aif="http://aif-ng.io/"
+           elementFormDefault="qualified"
+           attributeFormDefault="unqualified">
     <xs:annotation>
         <xs:documentation>
             See https://aif.square-r00t.net/ for more information about this project.
@@ -148,22 +150,24 @@
                                     <xs:sequence>
                                         <xs:element name="part" minOccurs="1" maxOccurs="unbounded">
                                             <xs:complexType>
+                                                <!-- num should not be required since it's a sequence; it's inherently
+                                                     ordered! -->
                                                 <xs:attribute name="num" type="xs:positiveInteger" use="required"/>
-                                                <xs:attribute name="start" type="disksize" use="required"/>
-                                                <xs:attribute name="stop" type="disksize" use="required"/>
-                                                <xs:attribute name="fstype" type="fstype" use="required"/>
+                                                <xs:attribute name="start" type="aif:disksize" use="required"/>
+                                                <xs:attribute name="stop" type="aif:disksize" use="required"/>
+                                                <xs:attribute name="fstype" type="aif:fstype" use="required"/>
                                             </xs:complexType>
                                             <xs:unique name="unique-partnum">
-                                                <xs:selector xpath="part"/>
+                                                <xs:selector xpath="aif:part"/>
                                                 <xs:field xpath="@num"/>
                                             </xs:unique>
                                         </xs:element>
                                     </xs:sequence>
-                                    <xs:attribute name="device" type="diskdev" use="required"/>
-                                    <xs:attribute name="diskfmt" type="diskfmt" use="required"/>
+                                    <xs:attribute name="device" type="aif:diskdev" use="required"/>
+                                    <xs:attribute name="diskfmt" type="aif:diskfmt" use="required"/>
                                 </xs:complexType>
                                 <xs:unique name="unique-diskdev">
-                                    <xs:selector xpath="disk"/>
+                                    <xs:selector xpath="aif:disk"/>
                                     <xs:field xpath="@device"/>
                                 </xs:unique>
                             </xs:element>
@@ -171,13 +175,13 @@
                             <xs:element name="mount" minOccurs="1" maxOccurs="unbounded">
                                 <xs:complexType>
                                     <xs:attribute name="order" type="xs:integer" use="required"/>
-                                    <xs:attribute name="source" type="diskdev" use="required"/>
+                                    <xs:attribute name="source" type="aif:diskdev" use="required"/>
                                     <xs:attribute name="target" type="xs:token" use="required"/>
-                                    <xs:attribute name="fstype" type="fstype"/>
-                                    <xs:attribute name="opts" type="mntopts"/>
+                                    <xs:attribute name="fstype" type="aif:fstype"/>
+                                    <xs:attribute name="opts" type="aif:mntopts"/>
                                 </xs:complexType>
                                 <xs:unique name="unique-mnts">
-                                    <xs:selector xpath="mount"/>
+                                    <xs:selector xpath="aif:mount"/>
                                     <xs:field xpath="@order"/>
                                     <xs:field xpath="@source"/>
                                     <xs:field xpath="@target"/>
@@ -194,10 +198,10 @@
                         <xs:sequence>
                             <xs:element name="iface" minOccurs="1" maxOccurs="unbounded">
                                 <xs:complexType>
-                                    <xs:attribute name="device" type="iface" use="required"/>
-                                    <xs:attribute name="address" type="netaddress" use="required"/>
-                                    <xs:attribute name="netproto" type="netproto" use="required"/>
-                                    <xs:attribute name="gateway" type="netaddress"/>
+                                    <xs:attribute name="device" type="aif:iface" use="required"/>
+                                    <xs:attribute name="address" type="aif:netaddress" use="required"/>
+                                    <xs:attribute name="netproto" type="aif:netproto" use="required"/>
+                                    <xs:attribute name="gateway" type="aif:netaddress"/>
                                     <xs:attribute name="resolvers" type="xs:string"/>
                                 </xs:complexType>
                             </xs:element>
@@ -205,7 +209,7 @@
                         <xs:attribute name="hostname" type="xs:token" use="required"/>
                     </xs:complexType>
                     <xs:unique name="unique-iface">
-                        <xs:selector xpath="iface"/>
+                        <xs:selector xpath="aif:iface"/>
                         <xs:field xpath="@address"/>
                         <xs:field xpath="@netproto"/>
                     </xs:unique>
@@ -229,30 +233,30 @@
                                                     </xs:element>
                                                     <xs:element name="xgroup" minOccurs="0" maxOccurs="unbounded">
                                                         <xs:complexType>
-                                                            <xs:attribute name="name" type="nixgroup" use="required"/>
+                                                            <xs:attribute name="name" type="aif:nixgroup" use="required"/>
                                                             <xs:attribute name="create" type="xs:boolean"/>
                                                             <xs:attribute name="gid" type="xs:boolean"/>
                                                         </xs:complexType>
                                                         <xs:unique name="unique-grp">
-                                                            <xs:selector xpath="xgroup"/>
+                                                            <xs:selector xpath="aif:xgroup"/>
                                                             <xs:field xpath="@name"/>
                                                         </xs:unique>
                                                     </xs:element>
                                                 </xs:sequence>
                                                 <xs:attribute name="name" type="xs:token" use="required"/>
                                                 <xs:attribute name="uid" type="xs:token"/>
-                                                <xs:attribute name="group" type="nixgroup"/>
+                                                <xs:attribute name="group" type="aif:nixgroup"/>
                                                 <xs:attribute name="gid" type="xs:token"/>
-                                                <xs:attribute name="password" type="nixpass"/>
+                                                <xs:attribute name="password" type="aif:nixpass"/>
                                                 <xs:attribute name="comment" type="xs:token"/>
                                                 <xs:attribute name="sudo" type="xs:boolean"/>
                                             </xs:complexType>
                                         </xs:element>
                                     </xs:sequence>
-                                    <xs:attribute name="rootpass" type="nixpass"/>
+                                    <xs:attribute name="rootpass" type="aif:nixpass"/>
                                 </xs:complexType>
                                 <xs:unique name="unique-usr">
-                                    <xs:selector xpath="user"/>
+                                    <xs:selector xpath="aif:user"/>
                                     <xs:field xpath="@name"/>
                                 </xs:unique>
                             </xs:element>
@@ -262,7 +266,7 @@
                                     <xs:attribute name="status" type="xs:boolean" use="required"/>
                                 </xs:complexType>
                                 <xs:unique name="unique-svc">
-                                    <xs:selector xpath="service"/>
+                                    <xs:selector xpath="aif:service"/>
                                     <xs:field xpath="@name"/>
                                     <xs:field xpath="@status"/>
                                 </xs:unique>
@@ -288,7 +292,7 @@
                                                 <xs:attribute name="name" type="xs:token" use="required"/>
                                                 <xs:attribute name="enabled" type="xs:boolean" use="required"/>
                                                 <xs:attribute name="siglevel" type="xs:token" use="required"/>
-                                                <xs:attribute name="mirror" type="pacuri" use="required"/>
+                                                <xs:attribute name="mirror" type="aif:pacuri" use="required"/>
                                             </xs:complexType>
                                         </xs:element>
                                     </xs:sequence>
@@ -297,11 +301,11 @@
                             <xs:element name="mirrorlist" maxOccurs="1" minOccurs="0">
                                 <xs:complexType>
                                     <xs:sequence>
-                                        <xs:element name="mirror" type="pacuri" maxOccurs="unbounded" minOccurs="1"/>
+                                        <xs:element name="mirror" type="aif:pacuri" maxOccurs="unbounded" minOccurs="1"/>
                                     </xs:sequence>
                                 </xs:complexType>
                                 <xs:unique name="unique-mirrors">
-                                    <xs:selector xpath="mirror"/>
+                                    <xs:selector xpath="aif:mirror"/>
                                     <xs:field xpath="."/>
                                 </xs:unique>
                             </xs:element>
@@ -325,7 +329,7 @@
                 <!-- BEGIN BOOTLOADER -->
                 <xs:element name="bootloader" maxOccurs="1" minOccurs="1">
                     <xs:complexType>
-                        <xs:attribute name="type" type="bootloaders" use="required"/>
+                        <xs:attribute name="type" type="aif:bootloaders" use="required"/>
                         <xs:attribute name="target" type="xs:token" use="required"/>
                         <xs:attribute name="efi" type="xs:boolean"/>
                     </xs:complexType>
@@ -337,19 +341,19 @@
                         <xs:sequence>
                             <xs:element name="script" minOccurs="1" maxOccurs="unbounded">
                                 <xs:complexType>
-                                    <xs:attribute name="uri" type="scripturi" use="required"/>
+                                    <xs:attribute name="uri" type="aif:scripturi" use="required"/>
                                     <xs:attribute name="order" type="xs:integer" use="required"/>
-                                    <xs:attribute name="execution" type="scripttype" use="required"/>
+                                    <xs:attribute name="execution" type="aif:scripttype" use="required"/>
                                     <xs:attribute name="user" type="xs:string"/>
                                     <xs:attribute name="password" type="xs:string"/>
                                     <xs:attribute name="realm" type="xs:string"/>
-                                    <xs:attribute name="authtype" type="authselect"/>
+                                    <xs:attribute name="authtype" type="aif:authselect"/>
                                 </xs:complexType>
                             </xs:element>
                         </xs:sequence>
                     </xs:complexType>
                     <xs:unique name="unique-script">
-                        <xs:selector xpath="script"/>
+                        <xs:selector xpath="aif:script"/>
                         <xs:field xpath="@order"/>
                     </xs:unique>
                 </xs:element>
