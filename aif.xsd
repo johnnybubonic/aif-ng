@@ -48,10 +48,10 @@
     </xs:simpleType>
 
     <xs:simpleType name="fstype">
+        <!-- ', '.join(sorted(list(dict(vars(parted.filesystem))['fileSystemType'].keys()))) -->
         <xs:annotation>
             <xs:documentation>
-                This element validates a filesystem type to be specified for formatting a partition. See sgdisk -L (or
-                the table at http://www.rodsbooks.com/gdisk/walkthrough.html) for valid filesystem codes.
+                This element validates a filesystem type to be specified for formatting a partition (NOT applying a filesystem!); valid values are: affs0, affs1, affs2, affs3, affs4, affs5, affs6, affs7, amufs, amufs0, amufs1, amufs2, amufs3, amufs4, amufs5, apfs1, apfs2, asfs, btrfs, ext2, ext3, ext4, fat16, fat32, hfs, hfs+, hfsx, hp-ufs, jfs, linux-swap(v0), linux-swap(v1), nilfs2, ntfs, reiserfs, sun-ufs, swsusp, udf, xfs
             </xs:documentation>
         </xs:annotation>
         <xs:restriction base="xs:token">

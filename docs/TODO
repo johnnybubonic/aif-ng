@@ -46,3 +46,6 @@ https://www.w3schools.com/xml/schema_intro.asp
 https://www.w3schools.com/xml/schema_example.asp
 https://msdn.microsoft.com/en-us/library/dd489258.aspx
 
+if i ever need a list of GPT GUIDs, maybe to do some fancy GUID-to-name-and-back mapping?
+https://en.wikipedia.org/wiki/GUID_Partition_Table#Partition_type_GUIDs
+(mapping can be done via https://stackoverflow.com/questions/483666/reverse-invert-a-dictionary-mapping)

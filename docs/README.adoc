@@ -199,7 +199,7 @@ The `/aif` element is the https://en.wikipedia.org/wiki/Root_element[root elemen
 The `/aif/storage` element contains <<code_disk_code, disk>>, <<code_part_code, disk/part>>, and <<code_mount_code, mount>> elements.
 
 ==== `<disk>`
-The `/aif/storage/disk` element holds information about disks on the system, and within this element are one (or more) <<code_part_code, part>> elements.
+The `/aif/storage/disk` element holds information about disks on the system, and within this element are one (or more) <<code_part_code, part>> elements. Note that any `disk` elements specified here will be *entirely reformatted*; operate under the assumption that ANY and ALL pre-existing data on the specified device will be IRREVOCABLY LOST.
 
 [options="header"]
 |======================
@@ -544,7 +544,19 @@ There are several script types availabe for `execution`. Currently, these are:
 *pre* scripts are run (in numerical `order`) before the disks are even formatted. *pkg* scripts are run (in numerical `order`) right before the <<code_package_code, packages>> are installed (this allows you to configure an <<command, alternate packager>> such as https://aur.archlinux.org/packages/apacman/[apacman^]) -- these are run *inside* the chroot of the new install. *post* scripts are run inside the chroot like *pkg*, but are executed very last thing, just before the reboot.
 
 = Further Information
-Here you will find further info, other resources, and such relating to AIF-NG.
+Here you will find further info and other resources relating to AIF-NG.
+
+== FAQ
+
+=== "I specified start sector as 0 for a GPT-labeled disk but it starts at sector 2048 instead. What gives?"
+GPT requires 33 sectors for the table at the beginning (and 32 sectors at the end) for the actual table. That plus an extra (usually) 512 bytes at the beginning for something called a https://en.wikipedia.org/wiki/GUID_Partition_Table#Protective_MBR_(LBA_0)[Protective MBR^] (this prevents disk utilities from overwriting the GPT label automatically in case they only recognize "msdos" labels and assume the disk is not formatted yet).
+
+Most disks these days use something called https://en.wikipedia.org/wiki/Advanced_Format[Advanced Format^]. These align their sectors to factors of 8, so sector 34 can't be used - it'd have to be sector 40. Additionally, various other low-level disk interactions (e.g. RAID stripe sizes) require a much larger boundary between partitions. If you're interested in a little more detail, you may find https://metebalci.com/blog/a-quick-tour-of-guid-partition-table-gpt/[this^] interesting (specifically https://metebalci.com/blog/a-quick-tour-of-guid-partition-table-gpt/#gpt-partition-entry-array[this section^], paragraph starting with `You may also ask why the first partition starts from LBA 2048...`).
+
+TL;DR: "It's the safest way to make sure your disk doesn't suffer massive degradation in performance, your RAID doesn't eat partitions, etc." Don't worry, it typically only ends up being about 1MB of "wasted" space surrounding partitions. I've written plaintext documentation larger than 1MB.
+
+=== "Why isn't my last GPT partition extending to the last sector?"
+See above.
 
 == Bug Reports/Feature Requests
 NOTE: It is possible to submit a bug or feature request without registering in my bugtracker. One of my pet peeves is needing to create an account/register on a bugtracker simply to report a bug! The following links only require an email address to file a bug (which is necessary in case I need any further clarification from you or to keep you updated on the status of the bug/feature request -- so please be sure to use a valid email address).
