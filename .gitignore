@@ -18,3 +18,4 @@
 .*.swp
 .editix
 __pycache__/
+test.py

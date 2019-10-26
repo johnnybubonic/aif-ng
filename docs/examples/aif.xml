@@ -3,7 +3,7 @@
      xmlns="http://aif-ng.io/"
      xsi:schemaLocation="http://aif-ng.io/aif.xsd">
     <storage>
-        <disk device="/dev/sda" diskFormat="gpt" forceReformat="true">
+        <disk device="/dev/sda" diskFormat="gpt">
             <!-- Partitions are numbered *in the order they are specified*. -->
             <part id="boot" name="BOOT" label="/boot" start="0%" stop="10%" fsType="ef00"/><!-- e.g. this would be /dev/sda1 -->
             <part id="secrets1" name="crypted" label="shh" start="10%" stop="20%" fsType="8300"/>
@@ -12,11 +12,6 @@
             <part id="raid1_d2" start="55%" stop="80%" fsType="fd00"/>
             <part id="swap" start="80%" stop="100%" fsType="8200" />
         </disk>
-        <fileSystems>
-            <fs source="boot" type="vfat">
-                <opts>-F 32 -n {label}</opts>
-            </fs>
-        </fileSystems>
         <!-- "Special" devices are processed *in the order they are specified*. This is important if you wish to
              e.g. layer LUKS on top of LVM - you would specify <lvm> before <luks> and reference the
              <luksDev id="SOMETHING" ... > as <lvmLogical source="SOMETHING" ... />. -->
@@ -34,8 +29,27 @@
                 <member source="raid1_d2"/>
             </array>
         </mdadm>
+        <fileSystems>
+            <fs source="boot" type="vfat">
+                <!-- Supports mkfs arguments. Leave off the filesystem type and device name, obviously;
+                     those are handled by the above attributes. -->
+                <opt name="-F">32</opt>
+                <opt name="-n">ESP</opt>
+            </fs>
+            <fs source="luks_secrets" type="ext4">
+                <opt name="-L">seekrit</opt>
+            </fs>
+        </fileSystems>
         <!-- And you use the id to reference mountpoints as well. -->
-        <mount source="luks_secrets" target="/mnt/aif" order="1" />
+        <mount source="luks_secrets" target="/mnt/aif" order="1">
+            <opt name="rw"/>
+            <opt name="relatime"/>
+            <opt name="compress">lzo</opt>
+            <opt name="ssd"/>
+            <opt name="space_cache"/>
+            <opt name="subvolid">5</opt>
+            <opt name="subvol">/</opt>
+        </mount>
         <mount source="boot" target="/mnt/aif/boot" order="2" />
         <mount source="swap" target="swap" order="3" />
         <mount source="vg1" target="/mnt/aif/mnt/pool" order="4" />
