@@ -80,7 +80,7 @@
             <!-- https://github.com/systemd/systemd/blob/master/src/udev/udev-builtin-net_id.c.
                  I have no idea if this will work. TODO: simplify, validate in-code. -->
             <xs:pattern
-                    value="(auto|((en|sl|wl|ww)(b[0-9]+|c[a-z0-9]|o[0-9]+(n.*(d.*)?)?|s[0-9]+(f.*)?((n|d).*)?|x([A-Fa-f0-9]:){5}[A-Fa-f0-9]|(P.*)?p[0-9]+s[0-9]+(((f|n|d).*)|u.*)?)))"/>
+                    value="(auto|((en|sl|wl|ww)(b[0-9]+|c[a-z0-9]|o[0-9]+(n.*(d.*)?)?|s[0-9]+(f.*)?([nd].*)?|x([A-Fa-f0-9]:){5}[A-Fa-f0-9]|(P.*)?p[0-9]+s[0-9]+(([fnd].*)|u.*)?)))"/>
             <xs:whiteSpace value="collapse"/>
         </xs:restriction>
     </xs:simpleType>
@@ -89,7 +89,7 @@
         <xs:restriction base="xs:string">
             <!-- This is a REALLY LAZY regex. Matching IPv4 in regex is ugly as heck, so we do that in-code.
                  This is just a gatekeeper. -->
-            <xs:pattern value="(dhcp|[0-9\.]{7,15}/[0-9]{,2})"/>
+            <xs:pattern value="(dhcp|[0-9.]{7,15}/[0-9]{1,2})"/>
             <xs:whiteSpace value="collapse"/>
         </xs:restriction>
     </xs:simpleType>
@@ -123,13 +123,13 @@
         <xs:restriction base="xs:token">
             <xs:enumeration value="netctl"/>
             <xs:enumeration value="nm"/>
-            <xs:enumeration value="networkd"/>
+            <xs:enumeration value="systemd"/>
         </xs:restriction>
     </xs:simpleType>
 
     <xs:simpleType name="t_scripturi">
         <xs:restriction base="xs:anyURI">
-            <xs:pattern value="(https?|ftps?|file)://"/>
+            <xs:pattern value="(https?|ftps?|file)://.+"/>
             <xs:whiteSpace value="collapse"/>
         </xs:restriction>
     </xs:simpleType>
@@ -147,8 +147,10 @@
     <xs:simpleType name="t_shadowhash">
         <!-- http://man7.org/linux/man-pages/man3/crypt.3.html#NOTES -->
         <xs:restriction base="xs:token">
-            <xs:pattern
-                    value="$(6$[A-Za-z0-9\./\+=]{8,16}$[A-Za-z0-9\./\+=]{86}|1$[A-Za-z0-9\./\+=]{8,16}$[A-Za-z0-9\./\+=]{22}|5$[A-Za-z0-9\./\+=]{8,16}$[A-Za-z0-9\./\+=]{43})"/>
+            <xs:pattern value="($1)?($[a-zA-Z0-9./]{1,16})$[a-zA-Z0-9./]{22}"/><!-- md5 -->
+            <xs:pattern value="($2[abxy]?)?($[0-9]+)$[a-zA-Z0-9./]{53}"/><!-- Blowfish -->
+            <xs:pattern value="($5)?($[a-zA-Z0-9./]{1,16})$[a-zA-Z0-9./]{43}"/><!-- sha256 -->
+            <xs:pattern value="($6)?($[a-zA-Z0-9./]{1,16})$[a-zA-Z0-9./]{86}"/><!-- sha512 -->
             <xs:whiteSpace value="collapse"/>
         </xs:restriction>
     </xs:simpleType>
@@ -162,19 +164,15 @@
         </xs:restriction>
     </xs:simpleType>
 
-    <xs:simpleType name="t_scripttype">
-        <xs:restriction base="xs:token">
-            <xs:pattern value="(pre|post|pkg)"/>
-            <xs:whiteSpace value="collapse"/>
-        </xs:restriction>
-    </xs:simpleType>
-
     <xs:simpleType name="t_bootloaders">
         <!-- TODO: expand?
              https://wiki.archlinux.org/index.php/Category:Boot_loaders
              https://wiki.archlinux.org/index.php/Arch_boot_process#Boot_loader -->
         <xs:restriction base="xs:token">
-            <xs:pattern value="(grub|systemd|syslinux)"/>
+            <xs:enumeration value="grub"/>
+            <xs:enumeration value="systemd"/>
+            <xs:enumeration value="syslinux"/>
+            <xs:enumeration value="lilo"/>
             <xs:whiteSpace value="collapse"/>
         </xs:restriction>
     </xs:simpleType>
@@ -196,7 +194,7 @@
 
     <xs:simpleType name="t_filepath">
         <xs:restriction base="xs:string">
-            <xs:pattern value="/([^/]+)"/>
+            <xs:pattern value="((/[^/]+)+/?|swap)"/>
         </xs:restriction>
     </xs:simpleType>
 
@@ -216,7 +214,7 @@
     </xs:simpleType>
 
     <xs:simpleType name="t_raid_levels">
-        <xs:restriction base="xs:positiveInteger">
+        <xs:restriction base="xs:integer">
             <xs:enumeration value="0"/>
             <xs:enumeration value="1"/>
             <xs:enumeration value="4"/>
@@ -232,6 +230,42 @@
         </xs:restriction>
     </xs:simpleType>
 
+    <xs:complexType name="t_nixpass">
+        <xs:choice minOccurs="1" maxOccurs="1">
+            <xs:element name="passwordPlain" type="t_nonempty"/>
+            <xs:element name="passwordHash">
+                <xs:complexType>
+                    <xs:simpleContent>
+                        <xs:extension base="aif:t_shadowhash">
+                            <xs:attribute name="hashType" use="optional" default="(detect)">
+                                <xs:simpleType>
+                                    <xs:restriction base="aif:t_nonempty">
+                                        <xs:enumeration value="md5"/>
+                                        <xs:enumeration value="bcrypt"/><!-- "blowfish" in crypt(3) -->
+                                        <xs:enumeration value="sha256"/>
+                                        <xs:enumeration value="sha512"/>
+                                        <xs:enumeration value="(detect)"/>
+                                    </xs:restriction>
+                                </xs:simpleType>
+                            </xs:attribute>
+                        </xs:extension>
+                    </xs:simpleContent>
+                </xs:complexType>
+            </xs:element>
+        </xs:choice>
+    </xs:complexType>
+
+    <xs:complexType name="t_provscript">
+        <xs:simpleContent>
+            <xs:extension base="aif:t_scripturi">
+                <xs:attribute name="user" type="aif:t_nonempty" use="optional"/>
+                <xs:attribute name="password" type="aif:t_nonempty" use="optional"/>
+                <xs:attribute name="realm" type="aif:t_nonempty" use="optional"/>
+                <xs:attribute name="authtype" type="aif:t_authselect" use="optional" default="none"/>
+            </xs:extension>
+        </xs:simpleContent>
+    </xs:complexType>
+
     <!-- ROOT -->
     <xs:element name="aif">
         <xs:complexType>
@@ -239,29 +273,41 @@
                 <!-- BEGIN STORAGE -->
                 <xs:element name="storage" minOccurs="1" maxOccurs="1">
                     <xs:complexType>
-                        <xs:sequence>
-                            <!-- BEGIN DISK -->
-                            <xs:element name="disk" minOccurs="1" maxOccurs="unbounded">
+                        <xs:all>
+                            <!-- BEGIN BLOCKDEVICES -->
+                            <xs:element name="blockDevices" minOccurs="1">
                                 <xs:complexType>
-                                    <xs:sequence>
-                                        <xs:element name="part" minOccurs="1" maxOccurs="unbounded">
+                                    <xs:sequence minOccurs="1" maxOccurs="unbounded">
+                                        <xs:element name="disk" minOccurs="1" maxOccurs="unbounded">
                                             <xs:complexType>
-                                                <xs:attribute name="id" type="aif:t_nonempty" use="required"/>
-                                                <xs:attribute name="name" type="aif:t_nonempty" use="optional"/>
-                                                <xs:attribute name="label" type="aif:t_nonempty" use="optional"/>
-                                                <xs:attribute name="start" type="aif:t_disksize" use="required"/>
-                                                <xs:attribute name="stop" type="aif:t_disksize" use="required"/>
-                                                <xs:attribute name="fsType" type="aif:t_fstype" use="required"/>
+                                                <xs:sequence>
+                                                    <xs:element name="part" minOccurs="1" maxOccurs="unbounded">
+                                                        <xs:complexType>
+                                                            <xs:attribute name="id" type="aif:t_nonempty"
+                                                                          use="required"/>
+                                                            <xs:attribute name="name" type="aif:t_nonempty"
+                                                                          use="optional"/>
+                                                            <xs:attribute name="label" type="aif:t_nonempty"
+                                                                          use="optional"/>
+                                                            <xs:attribute name="start" type="aif:t_disksize"
+                                                                          use="required"/>
+                                                            <xs:attribute name="stop" type="aif:t_disksize"
+                                                                          use="required"/>
+                                                            <xs:attribute name="fsType" type="aif:t_fstype"
+                                                                          use="required"/>
+                                                        </xs:complexType>
+                                                    </xs:element>
+                                                </xs:sequence>
+                                                <xs:attribute name="device" type="aif:t_diskdev" use="required"/>
+                                                <xs:attribute name="diskFormat" type="aif:t_diskfmt" use="required"/>
                                             </xs:complexType>
+                                            <xs:unique name="uniq_diskdev">
+                                                <xs:selector xpath="aif:disk"/>
+                                                <xs:field xpath="@device"/>
+                                            </xs:unique>
                                         </xs:element>
                                     </xs:sequence>
-                                    <xs:attribute name="device" type="aif:t_diskdev" use="required"/>
-                                    <xs:attribute name="diskFormat" type="aif:t_diskfmt" use="required"/>
                                 </xs:complexType>
-                                <xs:unique name="uniq_diskdev">
-                                    <xs:selector xpath="aif:disk"/>
-                                    <xs:field xpath="@device"/>
-                                </xs:unique>
                             </xs:element>
                             <!-- END DISK -->
                             <!-- BEGIN FILESYSTEMS -->
@@ -383,7 +429,7 @@
                             </xs:element>
                             <!-- END MDADM -->
                             <!-- BEGIN MOUNTPOINTS -->
-                            <xs:element name="mountPoints" minOccurs="1" maxOccurs="unbounded">
+                            <xs:element name="mountPoints" minOccurs="1">
                                 <xs:complexType>
                                     <xs:sequence minOccurs="1" maxOccurs="unbounded">
                                         <xs:element name="mount" minOccurs="1" maxOccurs="unbounded">
@@ -405,7 +451,7 @@
                                 </xs:complexType>
                             </xs:element>
                             <!-- END MOUNTPOINTS -->
-                        </xs:sequence>
+                        </xs:all>
                     </xs:complexType>
                 </xs:element>
                 <!-- END STORAGE -->
@@ -418,7 +464,7 @@
                                     <xs:all>
                                         <xs:element name="addresses" minOccurs="0" maxOccurs="1">
                                             <xs:complexType>
-                                                <xs:any minOccurs="1" maxOccurs="unbounded">
+                                                <xs:sequence minOccurs="1" maxOccurs="unbounded">
                                                     <xs:element name="ipv4">
                                                         <xs:complexType>
                                                             <xs:sequence>
@@ -439,16 +485,16 @@
                                                                           use="optional"/>
                                                         </xs:complexType>
                                                     </xs:element>
-                                                </xs:any>
-                                                <xs:unique name="uniq_ip4">
-                                                    <xs:selector xpath="ipv4"/>
-                                                    <xs:field xpath="address"/>
-                                                </xs:unique>
-                                                <xs:unique name="uniq_ip6">
-                                                    <xs:selector xpath="ipv6"/>
-                                                    <xs:field xpath="address"/>
-                                                </xs:unique>
+                                                </xs:sequence>
                                             </xs:complexType>
+                                            <xs:unique name="uniq_ip4">
+                                                <xs:selector xpath="ipv4"/>
+                                                <xs:field xpath="address"/>
+                                            </xs:unique>
+                                            <xs:unique name="uniq_ip6">
+                                                <xs:selector xpath="ipv6"/>
+                                                <xs:field xpath="address"/>
+                                            </xs:unique>
                                         </xs:element>
                                         <xs:element name="resolvers" minOccurs="0" maxOccurs="1">
                                             <xs:complexType>
@@ -480,8 +526,10 @@
                 <!-- BEGIN SYSTEM -->
                 <xs:element name="system" maxOccurs="1" minOccurs="1">
                     <xs:complexType>
-                        <xs:sequence>
-                            <xs:element name="locales" minOccurs="1" maxOccurs="unbounded">
+                        <xs:all>
+                            <xs:element name="rootPassword" minOccurs="1" maxOccurs="1"
+                                        type="aif:t_nixpass"/>
+                            <xs:element name="locales" minOccurs="1" maxOccurs="1">
                                 <xs:complexType>
                                     <xs:sequence minOccurs="1" maxOccurs="unbounded">
                                         <xs:element name="locale" minOccurs="1" maxOccurs="unbounded">
@@ -499,17 +547,11 @@
                             <xs:element name="users" minOccurs="1" maxOccurs="1">
                                 <xs:complexType>
                                     <xs:sequence>
-                                        <xs:element name="rootPassword" minOccurs="1" maxOccurs="1">
-                                            <xs:complexType>
-                                                <xs:choice minOccurs="1" maxOccurs="1">
-                                                    <xs:element name="password" type="t_nonempty"/>
-                                                    <xs:element name="passHash" type="t_nixpasshash"/>
-                                                </xs:choice>
-                                            </xs:complexType>
-                                        </xs:element>
                                         <xs:element name="user" minOccurs="0" maxOccurs="unbounded">
                                             <xs:complexType>
                                                 <xs:sequence>
+                                                    <xs:element name="password" minOccurs="0" maxOccurs="1"
+                                                                type="aif:t_nixpass"/>
                                                     <xs:element name="xGroup" minOccurs="0" maxOccurs="unbounded">
                                                         <xs:complexType>
                                                             <xs:attribute name="name" type="aif:t_posixUserGroup"
@@ -529,34 +571,38 @@
                                                 <xs:attribute name="uid" type="xs:positiveInteger" use="optional"/>
                                                 <xs:attribute name="group" type="aif:t_posixUserGroup" use="optional"/>
                                                 <xs:attribute name="gid" type="xs:positiveInteger" use="optional"/>
-                                                <xs:attribute name="password" type="aif:t_nixpass" use="optional"/>
                                                 <xs:attribute name="comment" type="aif:t_nonempty" use="optional"/>
                                                 <xs:attribute name="sudo" type="xs:boolean" use="optional" default="0"/>
                                             </xs:complexType>
                                         </xs:element>
                                     </xs:sequence>
-                                    <xs:attribute name="rootpass" type="aif:t_nixpass" use="required"/>
                                 </xs:complexType>
                                 <xs:unique name="uniq_usr">
                                     <xs:selector xpath="aif:user"/>
                                     <xs:field xpath="@name"/>
                                 </xs:unique>
                             </xs:element>
-                            <xs:element name="service" minOccurs="0" maxOccurs="unbounded">
+                            <xs:element name="services" minOccurs="0" maxOccurs="1">
                                 <xs:complexType>
-                                    <xs:simpleContent>
-                                        <xs:extension base="aif:t_nonempty">
-                                            <xs:attribute name="status" type="xs:boolean" use="required"/>
-                                        </xs:extension>
-                                    </xs:simpleContent>
+                                    <xs:sequence>
+                                        <xs:element name="service" minOccurs="0" maxOccurs="unbounded">
+                                            <xs:complexType>
+                                                <xs:simpleContent>
+                                                    <xs:extension base="aif:t_nonempty">
+                                                        <xs:attribute name="status" type="xs:boolean" use="required"/>
+                                                    </xs:extension>
+                                                </xs:simpleContent>
+                                            </xs:complexType>
+                                            <xs:unique name="uniq_svc">
+                                                <xs:selector xpath="aif:service"/>
+                                                <xs:field xpath="@name"/>
+                                                <xs:field xpath="@status"/>
+                                            </xs:unique>
+                                        </xs:element>
+                                    </xs:sequence>
                                 </xs:complexType>
-                                <xs:unique name="uniq_svc">
-                                    <xs:selector xpath="aif:service"/>
-                                    <xs:field xpath="@name"/>
-                                    <xs:field xpath="@status"/>
-                                </xs:unique>
                             </xs:element>
-                        </xs:sequence>
+                        </xs:all>
                         <!-- timezone and kbd/xkbd are validated in-code. -->
                         <xs:attribute name="timezone" type="aif:t_nonempty" use="required"/>
                         <xs:attribute name="chrootPath" type="aif:t_filepath" use="required"/>
@@ -577,24 +623,20 @@
                                             <xs:complexType>
                                                 <xs:attribute name="name" type="aif:t_nonempty" use="required"/>
                                                 <xs:attribute name="enabled" type="xs:boolean" use="required"/>
-                                                <xs:attribute name="siglevel" type="xs:token" use="required"/>
+                                                <xs:attribute name="sigLevel" type="aif:t_nonempty" use="required"/>
                                                 <xs:attribute name="mirror" type="aif:t_pacuri" use="required"/>
                                             </xs:complexType>
                                         </xs:element>
                                     </xs:sequence>
                                 </xs:complexType>
                             </xs:element>
-                            <xs:element name="mirrorlist" maxOccurs="1" minOccurs="0">
+                            <xs:element name="mirrorList" maxOccurs="1" minOccurs="0">
                                 <xs:complexType>
                                     <xs:sequence>
                                         <xs:element name="mirror" type="aif:t_pacuri" maxOccurs="unbounded"
                                                     minOccurs="1"/>
                                     </xs:sequence>
                                 </xs:complexType>
-                                <xs:unique name="uniq_mirrors">
-                                    <xs:selector xpath="aif:mirror"/>
-                                    <xs:field xpath="."/>
-                                </xs:unique>
                             </xs:element>
                             <xs:element name="software" maxOccurs="1" minOccurs="0">
                                 <xs:complexType>
@@ -610,6 +652,18 @@
                                         </xs:element>
                                     </xs:sequence>
                                 </xs:complexType>
+                                <xs:unique name="uniq_repos">
+                                    <xs:selector xpath="aif:repos"/>
+                                    <xs:field xpath="repo"/>
+                                </xs:unique>
+                                <xs:unique name="uniq_mirror">
+                                    <xs:selector xpath="aif:mirrorList"/>
+                                    <xs:field xpath="mirror"/>
+                                </xs:unique>
+                                <xs:unique name="uniq_pkg">
+                                    <xs:selector xpath="aif:software"/>
+                                    <xs:field xpath="package"/>
+                                </xs:unique>
                             </xs:element>
                         </xs:sequence>
                         <xs:attribute name="command" type="aif:t_nonempty" use="optional" default="pacman -S"/>
@@ -629,15 +683,28 @@
                 <xs:element name="scripts" maxOccurs="1" minOccurs="0">
                     <xs:complexType>
                         <xs:sequence>
-                            <xs:element name="script" minOccurs="1" maxOccurs="unbounded">
+                            <xs:element name="pre" minOccurs="0" maxOccurs="unbounded">
                                 <xs:complexType>
-                                    <xs:attribute name="uri" type="aif:t_scripturi" use="required"/>
-                                    <xs:attribute name="execution" type="aif:t_scripttype" use="required"/>
-                                    <xs:attribute name="user" type="aif:t_nonempty" use="optional"/>
-                                    <xs:attribute name="password" type="aif:t_nonempty" use="optional"/>
-                                    <xs:attribute name="realm" type="aif:t_nonempty" use="optional"/>
-                                    <xs:attribute name="authtype" type="aif:t_authselect" use="optional"
-                                                  default="none"/>
+                                    <xs:sequence>
+                                        <xs:element name="script" minOccurs="1" maxOccurs="unbounded"
+                                                    type="aif:t_provscript"/>
+                                    </xs:sequence>
+                                </xs:complexType>
+                            </xs:element>
+                            <xs:element name="post" minOccurs="0" maxOccurs="unbounded">
+                                <xs:complexType>
+                                    <xs:sequence>
+                                        <xs:element name="script" minOccurs="1" maxOccurs="unbounded"
+                                                    type="aif:t_provscript"/>
+                                    </xs:sequence>
+                                </xs:complexType>
+                            </xs:element>
+                            <xs:element name="pkg" minOccurs="0" maxOccurs="unbounded">
+                                <xs:complexType>
+                                    <xs:sequence>
+                                        <xs:element name="script" minOccurs="1" maxOccurs="unbounded"
+                                                    type="aif:t_provscript"/>
+                                    </xs:sequence>
                                 </xs:complexType>
                             </xs:element>
                         </xs:sequence>
@@ -649,6 +716,7 @@
                 </xs:element>
                 <!-- END SCRIPTS -->
             </xs:all>
+            <xs:attribute name="version" type="aif:t_nonempty" use="required"/>
         </xs:complexType>
     </xs:element>
 </xs:schema>

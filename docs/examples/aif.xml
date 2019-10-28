@@ -1,21 +1,26 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <aif xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
      xmlns="http://aif-ng.io/"
-     xsi:schemaLocation="http://aif-ng.io/aif.xsd">
+     xsi:schemaLocation="http://aif-ng.io/aif.xsd"
+     version="0.2.0">
     <storage>
-        <disk device="/dev/sda" diskFormat="gpt">
-            <!-- Partitions are numbered *in the order they are specified*. -->
-            <part id="boot" name="BOOT" label="/boot" start="0%" stop="10%"
-                  fsType="fat32"/><!-- e.g. this would be /dev/sda1 -->
-            <part id="secrets1" name="crypted" label="shh" start="10%" stop="20%" fsType="ext4"/>
-            <part id="lvm_member1" name="jbod" label="dynamic" start="20%" stop="30%" fsType="ext4"/>
-            <part id="raid1_d1" start="30%" stop="55%" fsType="ext4"/>
-            <part id="raid1_d2" start="55%" stop="80%" fsType="ext4"/>
-            <part id="swap" start="80%" stop="100%" fsType="linux-swap(v1)"/>
-        </disk>
+        <blockDevices>
+            <disk device="/dev/sda" diskFormat="gpt">
+                <!-- Partitions are numbered *in the order they are specified*. -->
+                <part id="boot" name="BOOT" label="/boot" start="0%" stop="10%"
+                      fsType="fat32"/><!-- e.g. this would be /dev/sda1 -->
+                <part id="secrets1" name="crypted" label="shh" start="10%" stop="20%" fsType="ext4"/>
+                <part id="lvm_member1" name="jbod" label="dynamic" start="20%" stop="30%" fsType="ext4"/>
+                <part id="raid1_d1" start="30%" stop="55%" fsType="ext4"/>
+                <part id="raid1_d2" start="55%" stop="80%" fsType="ext4"/>
+                <part id="swap" start="80%" stop="100%" fsType="linux-swap(v1)"/>
+            </disk>
+        </blockDevices>
         <!-- "Special" devices are processed *in the order they are specified*. This is important if you wish to
              e.g. layer LUKS on top of LVM - you would specify <lvm> before <luks> and reference the
-             <luksDev id="SOMETHING" ... > as <lvmLogical source="SOMETHING" ... />. -->
+             <luksDev id="SOMETHING" ... > as <lvmLogical source="SOMETHING" ... />.
+             Of course, a limitation of this is you cannot e.g. first assemble a LUKS volume, then an LVM
+             group, and then another LUKS volume - so plan accordingly and/or perform this in a <post> script. -->
         <luks>
             <luksDev id="luks_secrets" name="secrets" source="secrets1">
                 <!-- You can assign multiple secrets (or "keys") to a LUKS volume. -->
@@ -93,22 +98,31 @@
         </iface>
     </network>
     <system timezone="EST5EDT" chrootPath="/mnt/aif" reboot="0">
+        <rootPassword>
+            <passwordPlain>1ns3cur3p4ssw0rd</passwordPlain>
+        </rootPassword>
         <locales>
             <locale name="LANG">en_US.UTF-8</locale>
         </locales>
-        <!-- note: all password hashes below are "test"; don't waste your time trying to crack. :) -->
-        <users rootPass="$6$3YPpiS.l3SQC6ELe$NQ4qMvcDpv5j1cCM6AGNc5Hyg.rsvtzCt2VWlSbuZXCGg2GB21CMUN8TMGS35tdUezZ/n9y3UFGlmLRVWXvZR.">
+        <!-- Note: The password hashe below is "test"; don't waste your time trying to crack. :) -->
+        <users>
             <user name="aifusr"
                   home="/opt/aifusr"
                   sudo="true"
-                  password="$6$WtxZKOyaahvvWQRG$TUys60kQhF0ffBdnDSJVTA.PovwCOajjMz8HEHL2H0ZMi0bFpDTQvKA7BqzM3nA.ZMAUxNjpJP1dG/eA78Zgw0"
                   comment="A test user for AIF.">
+                <password>
+                    <passwordHash hashType="(detect)">
+                        $6$WtxZKOyaahvvWQRG$TUys60kQhF0ffBdnDSJVTA.PovwCOajjMz8HEHL2H0ZMi0bFpDTQvKA7BqzM3nA.ZMAUxNjpJP1dG/eA78Zgw0
+                    </passwordHash>
+                </password>
                 <xGroup name="admins" create="true"/>
                 <xGroup name="wheel"/>
                 <xGroup name="users"/>
             </user>
         </users>
-        <service name="sshd" status="0"/>
+        <services>
+            <service status="1">sshd</service>
+        </services>
     </system>
     <pacman>
         <repos>
@@ -130,17 +144,21 @@
             <mirror>http://mirror.jmu.edu/pub/archlinux/$repo/os/$arch</mirror>
         </mirrorList>
         <software>
-            <package name="sed" repo="core"/>
-            <package name="python"/>
-            <package name="perl"/>
-            <package name="openssh"/>
+            <package repo="core">sed</package>
+            <package>python</package>
+            <package>perl</package>
+            <package>openssh</package>
         </software>
     </pacman>
     <bootloader type="grub" target="/boot" efi="true"/>
     <scripts>
-        <script uri="https://aif.square-r00t.net/sample-scripts/post/first.sh" order="1" execution="post"/>
-        <script uri="https://aif.square-r00t.net/sample-scripts/pre/second.pl" order="2" execution="pre"/>
-        <script uri="https://aif.square-r00t.net/sample-scripts/pre/first.sh" order="1" execution="pre"/>
-        <script uri="https://aif.square-r00t.net/sample-scripts/post/second.py" order="2" execution="post"/>
+        <pre>
+            <script>https://aif.square-r00t.net/sample-scripts/pre/first.sh</script>
+            <script>https://aif.square-r00t.net/sample-scripts/pre/second.pl</script>
+        </pre>
+        <post>
+            <script>https://aif.square-r00t.net/sample-scripts/post/first.sh</script>
+            <script>https://aif.square-r00t.net/sample-scripts/post/second.py</script>
+        </post>
     </scripts>
 </aif>
