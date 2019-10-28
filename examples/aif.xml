@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <aif xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
      xmlns="http://aif-ng.io/"
-     xsi:schemaLocation="http://aif-ng.io/aif.xsd"
+     xsi:schemaLocation="AIF http://aif-ng.io/aif.xsd"
      version="0.2.0">
     <storage>
         <blockDevices>
