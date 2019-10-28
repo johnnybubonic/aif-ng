@@ -39,8 +39,8 @@ _units = {'B': 0,
 _pos_re = re.compile((r'^(?P<pos_or_neg>-|\+)?\s*'
                       r'(?P<size>[0-9]+)\s*'
                       # empty means size in sectors
-                      r'(?P<pct_unit_or_sct>%|[{0}]|)\s*$'.format(''.join(list(_units.keys())))),
-                     re.IGNORECASE)
+                      r'(?P<pct_unit_or_sct>%|{0}|)\s*$'.format('|'.join(list(_units.keys())))
+                      ))
 
 
 def convertSizeUnit(pos):
@@ -69,6 +69,7 @@ class Partition(object):
             raise ValueError(('You must specify if this is a '
                               'primary, extended, or logical partition for msdos partition tables'))
         self.xml = part_xml
+        self.id = part_xml.attrib['id']
         self.partnum = partnum
         if tbltype == 'msdos':
             if partnum > 4:

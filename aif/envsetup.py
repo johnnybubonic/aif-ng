@@ -13,8 +13,8 @@ import tempfile
 import venv
 
 # TODO: a more consistent way of managing deps?
-depmods = ['blkinfo', 'gpg', 'lxml', 'passlib', 'psutil',
-           'pyparted', 'pytz', 'requests', 'validators']
+depmods = ['blkinfo', 'gpg', 'lxml', 'mdstat', 'passlib', 'psutil',
+           'pyparted', 'pyroute2', 'pytz', 'requests', 'validators']
 
 class EnvBuilder(object):
     def __init__(self):

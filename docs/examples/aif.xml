@@ -5,18 +5,35 @@
     <storage>
         <disk device="/dev/sda" diskFormat="gpt">
             <!-- Partitions are numbered *in the order they are specified*. -->
-            <part id="boot" name="BOOT" label="/boot" start="0%" stop="10%" fsType="ef00"/><!-- e.g. this would be /dev/sda1 -->
-            <part id="secrets1" name="crypted" label="shh" start="10%" stop="20%" fsType="8300"/>
-            <part id="lvm_member1" name="jbod" label="dynamic" start="20%" stop="30%" fsType="8300"/>
-            <part id="raid1_d1" start="30%" stop="55%" fsType="fd00"/>
-            <part id="raid1_d2" start="55%" stop="80%" fsType="fd00"/>
-            <part id="swap" start="80%" stop="100%" fsType="8200" />
+            <part id="boot" name="BOOT" label="/boot" start="0%" stop="10%"
+                  fsType="fat32"/><!-- e.g. this would be /dev/sda1 -->
+            <part id="secrets1" name="crypted" label="shh" start="10%" stop="20%" fsType="ext4"/>
+            <part id="lvm_member1" name="jbod" label="dynamic" start="20%" stop="30%" fsType="ext4"/>
+            <part id="raid1_d1" start="30%" stop="55%" fsType="ext4"/>
+            <part id="raid1_d2" start="55%" stop="80%" fsType="ext4"/>
+            <part id="swap" start="80%" stop="100%" fsType="linux-swap(v1)"/>
         </disk>
         <!-- "Special" devices are processed *in the order they are specified*. This is important if you wish to
              e.g. layer LUKS on top of LVM - you would specify <lvm> before <luks> and reference the
              <luksDev id="SOMETHING" ... > as <lvmLogical source="SOMETHING" ... />. -->
         <luks>
-            <luksDev id="luks_secrets" name="secrets" source="secrets1" secret="superSeekritPassword"/>
+            <luksDev id="luks_secrets" name="secrets" source="secrets1">
+                <!-- You can assign multiple secrets (or "keys") to a LUKS volume. -->
+                <secrets>
+                    <!-- A simple passphrase. -->
+                    <passphrase>secrets1</passphrase>
+                </secrets>
+                <secrets>
+                    <!-- A key that uses a keyfile on a mounted path. This example uses the passphrase in
+                         a plaintext file, which is in turn read by LUKS. -->
+                    <passphrase>secrets1</passphrase>
+                    <keyFile>/boot/.decrypt.plaintext</keyFile>
+                </secrets>
+                <secrets>
+                    <!-- This will generate a 4096-byte file of random data. -->
+                    <keyFile size="4096">/root/.decrypt.key</keyFile>
+                </secrets>
+            </luksDev>
         </luks>
         <lvm>
             <lvmGroup id="vg1" name="GroupName">
@@ -24,7 +41,9 @@
             </lvmGroup>
         </lvm>
         <mdadm>
-            <array id="mdadm1" name="extra_data" meta="1.2" level="1">
+            <!-- level can be 0, 1, 4, 5, or 6. RAID 10 would be done by creating an array with members of a
+                 previously assembled array. -->
+            <array id="mdadm1" name="md0" meta="1.2" level="1">
                 <member source="raid1_d1"/>
                 <member source="raid1_d2"/>
             </array>
@@ -40,48 +59,67 @@
                 <opt name="-L">seekrit</opt>
             </fs>
         </fileSystems>
-        <!-- And you use the id to reference mountpoints as well. -->
-        <mount source="luks_secrets" target="/mnt/aif" order="1">
-            <opt name="rw"/>
-            <opt name="relatime"/>
-            <opt name="compress">lzo</opt>
-            <opt name="ssd"/>
-            <opt name="space_cache"/>
-            <opt name="subvolid">5</opt>
-            <opt name="subvol">/</opt>
-        </mount>
-        <mount source="boot" target="/mnt/aif/boot" order="2" />
-        <mount source="swap" target="swap" order="3" />
-        <mount source="vg1" target="/mnt/aif/mnt/pool" order="4" />
-        <mount source="mdadm1" target="/mnt/aif/mnt/raid" order="5" />
+        <mountPoints>
+            <!-- And you use the id to reference mountpoints as well. -->
+            <mount source="luks_secrets" target="/mnt/aif">
+                <opt name="rw"/>
+                <opt name="relatime"/>
+                <opt name="compress">lzo</opt>
+                <opt name="ssd"/>
+                <opt name="space_cache"/>
+                <opt name="subvolid">5</opt>
+                <opt name="subvol">/</opt>
+            </mount>
+            <mount source="boot" target="/mnt/aif/boot"/>
+            <mount source="swap" target="swap"/>
+            <mount source="vg1" target="/mnt/aif/mnt/pool"/>
+            <mount source="mdadm1" target="/mnt/aif/mnt/raid"/>
+        </mountPoints>
     </storage>
     <network hostname="aiftest.square-r00t.net">
-        <iface device="auto" address="auto" netProto="ipv4" />
+        <iface device="auto">
+            <addresses>
+                <ipv4>
+                    <address>dhcp</address>
+                </ipv4>
+                <ipv6>
+                    <address>slaac</address>
+                    <address>fde4:16b9:654b:bbfa::15/64</address>
+                </ipv6>
+            </addresses>
+            <resolvers>
+                <resolver>8.8.8.8</resolver>
+            </resolvers>
+        </iface>
     </network>
-    <system timezone="EST5EDT" locale="en_US.UTF-8" chrootPath="/mnt/aif" reboot="0">
+    <system timezone="EST5EDT" chrootPath="/mnt/aif" reboot="0">
+        <locales>
+            <locale name="LANG">en_US.UTF-8</locale>
+        </locales>
         <!-- note: all password hashes below are "test"; don't waste your time trying to crack. :) -->
         <users rootPass="$6$3YPpiS.l3SQC6ELe$NQ4qMvcDpv5j1cCM6AGNc5Hyg.rsvtzCt2VWlSbuZXCGg2GB21CMUN8TMGS35tdUezZ/n9y3UFGlmLRVWXvZR.">
             <user name="aifusr"
+                  home="/opt/aifusr"
                   sudo="true"
                   password="$6$WtxZKOyaahvvWQRG$TUys60kQhF0ffBdnDSJVTA.PovwCOajjMz8HEHL2H0ZMi0bFpDTQvKA7BqzM3nA.ZMAUxNjpJP1dG/eA78Zgw0"
                   comment="A test user for AIF.">
-                <home path="/opt/aifusr" create="true" />
-                <xGroup name="admins" create="true" />
-                <xGroup name="wheel" />
-                <xGroup name="users" />
+                <xGroup name="admins" create="true"/>
+                <xGroup name="wheel"/>
+                <xGroup name="users"/>
             </user>
         </users>
-        <service name="sshd" status="0" />
+        <service name="sshd" status="0"/>
     </system>
     <pacman>
         <repos>
-            <repo name="core" enabled="true" sigLevel="default" mirror="file:///etc/pacman.d/mirrorlist" />
-            <repo name="extra" enabled="true" sigLevel="default" mirror="file:///etc/pacman.d/mirrorlist" />
-            <repo name="community" enabled="true" sigLevel="default" mirror="file:///etc/pacman.d/mirrorlist" />
-            <repo name="multilib" enabled="true" sigLevel="default" mirror="file:///etc/pacman.d/mirrorlist" />
-            <repo name="testing" enabled="false" sigLevel="default" mirror="file:///etc/pacman.d/mirrorlist" />
-            <repo name="multilib-testing" enabled="false" sigLevel="default" mirror="file:///etc/pacman.d/mirrorlist" />
-            <repo name="archlinuxfr" enabled="false" sigLevel="Optional TrustedOnly" mirror="http://repo.archlinux.fr/$arch" />
+            <repo name="core" enabled="true" sigLevel="default" mirror="file:///etc/pacman.d/mirrorlist"/>
+            <repo name="extra" enabled="true" sigLevel="default" mirror="file:///etc/pacman.d/mirrorlist"/>
+            <repo name="community" enabled="true" sigLevel="default" mirror="file:///etc/pacman.d/mirrorlist"/>
+            <repo name="multilib" enabled="true" sigLevel="default" mirror="file:///etc/pacman.d/mirrorlist"/>
+            <repo name="testing" enabled="false" sigLevel="default" mirror="file:///etc/pacman.d/mirrorlist"/>
+            <repo name="multilib-testing" enabled="false" sigLevel="default" mirror="file:///etc/pacman.d/mirrorlist"/>
+            <repo name="archlinuxfr" enabled="false" sigLevel="Optional TrustedOnly"
+                  mirror="http://repo.archlinux.fr/$arch"/>
         </repos>
         <mirrorList>
             <mirror>http://arch.mirror.square-r00t.net/$repo/os/$arch</mirror>
@@ -92,17 +130,17 @@
             <mirror>http://mirror.jmu.edu/pub/archlinux/$repo/os/$arch</mirror>
         </mirrorList>
         <software>
-            <package name="sed" repo="core" />
-            <package name="python" />
-            <package name="perl" />
-            <package name="openssh" />
+            <package name="sed" repo="core"/>
+            <package name="python"/>
+            <package name="perl"/>
+            <package name="openssh"/>
         </software>
     </pacman>
-    <bootloader type="grub" target="/boot" efi="true" />
+    <bootloader type="grub" target="/boot" efi="true"/>
     <scripts>
-        <script uri="https://aif.square-r00t.net/sample-scripts/post/first.sh" order="1" execution="post" />
-        <script uri="https://aif.square-r00t.net/sample-scripts/pre/second.pl" order="2" execution="pre" />
-        <script uri="https://aif.square-r00t.net/sample-scripts/pre/first.sh" order="1" execution="pre" />
-        <script uri="https://aif.square-r00t.net/sample-scripts/post/second.py" order="2" execution="post" />
+        <script uri="https://aif.square-r00t.net/sample-scripts/post/first.sh" order="1" execution="post"/>
+        <script uri="https://aif.square-r00t.net/sample-scripts/pre/second.pl" order="2" execution="pre"/>
+        <script uri="https://aif.square-r00t.net/sample-scripts/pre/first.sh" order="1" execution="pre"/>
+        <script uri="https://aif.square-r00t.net/sample-scripts/post/second.py" order="2" execution="post"/>
     </scripts>
 </aif>

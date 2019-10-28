@@ -24,7 +24,7 @@ with open('/proc/filesystems', 'r') as fh:
 _mod_dir = os.path.join('/lib/modules',
                         os.uname().release,
                         'kernel/fs')
-_strip_mod_suffix = re.compile(r'(?P<fsname>)\.ko(\.(x|g)?z))?$', re.IGNORECASE)
+_strip_mod_suffix = re.compile(r'(?P<fsname>)\.ko(\.(x|g)?z)?$', re.IGNORECASE)
 for i in os.listdir(_mod_dir):
     path = os.path.join(_mod_dir, i)
     fs_name = None
