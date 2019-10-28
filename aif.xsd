@@ -147,10 +147,10 @@
     <xs:simpleType name="t_shadowhash">
         <!-- http://man7.org/linux/man-pages/man3/crypt.3.html#NOTES -->
         <xs:restriction base="xs:token">
-            <xs:pattern value="(\$1)?(\$[a-zA-Z0-9./]{1,16})\$[a-zA-Z0-9./]{22}"/><!-- md5 -->
-            <xs:pattern value="(\$2[abxy]?)?(\$[0-9]+)\$[a-zA-Z0-9./]{53}"/><!-- Blowfish -->
-            <xs:pattern value="(\$5)?(\$[a-zA-Z0-9./]{1,16})\$[a-zA-Z0-9./]{43}"/><!-- sha256 -->
-            <xs:pattern value="(\$6)?(\$[a-zA-Z0-9./]{1,16})\$[a-zA-Z0-9./]{86}"/><!-- sha512 -->
+            <xs:pattern value="($1)?($[a-zA-Z0-9./]{1,16})$[a-zA-Z0-9./]{22}"/><!-- md5 -->
+            <xs:pattern value="($2[abxy]?)?($[0-9]+)$[a-zA-Z0-9./]{53}"/><!-- Blowfish -->
+            <xs:pattern value="($5)?($[a-zA-Z0-9./]{1,16})$[a-zA-Z0-9./]{43}"/><!-- sha256 -->
+            <xs:pattern value="($6)?($[a-zA-Z0-9./]{1,16})$[a-zA-Z0-9./]{86}"/><!-- sha512 -->
             <xs:whiteSpace value="collapse"/>
         </xs:restriction>
     </xs:simpleType>
