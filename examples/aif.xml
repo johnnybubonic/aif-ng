@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <aif xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
      xmlns="http://aif-ng.io/"
-     xsi:schemaLocation="AIF http://aif-ng.io/aif.xsd"
-     version="0.2.0">
+     xsi:schemaLocation="http://aif-ng.io/ http://aif-ng.io/aif.xsd"
+     version="v2_rewrite"><!-- When we release, this should match the tagged release (e.g. 0.2.0) -->
     <storage>
         <blockDevices>
             <disk device="/dev/sda" diskFormat="gpt">
                 <!-- Partitions are numbered *in the order they are specified*. -->
-                <part id="boot" name="BOOT" label="/boot" start="0%" stop="10%"
-                      fsType="fat32"/><!-- e.g. this would be /dev/sda1 -->
+                <!-- e.g. "boot" would be /dev/sda1, "secrets1" would be /dev/sda2, etc. -->
+                <part id="boot" name="BOOT" label="/boot" start="0%" stop="10%" fsType="fat32"/>
                 <part id="secrets1" name="crypted" label="shh" start="10%" stop="20%" fsType="ext4"/>
                 <part id="lvm_member1" name="jbod" label="dynamic" start="20%" stop="30%" fsType="ext4"/>
                 <part id="raid1_d1" start="30%" stop="55%" fsType="ext4"/>
@@ -46,8 +46,8 @@
             </lvmGroup>
         </lvm>
         <mdadm>
-            <!-- level can be 0, 1, 4, 5, or 6. RAID 10 would be done by creating an array with members of a
-                 previously assembled array. -->
+            <!-- level can be 0, 1, 4, 5, 6, or 10. RAID 1+0 (which is different from mdadm RAID10) would be done by
+                 creating an array with members of a previously assembled array. -->
             <array id="mdadm1" name="md0" meta="1.2" level="1">
                 <member source="raid1_d1"/>
                 <member source="raid1_d2"/>
