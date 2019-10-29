@@ -1,8 +1,9 @@
+import copy
 import os
 import re
 ##
 import requests
-from lxml import etree
+from lxml import etree, objectify
 
 _patterns = {'raw': re.compile(r'^\s*(?P<xml><(\?xml|aif)\s+.*)\s*$', re.DOTALL|re.MULTILINE),
              'remote': re.compile(r'^(?P<uri>(?P<proto>(https?|ftps?)://)(?P<path>.*))\s*$'),
@@ -19,6 +20,7 @@ class Config(object):
         self.raw = None
         self.xsd = None
         self.defaultsParser = None
+        self.obj = None
 
     def main(self, validate = True, populate_defaults = True):
         self.fetch()
@@ -27,6 +29,7 @@ class Config(object):
             self.populateDefaults()
         if validate:
             self.validate()
+        self.pythonize()
         return()
 
     def fetch(self):  # Just a fail-safe; this is overridden by specific subclasses.
@@ -53,7 +56,7 @@ class Config(object):
             if len(split_url) == 2:  # a properly defined schemaLocation
                 schemaURL = split_url[1]
             else:
-                schemaURL = split_url[0]
+                schemaURL = split_url[0]  # a LAZY schemaLocation
             req = requests.get(schemaURL)
             if not req.ok:
                 # TODO: logging!
@@ -82,21 +85,63 @@ class Config(object):
         self.parseRaw(parser = self.defaultsParser)
         return()
 
+    def pythonize(self, stripped = True, obj = 'tree'):
+        # https://bugs.launchpad.net/lxml/+bug/1850221
+        strobj = self.toString(stripped = stripped, obj = obj)
+        self.obj = objectify.fromstring(strobj)
+        objectify.annotate(self.obj)
+        objectify.xsiannotate(self.obj)
+        return()
+
     def removeDefaults(self):
         self.parseRaw()
         return()
 
-    def stripNS(self):
+    def stripNS(self, obj = None):
         # https://stackoverflow.com/questions/30232031/how-can-i-strip-namespaces-out-of-an-lxml-tree/30233635#30233635
-        for x in (self.tree, self.xml):
-            for e in x.xpath("descendant-or-self::*[namespace-uri()!='']"):
+        xpathq = "descendant-or-self::*[namespace-uri()!='']"
+        if not obj:
+            for x in (self.tree, self.xml):
+                for e in x.xpath(xpathq):
+                    e.tag = etree.QName(e).localname
+        elif isinstance(obj, (etree._Element, etree._ElementTree)):
+            obj = copy.deepcopy(obj)
+            for e in obj.xpath(xpathq):
                 e.tag = etree.QName(e).localname
+            return(obj)
+        else:
+            raise ValueError('Did not know how to parse obj parameter')
         return()
+
+    def toString(self, stripped = False, obj = None):
+        if isinstance(obj, (etree._Element, etree._ElementTree)):
+            if stripped:
+                obj = self.stripNS(obj)
+        elif obj in ('tree', None):
+            if not stripped:
+                obj = self.namespaced_tree
+            else:
+                obj = self.tree
+        elif obj == 'xml':
+            if not stripped:
+                obj = self.namespaced_xml
+            else:
+                obj = self.xml
+        else:
+            raise ValueError(('obj parameter must be "tree", "xml", or of type '
+                              'lxml.etree._Element or lxml.etree._ElementTree'))
+        obj = copy.deepcopy(obj)
+        strxml = etree.tostring(obj,
+                                encoding = 'utf-8',
+                                xml_declaration = True,
+                                pretty_print = True,
+                                with_tail = True,
+                                inclusive_ns_prefixes = True)
+        return(strxml)
 
     def validate(self):
         if not self.xsd:
             self.getXSD()
-        self.xsd.assertValid(self.tree)
         self.xsd.assertValid(self.namespaced_tree)
         return()
 

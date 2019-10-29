@@ -75,6 +75,31 @@
         </xs:restriction>
     </xs:simpleType>
 
+    <xs:simpleType name="t_part_flags">
+        <!-- parted.partition.partitionFlag -->
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="atvrecv"/>
+            <xs:enumeration value="bios_grub"/>
+            <xs:enumeration value="boot"/>
+            <xs:enumeration value="diag"/>
+            <xs:enumeration value="esp"/>
+            <xs:enumeration value="hidden"/>
+            <xs:enumeration value="hp-service"/>
+            <xs:enumeration value="irst"/>
+            <xs:enumeration value="lba"/>
+            <xs:enumeration value="legacy_boot"/>
+            <xs:enumeration value="lvm"/>
+            <xs:enumeration value="msftdata"/>
+            <xs:enumeration value="msftres"/>
+            <xs:enumeration value="palo"/>
+            <xs:enumeration value="prep"/>
+            <xs:enumeration value="raid"/>
+            <xs:enumeration value="root"/>
+            <xs:enumeration value="swap"/>
+            <xs:whiteSpace value="collapse"/>
+        </xs:restriction>
+    </xs:simpleType>
+
     <xs:simpleType name="t_iface">
         <xs:restriction base="xs:token">
             <!-- https://github.com/systemd/systemd/blob/master/src/udev/udev-builtin-net_id.c.
@@ -224,6 +249,16 @@
         </xs:restriction>
     </xs:simpleType>
 
+    <xs:simpleType name="t_raid_layout">
+        <!-- mdadm(8), "layout=" option -->
+        <!-- We don't need to cook in the "faulty" levels. -->
+        <xs:restriction base="xs:token">
+            <xs:pattern
+                    value="((left|right)-a?symmetric(-6)?|[lr][as]|parity-(fir|la)st|ddf-(zero|N)-restart|ddf-N-continue|parity-first-6|[nof][0-9]+|none)"/>
+            <xs:whiteSpace value="collapse"/>
+        </xs:restriction>
+    </xs:simpleType>
+
     <xs:simpleType name="t_nonempty">
         <xs:restriction base="xs:token">
             <xs:minLength value="1"/>
@@ -283,6 +318,11 @@
                                                 <xs:sequence>
                                                     <xs:element name="part" minOccurs="1" maxOccurs="unbounded">
                                                         <xs:complexType>
+                                                            <xs:sequence minOccurs="0" maxOccurs="1">
+                                                                <xs:element name="partitionFlag" minOccurs="1"
+                                                                            maxOccurs="unbounded"
+                                                                            type="aif:t_part_flags"/>
+                                                            </xs:sequence>
                                                             <xs:attribute name="id" type="aif:t_nonempty"
                                                                           use="required"/>
                                                             <xs:attribute name="name" type="aif:t_nonempty"
@@ -422,6 +462,13 @@
                                                 <xs:attribute name="meta" use="optional" default="1.2"
                                                               type="aif:t_raid_meta"/>
                                                 <xs:attribute name="level" use="required" type="aif:t_raid_levels"/>
+                                                <!-- KB *only*. -->
+                                                <!-- Can be pretty important!
+                                                     https://www.zdnet.com/article/chunks-the-hidden-key-to-raid-performance/ -->
+                                                <xs:attribute name="chunkSize" use="optional" type="xs:positiveInteger"
+                                                              default="512"/>
+                                                <xs:attribute name="layout" use="optional" type="aif:t_raid_layout"
+                                                              default="none"/>
                                             </xs:complexType>
                                         </xs:element>
                                     </xs:sequence>

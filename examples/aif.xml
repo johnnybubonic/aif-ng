@@ -8,12 +8,24 @@
             <disk device="/dev/sda" diskFormat="gpt">
                 <!-- Partitions are numbered *in the order they are specified*. -->
                 <!-- e.g. "boot" would be /dev/sda1, "secrets1" would be /dev/sda2, etc. -->
-                <part id="boot" name="BOOT" label="/boot" start="0%" stop="10%" fsType="fat32"/>
-                <part id="secrets1" name="crypted" label="shh" start="10%" stop="20%" fsType="ext4"/>
-                <part id="lvm_member1" name="jbod" label="dynamic" start="20%" stop="30%" fsType="ext4"/>
-                <part id="raid1_d1" start="30%" stop="55%" fsType="ext4"/>
-                <part id="raid1_d2" start="55%" stop="80%" fsType="ext4"/>
-                <part id="swap" start="80%" stop="100%" fsType="linux-swap(v1)"/>
+                <part id="boot" name="BOOT" label="/boot" start="0%" stop="10%" fsType="fat32">
+                    <partitionFlag>esp</partitionFlag>
+                </part>
+                <part id="secrets1" name="crypted" label="shh" start="10%" stop="20%" fsType="ext4">
+                    <partitionFlag>root</partitionFlag>
+                </part>
+                <part id="lvm_member1" name="jbod" label="dynamic" start="20%" stop="30%" fsType="ext4">
+                    <partitionFlag>lvm</partitionFlag>
+                </part>
+                <part id="raid1_d1" start="30%" stop="55%" fsType="ext4">
+                    <partitionFlag>raid</partitionFlag>
+                </part>
+                <part id="raid1_d2" start="55%" stop="80%" fsType="ext4">
+                    <partitionFlag>raid</partitionFlag>
+                </part>
+                <part id="swap" start="80%" stop="100%" fsType="linux-swap(v1)">
+                    <partitionFlag>swap</partitionFlag>
+                </part>
             </disk>
         </blockDevices>
         <!-- "Special" devices are processed *in the order they are specified*. This is important if you wish to
