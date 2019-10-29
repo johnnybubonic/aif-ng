@@ -1,4 +1,5 @@
 import copy
+import datetime
 import math
 import re
 import subprocess
@@ -23,6 +24,14 @@ SUPPORTED_LAYOUTS = {5: (re.compile(r'^((left|right)-a?symmetric|[lr][as]|'
                      10: (re.compile(r'^[nof][0-9]+$'),
                           None)}
 
+_mdblock_size_re = re.compile(r'^(?P<sectors>[0-9]+)\s+'
+                              r'\((?P<GiB>[0-9.]+)\s+GiB\s+'
+                              r'(?P<GB>[0-9.]+)\s+GB\)')
+_mdblock_unused_re = re.compile(r'^before=(?P<before>[0-9]+)\s+sectors,'
+                                r'\s+after=(?P<after>[0-9]+)\s+sectors$')
+_mdblock_badblock_re = re.compile(r'^(?P<entries>[0-9]+)\s+entries'
+                                  r'[A-Za-z\s]+'
+                                  r'(?P<offset>[0-9]+)\s+sectors$')
 
 def _itTakesTwo(n):
     # So dumb.
@@ -43,14 +52,90 @@ class Member(object):
             raise ValueError(('partobj must be of type aif.disk.block.Partition, '
                               'aif.disk.block.Disk, or aif.disk.mdadm.Array'))
         self.devpath = self.device.devpath
+        self.is_superblocked = None
+        self.superblock = None
+        self._parseDeviceBlock()
+
+    def _parseDeviceBlock(self):
+        # I can't believe the mdstat module doesn't really have a way to do this.
+        super = subprocess.run(['mdadm', '--examine', self.devpath],
+                               stdout = subprocess.PIPE,
+                               stderr = subprocess.PIPE)
+        if super.returncode != 0:
+            # TODO: logging?
+            self.is_superblocked = False
+            return(None)
+        block = {}
+        for idx, line in enumerate(super.stdout.decode('utf-8').splitlines()):
+            line = line.strip()
+            if idx == 0:  # This is just the same as self.device.devpath.
+                continue
+            if line == '':
+                continue
+            k, v = [i.strip() for i in line.split(':', 1)]
+            orig_k = k
+            k = re.sub(r'\s+', '_', k.lower())
+            if k in ('raid_devices', 'events'):
+                v = int(v)
+            elif k == 'magic':
+                v = bytes.fromhex(v)
+            elif k == 'name':
+                # TODO: Will this *always* give 2 values?
+                name, local_to = [i.strip() for i in v.split(None, 1)]
+                local_to = re.sub(r'[()]', '', local_to)
+                v = (name, local_to)
+            elif k == 'raid_level':
+                v = re.sub(r'^raid', '', v)
+            elif k == 'checksum':
+                cksum, status = [i.strip() for i in v.split('-')]
+                v = (int(cksum), status)
+            elif k == 'unused_space':
+                r = _mdblock_unused_re.search(v)
+                if not r:
+                    raise ValueError(('Could not parse {0} for '
+                                      '{1}\'s superblock').format(orig_k,
+                                                                  self.devpath))
+                v = {}
+                for i in ('before', 'after'):
+                    v[i] = int(r.group(i))  # in sectors
+            elif k == 'bad_block_log':
+                k = 'badblock_log_entries'
+                r = _mdblock_badblock_re.search(v)
+                if not r:
+                    raise ValueError(('Could not parse {0} for '
+                                      '{1}\'s superblock').format(orig_k,
+                                                                  self.devpath))
+                v = {}
+                for i in ('entries', 'offset'):
+                    v[i] = int(r.group(i)) # offset is in sectors
+            elif re.search((r'^(creation|update)_time$'), k):
+                # TODO: Is this portable/correct? Or do I need to do '%a %b %d %H:%M:%s %Y'?
+                v = datetime.datetime.strptime(v, '%c')
+            elif re.search(r'^((avail|used)_dev|array)_size$', k):
+                r = _mdblock_size_re.search(v)
+                if not r:
+                    raise ValueError(('Could not parse {0} for '
+                                      '{1}\'s superblock').format(orig_k,
+                                                                  self.devpath))
+                v = {}
+                for i in ('sectors', 'GB', 'GiB'):
+                    v[i] = int(r.group(i))
+            elif re.search(r'^(data|super)_offset$', k):
+                v = int(v.split(None, 1)[0])
+            block[k] = v
+        self.superblock = block
+        self.is_superblocked = True
+        return()
 
     def prepare(self):
-        # TODO: logging
-        subprocess.run(['mdadm', '--misc', '--zero-superblock', self.devpath])
+        if self.is_superblocked:
+            # TODO: logging
+            subprocess.run(['mdadm', '--misc', '--zero-superblock', self.devpath])
+            self.is_superblocked = False
         return()
 
 class Array(object):
-    def __init__(self, array_xml, homehost):
+    def __init__(self, array_xml, homehost, devpath = None):
         self.xml = array_xml
         self.id = array_xml.attrib['id']
         self.level = int(self.xml.attrib['level'])
@@ -79,7 +164,7 @@ class Array(object):
         else:
             self.layout = None
         self.devname = self.xml.attrib['name']
-        self.devpath = '/dev/md/{0}'.format(self.devname)
+        self.devpath = devpath
         self.updateStatus()
         self.members = []
         self.state = None
@@ -92,6 +177,9 @@ class Array(object):
         return()
 
     def assemble(self, scan = False):
+        if not any((self.members, self.devpath)):
+            raise RuntimeError('Cannot assemble an array with no members (for hints) or device path')
+
         cmd = ['mdadm', '--assemble', self.devpath]
         if not scan:
             for m in self.members:
