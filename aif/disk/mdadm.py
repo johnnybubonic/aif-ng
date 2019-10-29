@@ -87,8 +87,8 @@ class Array(object):
     def addMember(self, memberobj):
         if not isinstance(memberobj, Member):
             raise ValueError('memberobj must be of type aif.disk.mdadm.Member')
-
-        pass
+        memberobj.prepare()
+        self.members.append(memberobj)
         return()
 
     def assemble(self, scan = False):

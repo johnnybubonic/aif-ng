@@ -21,7 +21,10 @@ import psutil
 from aif.aif_util import xmlBool
 
 
-PARTED_FSTYPES = list(dict(vars(parted.filesystem))['fileSystemType'].keys())
+PARTED_FSTYPES = sorted(list(dict(vars(parted.filesystem))['fileSystemType'].keys()))
+PARTED_FLAGS = sorted(list(parted.partition.partitionFlag.values()))
+IDX_FLAG = dict(parted.partition.partitionFlag)
+FLAG_IDX = {v: k for k, v in IDX_FLAG.items()}
 
 # parted lib can do SI or IEC (see table to right at https://en.wikipedia.org/wiki/Binary_prefix)
 # We bit-shift to do conversions:
@@ -70,6 +73,11 @@ class Partition(object):
                               'primary, extended, or logical partition for msdos partition tables'))
         self.xml = part_xml
         self.id = part_xml.attrib['id']
+        self.flags = set()
+        for f in self.xml.findall('partitionFlag'):
+            if f.text in PARTED_FLAGS:
+                self.flags.add(f.text)
+        self.flags = sorted(list(self.flags))
         self.partnum = partnum
         if tbltype == 'msdos':
             if partnum > 4:
@@ -126,6 +134,12 @@ class Partition(object):
                                           type = self.part_type,
                                           geometry = self.geometry,
                                           fs = self.filesystem)
+        for f in self.flags[:]:
+            flag_id = FLAG_IDX[f]
+            if self.partition.isFlagAvailable(flag_id):
+                self.partition.setFlag(flag_id)
+            else:
+                self.flags.remove(f)
         if tbltype == 'gpt' and self.xml.attrib.get('name'):
             # The name attribute setting is b0rk3n, so we operate on the underlying PedPartition object.
             # https://github.com/dcantrell/pyparted/issues/49#issuecomment-540096687

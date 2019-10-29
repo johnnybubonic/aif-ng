@@ -224,6 +224,7 @@
     </xs:simpleType>
 
     <xs:simpleType name="t_raid_meta">
+        <!-- Warn about 1.x used for non-aware bootloaders in manual... 0.90 should be used in that case. -->
         <xs:restriction base="xs:token">
             <xs:enumeration value="0"/><!-- Same as 0.90 -->
             <xs:enumeration value="0.90"/><!-- Same as 0 -->
