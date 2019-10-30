@@ -18,7 +18,7 @@ import blkinfo
 import parted  # https://www.gnu.org/software/parted/api/index.html
 import psutil
 ##
-from aif.utils import xmlBool
+from aif.utils import xmlBool, size
 
 
 PARTED_FSTYPES = sorted(list(dict(vars(parted.filesystem))['fileSystemType'].keys()))
@@ -26,23 +26,11 @@ PARTED_FLAGS = sorted(list(parted.partition.partitionFlag.values()))
 IDX_FLAG = dict(parted.partition.partitionFlag)
 FLAG_IDX = {v: k for k, v in IDX_FLAG.items()}
 
-# parted lib can do SI or IEC (see table to right at https://en.wikipedia.org/wiki/Binary_prefix)
-# We bit-shift to do conversions:
-# https://stackoverflow.com/a/12912296/733214
-# https://stackoverflow.com/a/52684562/733214
-_units = {'B': 0,
-          'kB': 7,
-          'MB': 17,
-          'GB': 27,
-          'TB': 37,
-          'KiB': 10,
-          'MiB': 20,
-          'GiB': 30,
-          'TiB': 40}
+# parted lib can do SI or IEC. So can we.
 _pos_re = re.compile((r'^(?P<pos_or_neg>-|\+)?\s*'
                       r'(?P<size>[0-9]+)\s*'
                       # empty means size in sectors
-                      r'(?P<pct_unit_or_sct>%|{0}|)\s*$'.format('|'.join(list(_units.keys())))
+                      r'(?P<pct_unit_or_sct>%|{0}|)\s*$'.format('|'.join(size.valid_storage))
                       ))
 
 
@@ -57,11 +45,11 @@ def convertSizeUnit(pos):
             from_beginning = False
         else:
             from_beginning = pos_or_neg
-        size = int(pos.group('size'))
+        _size = int(pos.group('size'))
         amt_type = pos.group('pct_unit_or_sct').strip()
     else:
         raise ValueError('Invalid size specified: {0}'.format(orig_pos))
-    return((from_beginning, size, amt_type))
+    return((from_beginning, _size, amt_type))
 
 
 class Partition(object):
@@ -105,8 +93,8 @@ class Partition(object):
             sectors = x['size']
             if x['type'] == '%':
                 sectors = int(self.device.getLength() / x['size'])
-            elif x['type'] in _units.keys():
-                sectors = int(x['size'] << _units[x['type']] / self.device.sectorSize)
+            else:
+                sectors = int(size.convertStorage(x['size'], x['type'], target = 'B') / self.device.sectorSize)
             sizes[s] = (sectors, x['from_bgn'])
         if sizes['start'][1] is not None:
             if sizes['start'][1]:

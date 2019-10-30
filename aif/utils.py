@@ -38,6 +38,8 @@ def collapseValues(d, vallist = None):
 class _Sizer(object):
     def __init__(self):
         # We use different methods for converting between storage and BW, and different multipliers for each subtype.
+        # https://stackoverflow.com/a/12912296/733214
+        # https://stackoverflow.com/a/52684562/733214
         # https://stackoverflow.com/questions/5194057/better-way-to-convert-file-sizes-in-python
         # https://en.wikipedia.org/wiki/Orders_of_magnitude_(data)
         # https://en.wikipedia.org/wiki/Binary_prefix
@@ -92,13 +94,13 @@ class _Sizer(object):
         for unit_type, convpair in self.storageUnits.items():
             for f, l in convpair.items():
                 for suffix in l:
-                    if suffix not in self.valid_storage:
+                    if suffix not in self.valid_storage and suffix:
                         self.valid_storage.append(suffix)
         self.valid_bw = []
         for unit_type, convpair in self.bwUnits.items():
             for f, l in convpair.items():
                 for suffix in l:
-                    if suffix not in self.valid_bw:
+                    if suffix not in self.valid_bw and suffix:
                         self.valid_bw.append(suffix)
 
     def convert(self, n, suffix):

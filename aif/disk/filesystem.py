@@ -36,8 +36,9 @@ for i in os.listdir(_mod_dir):
     if fs_name:
         # The kernel *probably* has autoloading enabled, but in case it doesn't...
         # TODO: logging!
-        subprocess.run(['modprobe', fs_name])
-        FS_FSTYPES.append(fs_name)
+        if os.getuid() == 0:
+            subprocess.run(['modprobe', fs_name])
+            FS_FSTYPES.append(fs_name)
 
 
 class FS(object):

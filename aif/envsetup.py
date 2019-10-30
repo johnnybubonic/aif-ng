@@ -11,10 +11,8 @@ import subprocess
 import sys
 import tempfile
 import venv
-
-# TODO: a more consistent way of managing deps?
-depmods = ['blkinfo', 'gpg', 'lxml', 'mdstat', 'passlib', 'psutil',
-           'pyparted', 'pyroute2', 'pytz', 'requests', 'validators']
+##
+import aif.constants
 
 class EnvBuilder(object):
     def __init__(self):
@@ -37,7 +35,7 @@ class EnvBuilder(object):
         # This is SO. DUMB. WHY DO I HAVE TO CALL PIP FROM A SHELL. IT'S WRITTEN IN PYTHON.
         # https://pip.pypa.io/en/stable/user_guide/#using-pip-from-your-program
         # TODO: logging
-        for m in depmods:
+        for m in aif.constants.external_deps:
             pip_cmd = [os.path.join(self.vdir,
                                     'bin',
                                     'python3'),

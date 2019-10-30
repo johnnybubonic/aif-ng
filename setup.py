@@ -1,11 +1,12 @@
 import setuptools
+import aif.constants as PROJ_CONST
 
 with open('README', 'r') as fh:
     long_description = fh.read()
 
 setuptools.setup(
         name = 'aif',
-        version = '0.2.0',
+        version = PROJ_CONST.version,
         author = 'Brent S.',
         author_email = 'bts@square-r00t.net',
         description = 'Arch Installation Framework (Next Generation)',
@@ -31,6 +32,5 @@ setuptools.setup(
         project_urls = {'Documentation': 'https://aif-ng.io/',
                         'Source': 'https://git.square-r00t.net/AIF-NG/',
                         'Tracker': 'https://bugs.square-r00t.net/index.php?project=9'},
-        install_requires = ['blkinfo', 'gpg', 'lxml', 'mdstat', 'passlib', 'psutil',
-                            'pyparted', 'pyroute2', 'pytz', 'requests', 'validators']
+        install_requires = PROJ_CONST.external_deps
         )

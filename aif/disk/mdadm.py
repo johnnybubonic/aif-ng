@@ -11,7 +11,7 @@ from aif.disk.block import Disk
 from aif.disk.block import Partition
 
 
-SUPPORTED_LEVELS = (0, 1, 4, 5, 6)
+SUPPORTED_LEVELS = (0, 1, 4, 5, 6, 10)
 SUPPORTED_METADATA = ('0', '0.90', '1', '1.0', '1.1', '1.2', 'default', 'ddf', 'imsm')
 SUPPORTED_LAYOUTS = {5: (re.compile(r'^((left|right)-a?symmetric|[lr][as]|'
                                     r'parity-(fir|la)st|'
