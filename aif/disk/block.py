@@ -18,7 +18,7 @@ import blkinfo
 import parted  # https://www.gnu.org/software/parted/api/index.html
 import psutil
 ##
-from aif.aif_util import xmlBool
+from aif.utils import xmlBool
 
 
 PARTED_FSTYPES = sorted(list(dict(vars(parted.filesystem))['fileSystemType'].keys()))
@@ -147,6 +147,9 @@ class Partition(object):
             # self.partition.name = self.xml.attrib.get('name')
             _pedpart = self.partition.getPedPartition()
             _pedpart.set_name(self.xml.attrib.get('name'))
+
+    def detect(self):
+        pass
 
 
 class Disk(object):

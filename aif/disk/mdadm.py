@@ -3,6 +3,7 @@ import datetime
 import math
 import re
 import subprocess
+import uuid
 ##
 import mdstat
 ##
@@ -88,7 +89,7 @@ class Member(object):
                 v = re.sub(r'^raid', '', v)
             elif k == 'checksum':
                 cksum, status = [i.strip() for i in v.split('-')]
-                v = (int(cksum), status)
+                v = (bytes.fromhex(cksum), status)
             elif k == 'unused_space':
                 r = _mdblock_unused_re.search(v)
                 if not r:
@@ -108,6 +109,10 @@ class Member(object):
                 v = {}
                 for i in ('entries', 'offset'):
                     v[i] = int(r.group(i)) # offset is in sectors
+            elif k == 'array_state':
+                v = [i.strip() for i in v.split(None, 1)][0].split()
+            elif k == 'device_uuid':
+                v = uuid.UUID(hex = v.replace(':', '-'))
             elif re.search((r'^(creation|update)_time$'), k):
                 # TODO: Is this portable/correct? Or do I need to do '%a %b %d %H:%M:%s %Y'?
                 v = datetime.datetime.strptime(v, '%c')
@@ -119,7 +124,9 @@ class Member(object):
                                                                   self.devpath))
                 v = {}
                 for i in ('sectors', 'GB', 'GiB'):
-                    v[i] = int(r.group(i))
+                    v[i] = float(r.group(i))
+                    if i == 'sectors':
+                        v[i] = int(v[i])
             elif re.search(r'^(data|super)_offset$', k):
                 v = int(v.split(None, 1)[0])
             block[k] = v

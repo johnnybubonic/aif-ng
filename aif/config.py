@@ -5,10 +5,6 @@ import re
 import requests
 from lxml import etree, objectify
 
-_patterns = {'raw': re.compile(r'^\s*(?P<xml><(\?xml|aif)\s+.*)\s*$', re.DOTALL|re.MULTILINE),
-             'remote': re.compile(r'^(?P<uri>(?P<proto>(https?|ftps?)://)(?P<path>.*))\s*$'),
-             'local': re.compile(r'^(file://)?(?P<path>(/?[^/]+)+/?)$')}
-
 
 class Config(object):
     def __init__(self, xsd_path = None, *args, **kwargs):
@@ -197,22 +193,21 @@ class ConfigBin(Config):
         return()
 
 
+detector = {'raw': (re.compile(r'^\s*(?P<xml><(\?xml|aif)\s+.*)\s*$', re.DOTALL | re.MULTILINE), ConfigStr),
+            'remote': (re.compile(r'^(?P<uri>(?P<proto>(https?|ftps?)://)(?P<path>.*))\s*$'), RemoteFile),
+            'local': (re.compile(r'^(file://)?(?P<path>(/?[^/]+)+/?)$'), LocalFile)}
+
+
 def getConfig(cfg_ref, validate = True, populate_defaults = True, xsd_path = None):
     cfgobj = None
     # This is kind of gross.
-    for configtype, pattern in _patterns.items():
+    for configtype, (pattern, configClass) in detector.items():
         try:
             if pattern.search(cfg_ref):
-                if configtype == 'raw':
-                    cfgobj = ConfigStr(cfg_ref, xsd_path = xsd_path)
-                elif configtype == 'remote':
-                    cfgobj = RemoteFile(cfg_ref, xsd_path = xsd_path)
-                elif configtype == 'local':
-                    cfgobj = LocalFile(cfg_ref, xsd_path = xsd_path)
-                if cfgobj:
-                    break
+                cfgobj = configClass(cfg_ref, xsd_path = xsd_path)
+                break
         except TypeError:
-            ptrn = re.compile(_patterns['raw'].pattern.encode('utf-8'))
+            ptrn = re.compile(detector['raw'][0].pattern.encode('utf-8'))
             if not ptrn.search(cfg_ref):
                 raise ValueError('Received junk data for cfg_ref')
             else:

@@ -23,9 +23,11 @@
                 <part id="raid1_d2" start="55%" stop="80%" fsType="ext4">
                     <partitionFlag>raid</partitionFlag>
                 </part>
-                <part id="swap" start="80%" stop="100%" fsType="linux-swap(v1)">
+                <part id="swap" start="80%" stop="90%" fsType="linux-swap(v1)">
                     <partitionFlag>swap</partitionFlag>
                 </part>
+                <!-- You can also create a partition with no flags (and not use). -->
+                <part id="grow" start="90%" stop="100%" fsType="ext4"/>
             </disk>
         </blockDevices>
         <!-- "Special" devices are processed *in the order they are specified*. This is important if you wish to
