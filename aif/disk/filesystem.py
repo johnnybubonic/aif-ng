@@ -6,7 +6,7 @@ import psutil
 ##
 from aif.disk.block import Partition
 from aif.disk.luks import LUKS
-from aif.disk.lvm import Group as LVMGroup
+from aif.disk.lvm import LV as LVMVolume
 from aif.disk.mdadm import Array as MDArray
 
 # I wish there was a better way of doing this.
@@ -44,11 +44,11 @@ for i in os.listdir(_mod_dir):
 class FS(object):
     def __init__(self, fs_xml, sourceobj):
         self.xml = fs_xml
-        if not isinstance(sourceobj, (Partition, LUKS, LVMGroup, MDArray)):
+        if not isinstance(sourceobj, (Partition, LUKS, LVMVolume, MDArray)):
             raise ValueError(('sourceobj must be of type '
                               'aif.disk.block.Partition, '
                               'aif.disk.luks.LUKS, '
-                              'aif.disk.lvm.Group, or'
+                              'aif.disk.lvm.LV, or'
                               'aif.disk.mdadm.Array'))
         self.source = sourceobj
         self.devpath = sourceobj.devpath

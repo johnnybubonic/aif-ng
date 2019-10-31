@@ -20,6 +20,8 @@ import psutil
 ##
 from aif.utils import xmlBool, size
 
+# TODO: https://serverfault.com/questions/356534/ssd-erase-block-size-lvm-pv-on-raw-device-alignment
+
 
 PARTED_FSTYPES = sorted(list(dict(vars(parted.filesystem))['fileSystemType'].keys()))
 PARTED_FLAGS = sorted(list(parted.partition.partitionFlag.values()))

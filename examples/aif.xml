@@ -55,9 +55,20 @@
             </luksDev>
         </luks>
         <lvm>
-            <lvmGroup id="vg1" name="GroupName">
-                <lvmLogical id="lv1" name="LogicalName" source="lvm_member1"/>
-            </lvmGroup>
+            <physicals>
+                <!-- "size" refers to the size used of the LV for this VG. -->
+                <pv id="pv1" source="lvm_member1" vg="vg1"/>
+            </physicals>
+            <volumes>
+                <vg id="vg1" name="group1">
+                    <tags>
+                        <tag>data</tag>
+                    </tags>
+                    <logicals>
+                        <lv id="lv1" name="logical1" size="100%"/>
+                    </logicals>
+                </vg>
+            </volumes>
         </lvm>
         <mdadm>
             <!-- level can be 0, 1, 4, 5, 6, or 10. RAID 1+0 (which is different from mdadm RAID10) would be done by
@@ -91,7 +102,7 @@
             </mount>
             <mount source="boot" target="/mnt/aif/boot"/>
             <mount source="swap" target="swap"/>
-            <mount source="vg1" target="/mnt/aif/mnt/pool"/>
+            <mount source="lv1" target="/mnt/aif/mnt/pool"/>
             <mount source="mdadm1" target="/mnt/aif/mnt/raid"/>
         </mountPoints>
     </storage>

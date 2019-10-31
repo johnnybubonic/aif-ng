@@ -7,8 +7,9 @@ import uuid
 ##
 import mdstat
 ##
-from aif.disk.block import Disk
-from aif.disk.block import Partition
+from aif.disk.block import Disk, Partition
+from aif.disk.luks import LUKS
+from aif.disk.lvm import LV
 
 
 SUPPORTED_LEVELS = (0, 1, 4, 5, 6, 10)
@@ -173,8 +174,10 @@ class Array(object):
         self.devname = self.xml.attrib['name']
         self.devpath = devpath
         self.updateStatus()
+        self.homehost = homehost
         self.members = []
         self.state = None
+        self.info = None
 
     def addMember(self, memberobj):
         if not isinstance(memberobj, Member):
@@ -183,20 +186,18 @@ class Array(object):
         self.members.append(memberobj)
         return()
 
-    def assemble(self, scan = False):
+    def start(self, scan = False):
         if not any((self.members, self.devpath)):
             raise RuntimeError('Cannot assemble an array with no members (for hints) or device path')
-
         cmd = ['mdadm', '--assemble', self.devpath]
         if not scan:
             for m in self.members:
                 cmd.append(m.devpath)
         else:
-            cmd.extend([''])
+            cmd.append('--scan')
         # TODO: logging!
         subprocess.run(cmd)
-
-        pass
+        self.state = 'assembled'
         return()
 
     def create(self):
@@ -206,6 +207,7 @@ class Array(object):
                '--level={0}'.format(self.level),
                '--metadata={0}'.format(self.metadata),
                '--chunk={0}'.format(self.chunksize),
+               '--homehost={0}'.format(self.homehost),
                '--raid-devices={0}'.format(len(self.members))]
         if self.layout:
             cmd.append('--layout={0}'.format(self.layout))
@@ -214,13 +216,14 @@ class Array(object):
             cmd.append(m.devpath)
         # TODO: logging!
         subprocess.run(cmd)
-
-        pass
+        self.writeConf()
+        self.state = 'new'
         return()
 
     def stop(self):
         # TODO: logging
         subprocess.run(['mdadm', '--stop', self.devpath])
+        self.state = 'disassembled'
         return()
 
     def updateStatus(self):
@@ -232,4 +235,22 @@ class Array(object):
         return()
 
     def writeConf(self, conf = '/etc/mdadm.conf'):
-        pass
+        with open(conf, 'r') as fh:
+            conflines = fh.read().splitlines()
+        # TODO: logging
+        arrayinfo = subprocess.run(['mdadm', '--detail', '--brief', self.devpath],
+                                   stdout = subprocess.PIPE).stdout.decode('utf-8').strip()
+        if arrayinfo not in conflines:
+            r = re.compile(r'^ARRAY\s+{0}'.format(self.devpath))
+            nodev = True
+            for l in conflines:
+                if r.search(l):
+                    nodev = False
+                    # TODO: logging?
+                    # and/or Raise an exception here;
+                    # an array already exists with that name but not with the same opts/GUID/etc.
+                    break
+            if nodev:
+                with open(conf, 'a') as fh:
+                    fh.write('{0}\n'.format(arrayinfo))
+        return()
