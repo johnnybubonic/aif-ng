@@ -1,9 +1,3 @@
-import aif.disk.block
-import aif.disk.lvm
-import aif.disk.mdadm
+from . import _common
 
-
-class LUKS(object):
-    def __init__(self, partobj):
-        self.devpath = None
-        pass
+BlockDev = _common.BlockDev
