@@ -146,7 +146,7 @@ class LocalFile(Config):
     def __init__(self, path, xsd_path = None, *args, **kwargs):
         super().__init__(xsd_path = xsd_path, *args, **kwargs)
         self.type = 'local'
-        self.source = _patterns['local'].search(path).group('path')
+        self.source = path
 
     def fetch(self):
         self.source = os.path.realpath(self.source)

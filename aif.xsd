@@ -466,23 +466,23 @@
                                                 <xs:attribute name="name" type="aif:t_nonempty" use="required"/>
                                             </xs:complexType>
                                             <xs:unique name="uniq_vg_tags">
-                                                <xs:selector xpath="tags"/>
+                                                <xs:selector xpath="aif:tags"/>
                                                 <xs:field xpath="tag"/>
                                             </xs:unique>
                                         </xs:element>
                                     </xs:sequence>
                                 </xs:complexType>
                                 <xs:unique name="uniq_vg_names">
-                                    <xs:selector xpath="volumeGroup"/>
+                                    <xs:selector xpath="aif:volumeGroup"/>
                                     <xs:field xpath="@name"/>
                                 </xs:unique>
                                 <!-- ??? doesn't seem to work. -->
                                 <xs:unique name="uniq_vg_lv">
-                                    <xs:selector xpath="volumeGroup/logicalVolumes/lv"/>
+                                    <xs:selector xpath=".//aif:lv"/>
                                     <xs:field xpath="@name"/>
                                 </xs:unique>
                                 <xs:unique name="uniq_vg_pv">
-                                    <xs:selector xpath="pv"/>
+                                    <xs:selector xpath=".//aif:pv"/>
                                     <xs:field xpath="@source"/>
                                 </xs:unique>
                             </xs:element>
@@ -518,7 +518,7 @@
                                     </xs:sequence>
                                 </xs:complexType>
                                 <xs:unique name="uniq_array_name">
-                                    <xs:selector xpath="array"/>
+                                    <xs:selector xpath="aif:array"/>
                                     <xs:field xpath="@name"/>
                                 </xs:unique>
                             </xs:element>
@@ -586,11 +586,11 @@
                                                 </xs:sequence>
                                             </xs:complexType>
                                             <xs:unique name="uniq_ip4">
-                                                <xs:selector xpath="ipv4"/>
+                                                <xs:selector xpath="aif:ipv4"/>
                                                 <xs:field xpath="address"/>
                                             </xs:unique>
                                             <xs:unique name="uniq_ip6">
-                                                <xs:selector xpath="ipv6"/>
+                                                <xs:selector xpath="aif:ipv6"/>
                                                 <xs:field xpath="address"/>
                                             </xs:unique>
                                         </xs:element>
@@ -606,7 +606,7 @@
                                     <xs:attribute name="device" type="aif:t_iface" use="required"/>
                                 </xs:complexType>
                                 <xs:unique name="uniq_resolver">
-                                    <xs:selector xpath="resolvers"/>
+                                    <xs:selector xpath="aif:resolvers"/>
                                     <xs:field xpath="resolver"/>
                                 </xs:unique>
                             </xs:element>

@@ -1,6 +1,7 @@
-from aif.disk.block import Disk, Partition
-from aif.disk.lvm import LV
-from aif.disk.mdadm import Array
+import aif.disk.block
+import aif.disk.lvm
+import aif.disk.mdadm
+
 
 class LUKS(object):
     def __init__(self, partobj):

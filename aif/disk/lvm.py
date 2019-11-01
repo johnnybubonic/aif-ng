@@ -7,9 +7,9 @@ except ImportError:
     import subprocess
     has_mod = False
 ##
-from aif.disk.block import Disk, Partition
-from aif.disk.luks import LUKS
-from aif.disk.mdadm import Array
+import aif.disk.block
+import aif.disk.luks
+import aif.disk.mdadm
 
 
 class PV(object):

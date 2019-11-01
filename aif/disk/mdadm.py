@@ -7,9 +7,9 @@ import uuid
 ##
 import mdstat
 ##
-from aif.disk.block import Disk, Partition
-from aif.disk.luks import LUKS
-from aif.disk.lvm import LV
+import aif.disk.block
+import aif.disk.luks
+import aif.disk.lvm
 
 
 SUPPORTED_LEVELS = (0, 1, 4, 5, 6, 10)
@@ -50,7 +50,11 @@ class Member(object):
     def __init__(self, member_xml, partobj):
         self.xml = member_xml
         self.device = partobj
-        if not isinstance(self.device, (Partition, Disk, Array)):
+        if not isinstance(self.device, (aif.disk.block.Partition,
+                                        aif.disk.block.Disk,
+                                        aif.disk.mdadm.Array,
+                                        aif.disk.lvm.LV,
+                                        aif.disk.luks.LUKS)):
             raise ValueError(('partobj must be of type aif.disk.block.Partition, '
                               'aif.disk.block.Disk, or aif.disk.mdadm.Array'))
         self.devpath = self.device.devpath
