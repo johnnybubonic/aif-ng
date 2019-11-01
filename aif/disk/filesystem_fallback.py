@@ -25,20 +25,24 @@ _mod_dir = os.path.join('/lib/modules',
                         os.uname().release,
                         'kernel/fs')
 _strip_mod_suffix = re.compile(r'(?P<fsname>)\.ko(\.(x|g)?z)?$', re.IGNORECASE)
-for i in os.listdir(_mod_dir):
-    path = os.path.join(_mod_dir, i)
-    fs_name = None
-    if os.path.isdir(path):
-        fs_name = i
-    elif os.path.isfile(path):
-        mod_name = _strip_mod_suffix.search(i)
-        fs_name = mod_name.group('fsname')
-    if fs_name:
-        # The kernel *probably* has autoloading enabled, but in case it doesn't...
-        # TODO: logging!
-        if os.getuid() == 0:
-            subprocess.run(['modprobe', fs_name])
-            FS_FSTYPES.append(fs_name)
+try:
+    for i in os.listdir(_mod_dir):
+        path = os.path.join(_mod_dir, i)
+        fs_name = None
+        if os.path.isdir(path):
+            fs_name = i
+        elif os.path.isfile(path):
+            mod_name = _strip_mod_suffix.search(i)
+            fs_name = mod_name.group('fsname')
+        if fs_name:
+            # The kernel *probably* has autoloading enabled, but in case it doesn't...
+            # TODO: logging!
+            if os.getuid() == 0:
+                subprocess.run(['modprobe', fs_name])
+                FS_FSTYPES.append(fs_name)
+except FileNotFoundError:
+    # We're running on a kernel that doesn't have modules
+    pass
 
 
 class FS(object):

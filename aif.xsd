@@ -810,7 +810,7 @@
                 </xs:element>
                 <!-- END SCRIPTS -->
             </xs:all>
-            <xs:attribute name="version" type="aif:t_nonempty" use="required"/>
+            <xs:attribute name="version" type="aif:t_nonempty" use="optional" default="master"/>
         </xs:complexType>
     </xs:element>
 </xs:schema>

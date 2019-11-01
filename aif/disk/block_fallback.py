@@ -3,9 +3,7 @@
 # https://github.com/dcantrell/pyparted/blob/master/examples/query_device_capacity.py
 # TODO: Remember to replicate genfstab behaviour.
 
-import os
 import re
-import subprocess
 try:
     # https://stackoverflow.com/a/34812552/733214
     # https://github.com/karelzak/util-linux/blob/master/libmount/python/test_mount_context.py#L6
@@ -14,7 +12,6 @@ except ImportError:
     # We should never get here. util-linux is part of core (base) in Arch and uses "libmount".
     import pylibmount as mount
 ##
-# import blkinfo
 import parted  # https://www.gnu.org/software/parted/api/index.html
 import psutil
 ##
