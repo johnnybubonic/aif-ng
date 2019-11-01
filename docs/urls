@@ -1,0 +1,5 @@
+libblockdev/python gobject-introspection ("gi") API reference:
+https://lazka.github.io/pgi-docs/
+
+example of using above for LVM:
+https://github.com/storaged-project/libblockdev/blob/master/tests/lvm_test.py
