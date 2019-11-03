@@ -220,3 +220,8 @@ class Disk(object):
             p.is_hiformatted = True
         self.is_partitioned = True
         return()
+
+class Mount(object):
+    def __init__(self, mount_xml, partobj):
+        self.xml = mount_xml
+        pass

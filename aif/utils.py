@@ -1,4 +1,10 @@
-import re
+import os
+
+def hasBin(binary_name):
+    paths = []
+    for p in os.environ.get('PATH', '/usr/bin:/bin').split(':'):
+        os.listdir(os.path.realpath(p))
+
 
 def xmlBool(xmlobj):
     # https://bugs.launchpad.net/lxml/+bug/1850221

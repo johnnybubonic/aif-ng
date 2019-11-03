@@ -1,3 +1,4 @@
 from . import _common
 
-BlockDev = _common.BlockDev
+_BlockDev = _common.BlockDev
+

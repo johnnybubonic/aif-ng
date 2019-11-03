@@ -8,7 +8,7 @@
 
     <xs:simpleType name="t_diskdev">
         <xs:restriction base="xs:string">
-            <xs:pattern value="/dev/([A-Za-z0-9_]+/)?[A-Za-z0-9_]+[0-9]?"/>
+            <xs:pattern value="(/dev/([A-Za-z0-9_]+/)?[A-Za-z0-9_]+[0-9]?|auto)"/>
             <xs:whiteSpace value="collapse"/>
         </xs:restriction>
     </xs:simpleType>
