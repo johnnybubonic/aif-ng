@@ -25,79 +25,116 @@
 
     <xs:simpleType name="t_disksize">
         <xs:restriction base="xs:string">
-            <xs:pattern value="[-|+]?\s*([0-9]+)\s*(%|B|kB|MB|GB|TB|KiB|MiB|GiB|TiB|)\s*"/>
+            <xs:pattern value="[-|+]?\s*([0-9]+)\s*(%|((k|Ki)|[MGTPEZY]i?)?B?|)\s*"/>
             <xs:whiteSpace value="collapse"/>
         </xs:restriction>
     </xs:simpleType>
 
     <xs:simpleType name="t_fstype">
-        <!-- ', '.join(sorted(list(dict(vars(parted.filesystem))['fileSystemType'].keys()))) -->
-        <xs:restriction base="xs:token">
-            <xs:enumeration value="affs0"/>
-            <xs:enumeration value="affs1"/>
-            <xs:enumeration value="affs2"/>
-            <xs:enumeration value="affs3"/>
-            <xs:enumeration value="affs4"/>
-            <xs:enumeration value="affs5"/>
-            <xs:enumeration value="affs6"/>
-            <xs:enumeration value="affs7"/>
-            <xs:enumeration value="amufs"/>
-            <xs:enumeration value="amufs0"/>
-            <xs:enumeration value="amufs1"/>
-            <xs:enumeration value="amufs2"/>
-            <xs:enumeration value="amufs3"/>
-            <xs:enumeration value="amufs4"/>
-            <xs:enumeration value="amufs5"/>
-            <xs:enumeration value="apfs1"/>
-            <xs:enumeration value="apfs2"/>
-            <xs:enumeration value="asfs"/>
-            <xs:enumeration value="btrfs"/>
-            <xs:enumeration value="ext2"/>
-            <xs:enumeration value="ext3"/>
-            <xs:enumeration value="ext4"/>
-            <xs:enumeration value="fat16"/>
-            <xs:enumeration value="fat32"/>
-            <xs:enumeration value="hfs"/>
-            <xs:enumeration value="hfs+"/>
-            <xs:enumeration value="hfsx"/>
-            <xs:enumeration value="hp-ufs"/>
-            <xs:enumeration value="jfs"/>
-            <xs:enumeration value="linux-swap(v0)"/>
-            <xs:enumeration value="linux-swap(v1)"/>
-            <xs:enumeration value="nilfs2"/>
-            <xs:enumeration value="ntfs"/>
-            <xs:enumeration value="reiserfs"/>
-            <xs:enumeration value="sun-ufs"/>
-            <xs:enumeration value="swsusp"/>
-            <xs:enumeration value="udf"/>
-            <xs:enumeration value="xfs"/>
-            <xs:whiteSpace value="collapse"/>
-        </xs:restriction>
+        <xs:union>
+            <xs:simpleType>
+                <!-- parted names -->
+                <!-- ', '.join(sorted(list(dict(vars(parted.filesystem))['fileSystemType'].keys()))) -->
+                <xs:restriction base="xs:token">
+                    <xs:enumeration value="affs0"/>
+                    <xs:enumeration value="affs1"/>
+                    <xs:enumeration value="affs2"/>
+                    <xs:enumeration value="affs3"/>
+                    <xs:enumeration value="affs4"/>
+                    <xs:enumeration value="affs5"/>
+                    <xs:enumeration value="affs6"/>
+                    <xs:enumeration value="affs7"/>
+                    <xs:enumeration value="amufs"/>
+                    <xs:enumeration value="amufs0"/>
+                    <xs:enumeration value="amufs1"/>
+                    <xs:enumeration value="amufs2"/>
+                    <xs:enumeration value="amufs3"/>
+                    <xs:enumeration value="amufs4"/>
+                    <xs:enumeration value="amufs5"/>
+                    <xs:enumeration value="apfs1"/>
+                    <xs:enumeration value="apfs2"/>
+                    <xs:enumeration value="asfs"/>
+                    <xs:enumeration value="btrfs"/>
+                    <xs:enumeration value="ext2"/>
+                    <xs:enumeration value="ext3"/>
+                    <xs:enumeration value="ext4"/>
+                    <xs:enumeration value="fat16"/>
+                    <xs:enumeration value="fat32"/>
+                    <xs:enumeration value="hfs"/>
+                    <xs:enumeration value="hfs+"/>
+                    <xs:enumeration value="hfsx"/>
+                    <xs:enumeration value="hp-ufs"/>
+                    <xs:enumeration value="jfs"/>
+                    <xs:enumeration value="linux-swap(v0)"/>
+                    <xs:enumeration value="linux-swap(v1)"/>
+                    <xs:enumeration value="nilfs2"/>
+                    <xs:enumeration value="ntfs"/>
+                    <xs:enumeration value="reiserfs"/>
+                    <xs:enumeration value="sun-ufs"/>
+                    <xs:enumeration value="swsusp"/>
+                    <xs:enumeration value="udf"/>
+                    <xs:enumeration value="xfs"/>
+                    <xs:whiteSpace value="collapse"/>
+                </xs:restriction>
+            </xs:simpleType>
+            <xs:simpleType>
+                <!-- https://en.wikipedia.org/wiki/GUID_Partition_Table#Partition_type_GUIDs -->
+                <xs:restriction base="xs:token">
+                    <xs:pattern value="[A-Fa-f0-9]{8}-[A-Fa-f0-9]{4}-[A-Fa-f0-9]{4}-[A-Fa-f0-9]{4}-[A-Fa-f0-9]{12}"/>
+                    <xs:whiteSpace value="collapse"/>
+                </xs:restriction>
+            </xs:simpleType>
+        </xs:union>
     </xs:simpleType>
 
     <xs:simpleType name="t_part_flags">
-        <!-- parted.partition.partitionFlag -->
-        <xs:restriction base="xs:string">
-            <xs:enumeration value="atvrecv"/>
-            <xs:enumeration value="bios_grub"/>
-            <xs:enumeration value="boot"/>
-            <xs:enumeration value="diag"/>
-            <xs:enumeration value="esp"/>
-            <xs:enumeration value="hidden"/>
-            <xs:enumeration value="hp-service"/>
-            <xs:enumeration value="irst"/>
-            <xs:enumeration value="lba"/>
-            <xs:enumeration value="legacy_boot"/>
-            <xs:enumeration value="lvm"/>
-            <xs:enumeration value="msftdata"/>
-            <xs:enumeration value="msftres"/>
-            <xs:enumeration value="palo"/>
-            <xs:enumeration value="prep"/>
-            <xs:enumeration value="raid"/>
-            <xs:enumeration value="root"/>
-            <xs:enumeration value="swap"/>
-            <xs:whiteSpace value="collapse"/>
-        </xs:restriction>
+        <xs:union>
+            <xs:simpleType>
+                <!-- parted.partition.partitionFlag -->
+                <xs:restriction base="xs:string">
+                    <xs:enumeration value="atvrecv"/>
+                    <xs:enumeration value="bios_grub"/>
+                    <xs:enumeration value="boot"/>
+                    <xs:enumeration value="diag"/>
+                    <xs:enumeration value="esp"/>
+                    <xs:enumeration value="hidden"/>
+                    <xs:enumeration value="hp-service"/>
+                    <xs:enumeration value="irst"/>
+                    <xs:enumeration value="lba"/>
+                    <xs:enumeration value="legacy_boot"/>
+                    <xs:enumeration value="lvm"/>
+                    <xs:enumeration value="msftdata"/>
+                    <xs:enumeration value="msftres"/>
+                    <xs:enumeration value="palo"/>
+                    <xs:enumeration value="prep"/>
+                    <xs:enumeration value="raid"/>
+                    <xs:enumeration value="root"/>
+                    <xs:enumeration value="swap"/>
+                    <xs:whiteSpace value="collapse"/>
+                </xs:restriction>
+            </xs:simpleType>
+            <xs:simpleType>
+                <!-- These deviate from the parted flags (and in the case of the gpt_* ones, have no parted
+                    equivalent it seems).
+                    fdisk's "e(x)pert mode" has numerical GUID identifers for these ("Attrs").
+
+                    BD_PART_FLAGS = BlockDev.PartFlag(-1)
+                    BD_PART_FLAGS_FRIENDLY = dict(zip(BD_PART_FLAGS.value_nicks, BD_PART_FLAGS.value_names))
+                    sorted(list(BD_PART_FLAGS_FRIENDLY.keys()))
+                -->
+                <xs:restriction base="xs:string">
+                    <xs:enumeration value="apple_tv_recovery"/>
+                    <xs:enumeration value="cpalo"/>
+                    <xs:enumeration value="gpt_hidden"/>
+                    <xs:enumeration value="gpt_no_automount"/>
+                    <xs:enumeration value="gpt_read_only"/>
+                    <xs:enumeration value="hpservice"/>
+                    <xs:enumeration value="msft_data"/>
+                    <xs:enumeration value="msft_reserved"/>
+                    <xs:whiteSpace value="collapse"/>
+                </xs:restriction>
+            </xs:simpleType>
+        </xs:union>
     </xs:simpleType>
 
     <xs:simpleType name="t_iface">
@@ -139,7 +176,9 @@
 
     <xs:simpleType name="t_netproto">
         <xs:restriction base="xs:token">
-            <xs:pattern value="(both|ipv4|ipv6)"/>
+            <xs:enumeration value="both"/>
+            <xs:enumeration value="ipv4"/>
+            <xs:enumeration value="ipv6"/>
             <xs:whiteSpace value="collapse"/>
         </xs:restriction>
     </xs:simpleType>
@@ -149,6 +188,7 @@
             <xs:enumeration value="netctl"/>
             <xs:enumeration value="nm"/>
             <xs:enumeration value="systemd"/>
+            <xs:whiteSpace value="collapse"/>
         </xs:restriction>
     </xs:simpleType>
 
@@ -204,7 +244,9 @@
 
     <xs:simpleType name="t_authselect">
         <xs:restriction base="xs:token">
-            <xs:pattern value="(basic|digest|none)"/>
+            <xs:enumeration value="basic"/>
+            <xs:enumeration value="digest"/>
+            <xs:enumeration value="none"/>
             <xs:whiteSpace value="collapse"/>
         </xs:restriction>
     </xs:simpleType>

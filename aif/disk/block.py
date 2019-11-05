@@ -1,7 +1,7 @@
 import re
 ##
-import parted  # Do I need this if I can have libblockdev's mounts API? Is there a way to get current mounts?
-import psutil
+import parted
+import psutil  # Do I need this if I can have libblockdev's mounts API? Is there a way to get current mounts?
 ##
 import aif.constants
 import aif.utils
@@ -24,8 +24,8 @@ class Partition(object):
         self.id = part_xml.attrib['id']
         self.table_type = getattr(_BlockDev.PartTableType, tbltype.upper())
         if tbltype == 'msdos':
-            # Could technically be _BlockDev.PartTypeReq.NEXT buuuut that doesn't *quite* work
-            # with our project's structure.
+            # Could technically be _BlockDev.PartTypeReq.NEXT BUT that doesn't *quite* work
+            # with this project's structure.
             if part_type == 'primary':
                 self.part_type = _BlockDev.PartTypeReq.NORMAL
             elif part_type == 'extended':
@@ -50,7 +50,7 @@ class Partition(object):
                               'must be one of: {1}').format(self.xml.attrib['fsType'],
                                                             ', '.join(sorted(aif.constants.PARTED_FSTYPES))))
         self.disk = diskobj
-        self.device = self.disk.device  # TODO: how to get this in libblockdev?
+        self.device = self.disk.path
         self.devpath = '{0}{1}'.format(self.device.path, partnum)
         self.is_hiformatted = False
         sizes = {}
