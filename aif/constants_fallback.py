@@ -23,6 +23,7 @@ PARTED_FLAGS = sorted(list(parted.partition.partitionFlag.values()))
 PARTED_IDX_FLAG = dict(parted.partition.partitionFlag)
 PARTED_FLAG_IDX = {v: k for k, v in PARTED_IDX_FLAG.items()}
 # LIBBLOCKDEV BOOTSTRAPPING (ALLOWED VALUES IN CONFIG)
+# https://en.wikipedia.org/wiki/GUID_Partition_Table#Partition_entries_(LBA_2%E2%80%9333)
 BD_PARTED_MAP = {'apple_tv_recovery': 'atvrecv',
                  'cpalo': 'palo',
                  'gpt_hidden': None,  # No parted equivalent
@@ -136,12 +137,12 @@ MSDOS_FSTYPE_IDS = ((1, 'Empty', b'\x00'),
                     (7, 'FAT16', b'\x06'),
                     (8, 'HPFS/NTFS/exFAT', b'\x07'),
                     (9, 'AIX', b'\x08'),
-                    (10, 'AIX bootable', b'\t'),
-                    (11, 'OS/2 Boot Manager', b'\n'),
-                    (12, 'W95 FAT32', b'\x0b'),
-                    (13, 'W95 FAT32 (LBA)', b'\x0c'),
-                    (14, 'W95 FAT16 (LBA)', b'\x0e'),
-                    (15, "W95 Ext'd (LBA)", b'\x0f'),
+                    (10, 'AIX bootable', b'\t'),  # \x09
+                    (11, 'OS/2 Boot Manager', b'\n'),  # \x0A
+                    (12, 'W95 FAT32', b'\x0B'),
+                    (13, 'W95 FAT32 (LBA)', b'\x0C'),
+                    (14, 'W95 FAT16 (LBA)', b'\x0E'),
+                    (15, "W95 Ext'd (LBA)", b'\x0F'),
                     (16, 'OPUS', b'\x10'),
                     (17, 'Hidden FAT12', b'\x11'),
                     (18, 'Compaq diagnostics', b'\x12'),
@@ -149,33 +150,33 @@ MSDOS_FSTYPE_IDS = ((1, 'Empty', b'\x00'),
                     (20, 'Hidden FAT16', b'\x16'),
                     (21, 'Hidden HPFS/NTFS', b'\x17'),
                     (22, 'AST SmartSleep', b'\x18'),
-                    (23, 'Hidden W95 FAT32', b'\x1b'),
-                    (24, 'Hidden W95 FAT32 (LBA)', b'\x1c'),
-                    (25, 'Hidden W95 FAT16 (LBA)', b'\x1e'),
-                    (26, 'NEC DOS', b'$'),
-                    (27, 'Hidden NTFS WinRE', b"'"),
-                    (28, 'Plan 9', b'9'),
-                    (29, 'PartitionMagic recovery', b'<'),
-                    (30, 'Venix 80286', b'@'),
-                    (31, 'PPC PReP Boot', b'A'),
-                    (32, 'SFS', b'B'),
-                    (33, 'QNX4.x', b'M'),
-                    (34, 'QNX4.x 2nd part', b'N'),
-                    (35, 'QNX4.x 3rd part', b'O'),
-                    (36, 'OnTrack DM', b'P'),
-                    (37, 'OnTrack DM6 Aux1', b'Q'),
-                    (38, 'CP/M', b'R'),
-                    (39, 'OnTrack DM6 Aux3', b'S'),
-                    (40, 'OnTrackDM6', b'T'),
-                    (41, 'EZ-Drive', b'U'),
-                    (42, 'Golden Bow', b'V'),
-                    (43, 'Priam Edisk', b'\\'),
-                    (44, 'SpeedStor', b'a'),
-                    (45, 'GNU HURD or SysV', b'c'),
-                    (46, 'Novell Netware 286', b'd'),
-                    (47, 'Novell Netware 386', b'e'),
-                    (48, 'DiskSecure Multi-Boot', b'p'),
-                    (49, 'PC/IX', b'u'),
+                    (23, 'Hidden W95 FAT32', b'\x1B'),
+                    (24, 'Hidden W95 FAT32 (LBA)', b'\x1C'),
+                    (25, 'Hidden W95 FAT16 (LBA)', b'\x1E'),
+                    (26, 'NEC DOS', b'$'),  # \x24
+                    (27, 'Hidden NTFS WinRE', b"'"),  # \x27
+                    (28, 'Plan 9', b'9'),  # \x39
+                    (29, 'PartitionMagic recovery', b'<'),  # \x3C
+                    (30, 'Venix 80286', b'@'),  # \x40
+                    (31, 'PPC PReP Boot', b'A'),  # \x41
+                    (32, 'SFS', b'B'),  # \x42
+                    (33, 'QNX4.x', b'M'),  # \x4D
+                    (34, 'QNX4.x 2nd part', b'N'),  # \x4E
+                    (35, 'QNX4.x 3rd part', b'O'),  # \x4F
+                    (36, 'OnTrack DM', b'P'),  # \x50
+                    (37, 'OnTrack DM6 Aux1', b'Q'),  # \x51
+                    (38, 'CP/M', b'R'),  # \x52
+                    (39, 'OnTrack DM6 Aux3', b'S'),  # \x53
+                    (40, 'OnTrackDM6', b'T'),  # \x54
+                    (41, 'EZ-Drive', b'U'),  # \x55
+                    (42, 'Golden Bow', b'V'),  # \x56
+                    (43, 'Priam Edisk', b'\\'),  # \x5C
+                    (44, 'SpeedStor', b'a'),  # \x61
+                    (45, 'GNU HURD or SysV', b'c'),  # \x63
+                    (46, 'Novell Netware 286', b'd'),  # \x64
+                    (47, 'Novell Netware 386', b'e'),  # \x65
+                    (48, 'DiskSecure Multi-Boot', b'p'),  # \x70
+                    (49, 'PC/IX', b'u'),  # \x75
                     (50, 'Old Minix', b'\x80'),
                     (51, 'Minix / old Linux', b'\x81'),
                     (52, 'Linux swap / Solaris', b'\x82'),
@@ -185,45 +186,45 @@ MSDOS_FSTYPE_IDS = ((1, 'Empty', b'\x00'),
                     (56, 'NTFS volume set', b'\x86'),
                     (57, 'NTFS volume set', b'\x87'),
                     (58, 'Linux plaintext', b'\x88'),
-                    (59, 'Linux LVM', b'\x8e'),
+                    (59, 'Linux LVM', b'\x8E'),
                     (60, 'Amoeba', b'\x93'),
                     (61, 'Amoeba BBT', b'\x94'),
-                    (62, 'BSD/OS', b'\x9f'),
-                    (63, 'IBM Thinkpad hibernation', b'\xa0'),
-                    (64, 'FreeBSD', b'\xa5'),
-                    (65, 'OpenBSD', b'\xa6'),
-                    (66, 'NeXTSTEP', b'\xa7'),
-                    (67, 'Darwin UFS', b'\xa8'),
-                    (68, 'NetBSD', b'\xa9'),
-                    (69, 'Darwin boot', b'\xab'),
-                    (70, 'HFS / HFS+', b'\xaf'),
-                    (71, 'BSDI fs', b'\xb7'),
-                    (72, 'BSDI swap', b'\xb8'),
-                    (73, 'Boot Wizard hidden', b'\xbb'),
-                    (74, 'Acronis FAT32 LBA', b'\xbc'),
-                    (75, 'Solaris boot', b'\xbe'),
-                    (76, 'Solaris', b'\xbf'),
-                    (77, 'DRDOS/sec (FAT-12)', b'\xc1'),
-                    (78, 'DRDOS/sec (FAT-16 < 32M)', b'\xc4'),
-                    (79, 'DRDOS/sec (FAT-16)', b'\xc6'),
-                    (80, 'Syrinx', b'\xc7'),
-                    (81, 'Non-FS data', b'\xda'),
-                    (82, 'CP/M / CTOS / ...', b'\xdb'),
-                    (83, 'Dell Utility', b'\xde'),
-                    (84, 'BootIt', b'\xdf'),
-                    (85, 'DOS access', b'\xe1'),
-                    (86, 'DOS R/O', b'\xe3'),
-                    (87, 'SpeedStor', b'\xe4'),
-                    (88, 'Rufus alignment', b'\xea'),
-                    (89, 'BeOS fs', b'\xeb'),
-                    (90, 'GPT', b'\xee'),
-                    (91, 'EFI (FAT-12/16/32)', b'\xef'),
-                    (92, 'Linux/PA-RISC boot', b'\xf0'),
-                    (93, 'SpeedStor', b'\xf1'),
-                    (94, 'SpeedStor', b'\xf4'),
-                    (95, 'DOS secondary', b'\xf2'),
-                    (96, 'VMware VMFS', b'\xfb'),
-                    (97, 'VMware VMKCORE', b'\xfc'),
-                    (98, 'Linux raid autodetect', b'\xfd'),
-                    (99, 'LANstep', b'\xfe'),
-                    (100, 'BBT', b'\xff'))
+                    (62, 'BSD/OS', b'\x9F'),
+                    (63, 'IBM Thinkpad hibernation', b'\xA0'),
+                    (64, 'FreeBSD', b'\xA5'),
+                    (65, 'OpenBSD', b'\xA6'),
+                    (66, 'NeXTSTEP', b'\xA7'),
+                    (67, 'Darwin UFS', b'\xA8'),
+                    (68, 'NetBSD', b'\xA9'),
+                    (69, 'Darwin boot', b'\xAB'),
+                    (70, 'HFS / HFS+', b'\xAF'),
+                    (71, 'BSDI fs', b'\xB7'),
+                    (72, 'BSDI swap', b'\xB8'),
+                    (73, 'Boot Wizard hidden', b'\xBB'),
+                    (74, 'Acronis FAT32 LBA', b'\xBC'),
+                    (75, 'Solaris boot', b'\xBE'),
+                    (76, 'Solaris', b'\xBF'),
+                    (77, 'DRDOS/sec (FAT-12)', b'\xC1'),
+                    (78, 'DRDOS/sec (FAT-16 < 32M)', b'\xC4'),
+                    (79, 'DRDOS/sec (FAT-16)', b'\xC6'),
+                    (80, 'Syrinx', b'\xC7'),
+                    (81, 'Non-FS data', b'\xDA'),
+                    (82, 'CP/M / CTOS / ...', b'\xDB'),
+                    (83, 'Dell Utility', b'\xDE'),
+                    (84, 'BootIt', b'\xDF'),
+                    (85, 'DOS access', b'\xE1'),
+                    (86, 'DOS R/O', b'\xE3'),
+                    (87, 'SpeedStor', b'\xE4'),
+                    (88, 'Rufus alignment', b'\xEA'),
+                    (89, 'BeOS fs', b'\xEB'),
+                    (90, 'GPT', b'\xEE'),
+                    (91, 'EFI (FAT-12/16/32)', b'\xEF'),
+                    (92, 'Linux/PA-RISC boot', b'\xF0'),
+                    (93, 'SpeedStor', b'\xF1'),
+                    (94, 'SpeedStor', b'\xF4'),
+                    (95, 'DOS secondary', b'\xF2'),
+                    (96, 'VMware VMFS', b'\xFB'),
+                    (97, 'VMware VMKCORE', b'\xFC'),
+                    (98, 'Linux raid autodetect', b'\xFD'),
+                    (99, 'LANstep', b'\xFE'),
+                    (100, 'BBT', b'\xFF'))

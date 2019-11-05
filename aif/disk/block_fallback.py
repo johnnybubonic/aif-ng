@@ -19,6 +19,8 @@ import aif.constants
 import aif.utils
 
 # TODO: https://serverfault.com/questions/356534/ssd-erase-block-size-lvm-pv-on-raw-device-alignment
+# TODO: caveats? https://gist.github.com/leodutra/8779d468e9062058a3e90008295d3ca6
+#                https://unix.stackexchange.com/questions/325886/bios-gpt-do-we-need-a-boot-flag
 
 
 class Partition(object):

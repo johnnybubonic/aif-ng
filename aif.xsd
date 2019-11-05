@@ -117,6 +117,8 @@
                 <!-- These deviate from the parted flags (and in the case of the gpt_* ones, have no parted
                     equivalent it seems).
                     fdisk's "e(x)pert mode" has numerical GUID identifers for these ("Attrs").
+                    Details on these are at:
+                    https://en.wikipedia.org/wiki/GUID_Partition_Table#Partition_entries_(LBA_2%E2%80%9333)
 
                     BD_PART_FLAGS = BlockDev.PartFlag(-1)
                     BD_PART_FLAGS_FRIENDLY = dict(zip(BD_PART_FLAGS.value_nicks, BD_PART_FLAGS.value_names))
@@ -125,9 +127,10 @@
                 <xs:restriction base="xs:string">
                     <xs:enumeration value="apple_tv_recovery"/>
                     <xs:enumeration value="cpalo"/>
-                    <xs:enumeration value="gpt_hidden"/>
-                    <xs:enumeration value="gpt_no_automount"/>
-                    <xs:enumeration value="gpt_read_only"/>
+                    <xs:enumeration value="gpt_hidden"/><!-- No parted equivalent -->
+                    <xs:enumeration value="gpt_no_automount"/><!-- No parted equivalent -->
+                    <xs:enumeration value="gpt_read_only"/><!-- No parted equivalent -->
+                    <xs:enumeration value="gpt_system_part"/><!-- No parted equivalent -->
                     <xs:enumeration value="hpservice"/>
                     <xs:enumeration value="msft_data"/>
                     <xs:enumeration value="msft_reserved"/>
