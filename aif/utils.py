@@ -1,9 +1,13 @@
 import os
+import re
+
 
 def hasBin(binary_name):
     paths = []
     for p in os.environ.get('PATH', '/usr/bin:/bin').split(':'):
-        os.listdir(os.path.realpath(p))
+        if binary_name in os.listdir(os.path.realpath(p)):
+            return(os.path.join(p, binary_name))
+    return(False)
 
 
 def xmlBool(xmlobj):
@@ -181,3 +185,30 @@ class _Sizer(object):
 
 
 size = _Sizer()
+
+
+# We do this as base level so they aren't compiled on every invocation/instantiation.
+# parted lib can do SI or IEC. So can we.
+_pos_re = re.compile((r'^(?P<pos_or_neg>-|\+)?\s*'
+                      r'(?P<size>[0-9]+)\s*'
+                      # empty means size in sectors
+                      r'(?P<pct_unit_or_sct>%|{0}|)\s*$'.format('|'.join(size.valid_storage))
+                      ))
+
+
+def convertSizeUnit(pos):
+    orig_pos = pos
+    pos = _pos_re.search(pos)
+    if pos:
+        pos_or_neg = (pos.group('pos_or_neg') if pos.group('pos_or_neg') else None)
+        if pos_or_neg == '+':
+            from_beginning = True
+        elif pos_or_neg == '-':
+            from_beginning = False
+        else:
+            from_beginning = pos_or_neg
+        _size = int(pos.group('size'))
+        amt_type = pos.group('pct_unit_or_sct').strip()
+    else:
+        raise ValueError('Invalid size specified: {0}'.format(orig_pos))
+    return((from_beginning, _size, amt_type))

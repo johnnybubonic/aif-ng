@@ -21,3 +21,8 @@ try:
     from . import mdadm_fallback
 except ImportError:
     from . import mdadm_fallback as mdadm
+
+try:
+    from . import _common
+except ImportError:
+    pass  # GI isn't supported, so we don't even use a fallback.

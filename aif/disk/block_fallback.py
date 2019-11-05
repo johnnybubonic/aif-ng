@@ -15,40 +15,10 @@ except ImportError:
 import parted  # https://www.gnu.org/software/parted/api/index.html
 import psutil
 ##
-from aif.utils import xmlBool, size
+import aif.constants
+import aif.utils
 
 # TODO: https://serverfault.com/questions/356534/ssd-erase-block-size-lvm-pv-on-raw-device-alignment
-
-
-PARTED_FSTYPES = sorted(list(dict(vars(parted.filesystem))['fileSystemType'].keys()))
-PARTED_FLAGS = sorted(list(parted.partition.partitionFlag.values()))
-IDX_FLAG = dict(parted.partition.partitionFlag)
-FLAG_IDX = {v: k for k, v in IDX_FLAG.items()}
-
-# parted lib can do SI or IEC. So can we.
-_pos_re = re.compile((r'^(?P<pos_or_neg>-|\+)?\s*'
-                      r'(?P<size>[0-9]+)\s*'
-                      # empty means size in sectors
-                      r'(?P<pct_unit_or_sct>%|{0}|)\s*$'.format('|'.join(size.valid_storage))
-                      ))
-
-
-def convertSizeUnit(pos):
-    orig_pos = pos
-    pos = _pos_re.search(pos)
-    if pos:
-        pos_or_neg = (pos.group('pos_or_neg') if pos.group('pos_or_neg') else None)
-        if pos_or_neg == '+':
-            from_beginning = True
-        elif pos_or_neg == '-':
-            from_beginning = False
-        else:
-            from_beginning = pos_or_neg
-        _size = int(pos.group('size'))
-        amt_type = pos.group('pct_unit_or_sct').strip()
-    else:
-        raise ValueError('Invalid size specified: {0}'.format(orig_pos))
-    return((from_beginning, _size, amt_type))
 
 
 class Partition(object):
@@ -59,10 +29,10 @@ class Partition(object):
             raise ValueError(('You must specify if this is a '
                               'primary, extended, or logical partition for msdos partition tables'))
         self.xml = part_xml
-        self.id = part_xml.attrib['id']
+        self.id = self.xml.attrib['id']
         self.flags = set()
         for f in self.xml.findall('partitionFlag'):
-            if f.text in PARTED_FLAGS:
+            if f.text in aif.constants.PARTED_FLAGS:
                 self.flags.add(f.text)
         self.flags = sorted(list(self.flags))
         self.partnum = partnum
@@ -77,10 +47,10 @@ class Partition(object):
         else:
             self.part_type = parted.PARTITION_NORMAL
         self.fstype = self.xml.attrib['fsType'].lower()
-        if self.fstype not in PARTED_FSTYPES:
+        if self.fstype not in aif.constants.PARTED_FSTYPES:
             raise ValueError(('{0} is not a valid partition filesystem type; '
                               'must be one of: {1}').format(self.xml.attrib['fsType'],
-                                                            ', '.join(sorted(PARTED_FSTYPES))))
+                                                            ', '.join(sorted(aif.constants.PARTED_FSTYPES))))
         self.disk = diskobj
         self.device = self.disk.device
         self.devpath = '{0}{1}'.format(self.device.path, partnum)
@@ -88,12 +58,14 @@ class Partition(object):
         sizes = {}
         for s in ('start', 'stop'):
             x = dict(zip(('from_bgn', 'size', 'type'),
-                         convertSizeUnit(self.xml.attrib[s])))
+                         aif.utils.convertSizeUnit(self.xml.attrib[s])))
             sectors = x['size']
             if x['type'] == '%':
                 sectors = int(self.device.getLength() / x['size'])
             else:
-                sectors = int(size.convertStorage(x['size'], x['type'], target = 'B') / self.device.sectorSize)
+                sectors = int(aif.utils.size.convertStorage(x['size'],
+                                                            x['type'],
+                                                            target = 'B') / self.device.sectorSize)
             sizes[s] = (sectors, x['from_bgn'])
         if sizes['start'][1] is not None:
             if sizes['start'][1]:
@@ -122,7 +94,7 @@ class Partition(object):
                                           geometry = self.geometry,
                                           fs = self.filesystem)
         for f in self.flags[:]:
-            flag_id = FLAG_IDX[f]
+            flag_id = aif.constants.PARTED_FLAG_IDX[f]
             if self.partition.isFlagAvailable(flag_id):
                 self.partition.setFlag(flag_id)
             else:
@@ -133,16 +105,20 @@ class Partition(object):
             # https://github.com/dcantrell/pyparted/issues/65
             # self.partition.name = self.xml.attrib.get('name')
             _pedpart = self.partition.getPedPartition()
-            _pedpart.set_name(self.xml.attrib.get('name'))
-
-    def detect(self):
-        pass
+            _pedpart.set_name(self.xml.attrib['name'])
+    #
+    # def detect(self):
+    #     pass  # TODO; blkinfo?
 
 
 class Disk(object):
     def __init__(self, disk_xml):
         self.xml = disk_xml
         self.devpath = self.xml.attrib['device']
+        self.is_lowformatted = None
+        self.is_hiformatted = None
+        self.is_partitioned = None
+        self.partitions = None
         self._initDisk()
 
     def _initDisk(self):
@@ -220,6 +196,7 @@ class Disk(object):
             p.is_hiformatted = True
         self.is_partitioned = True
         return()
+
 
 class Mount(object):
     def __init__(self, mount_xml, partobj):
