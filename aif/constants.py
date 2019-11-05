@@ -1,8 +1,16 @@
 from .constants_fallback import *
 ##
-import aif.disk._common
-_BlockDev = aif.disk._common.BlockDev
-aif.disk._common.addBDPlugin('part')
+# This creates a conflict of imports, unfortunately.
+# So we end up doing the same thing in aif/disk/(__init__.py => _common.py)... C'est la vie.
+# Patches welcome.
+# import aif.disk._common
+# _BlockDev = aif.disk._common.BlockDev
+# aif.disk._common.addBDPlugin('part')
+import gi
+gi.require_version('BlockDev', '2.0')
+from gi.repository import BlockDev as _BlockDev
+from gi.repository import GLib
+_BlockDev.ensure_init(_BlockDev.plugin_specs_from_names(('part', )))
 
 
 # LIBBLOCKDEV FLAG INDEXING / PARTED <=> LIBBLOCKDEV FLAG CONVERSION

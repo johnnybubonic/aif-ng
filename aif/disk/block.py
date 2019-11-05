@@ -1,13 +1,14 @@
 import re
 ##
-import parted
+import parted  # Do I need this if I can have libblockdev's mounts API? Is there a way to get current mounts?
 import psutil
 ##
 import aif.constants
-import aif.disk._common
 import aif.utils
+from . import _common
 
-_BlockDev = aif.disk._common.BlockDev
+
+_BlockDev = _common.BlockDev
 
 
 class Partition(object):
