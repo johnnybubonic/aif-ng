@@ -17,11 +17,11 @@ class Member(object):
     def __init__(self, member_xml, partobj):
         self.xml = member_xml
         self.device = partobj
-        if not isinstance(self.device, (block.Partition,
-                                        block.Disk,
+        if not isinstance(self.device, (block.Disk,
+                                        block.Partition,
                                         Array,
-                                        lvm.LV,
-                                        luks.LUKS)):
+                                        luks.LUKS,
+                                        lvm.LV)):
             raise ValueError(('partobj must be of type '
                               'aif.disk.block.Disk, '
                               'aif.disk.block.Partition, '
@@ -67,6 +67,7 @@ class Member(object):
         except _BlockDev.MDRaidError:
             pass
         _BlockDev.md.destroy(self.devpath)
+        self._parseDeviceBlock()
         return()
 
 

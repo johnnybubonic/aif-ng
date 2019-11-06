@@ -57,15 +57,16 @@
         </luks>
         <lvm>
             <volumeGroup id="vg1" name="group1">
-                <tags>
-                    <tag>data</tag>
-                    <tag>misc</tag>
-                </tags>
                 <physicalVolumes>
                     <pv id="pv1" source="lvm_member1"/>
                 </physicalVolumes>
                 <logicalVolumes>
-                    <lv id="lv1" name="logical1" size="100%"/>
+                    <!-- Default is to add all available PVs in PhysicalVolumes... -->
+                    <lv id="lv1" name="logical1" size="80%"/>
+                    <!-- But you can also explicitly designate them. -->
+                    <lv id="lv2" name="logical1" size="20%">
+                        <pvMember source="pv1"/>
+                    </lv>
                 </logicalVolumes>
             </volumeGroup>
         </lvm>

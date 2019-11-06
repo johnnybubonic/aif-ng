@@ -2,7 +2,7 @@ try:
     from . import constants
 except ImportError:
     from . import constants_fallback as constants
-
+from . import constants_fallback
 from . import utils
 from . import disk
 from . import system

@@ -123,6 +123,7 @@ class Member(object):
             # TODO: logging
             subprocess.run(['mdadm', '--misc', '--zero-superblock', self.devpath])
             self.is_superblocked = False
+        self._parseDeviceBlock()
         return()
 
 class Array(object):

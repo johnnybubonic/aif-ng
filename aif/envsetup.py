@@ -12,7 +12,7 @@ import sys
 import tempfile
 import venv
 ##
-import aif.constants
+import aif.constants_fallback
 
 class EnvBuilder(object):
     def __init__(self):
@@ -35,7 +35,7 @@ class EnvBuilder(object):
         # This is SO. DUMB. WHY DO I HAVE TO CALL PIP FROM A SHELL. IT'S WRITTEN IN PYTHON.
         # https://pip.pypa.io/en/stable/user_guide/#using-pip-from-your-program
         # TODO: logging
-        for m in aif.constants.external_deps:
+        for m in aif.constants_fallback.EXTERNAL_DEPS:
             pip_cmd = [os.path.join(self.vdir,
                                     'bin',
                                     'python3'),
