@@ -262,6 +262,7 @@
         </xs:simpleContent>
     </xs:complexType>
 
+    <!-- TODO: "swap" shouldn't be here. Split off into a different type. -->
     <xs:simpleType name="t_filepath">
         <xs:restriction base="xs:string">
             <xs:pattern value="((/[^/]+)+/?|swap)"/>
@@ -384,6 +385,7 @@
                                                         </xs:complexType>
                                                     </xs:element>
                                                 </xs:sequence>
+                                                <xs:attribute name="id" type="xs:ID" use="required"/>
                                                 <xs:attribute name="device" type="aif:t_diskdev" use="required"/>
                                                 <xs:attribute name="diskFormat" type="aif:t_diskfmt" use="required"/>
                                             </xs:complexType>
@@ -406,6 +408,7 @@
                                                     <xs:element name="opt" minOccurs="0" maxOccurs="unbounded"
                                                                 type="aif:t_cmdopts"/>
                                                 </xs:sequence>
+                                                <xs:attribute name="id" type="xs:ID" use="required"/>
                                                 <xs:attribute name="source" type="xs:IDREF" use="required"/>
                                                 <!-- We validate this in-code because there's way too many and
                                                      it's way too variable per-host. -->

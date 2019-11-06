@@ -5,7 +5,7 @@
      version="v2_rewrite"><!-- When we release, this should match the tagged release (e.g. 0.2.0) -->
     <storage>
         <blockDevices>
-            <disk device="/dev/sda" diskFormat="gpt">
+            <disk id="sda" device="/dev/sda" diskFormat="gpt">
                 <!-- Partitions are numbered *in the order they are specified*. -->
                 <!-- e.g. "boot" would be /dev/sda1, "secrets1" would be /dev/sda2, etc. -->
                 <part id="boot" name="BOOT" label="/boot" start="0%" stop="10%" fsType="fat32">
@@ -23,7 +23,7 @@
                 <part id="raid1_d2" start="55%" stop="80%" fsType="ext4">
                     <partitionFlag>raid</partitionFlag>
                 </part>
-                <part id="swap" start="80%" stop="90%" fsType="linux-swap(v1)">
+                <part id="swapdisk" start="80%" stop="90%" fsType="linux-swap(v1)">
                     <partitionFlag>swap</partitionFlag>
                 </part>
                 <!-- You can also create a partition with no flags (and not use). -->
@@ -38,7 +38,8 @@
         <luks>
             <luksDev id="luks_secrets" name="secrets" source="secrets1">
                 <!-- You can assign multiple secrets (or "keys") to a LUKS volume. -->
-                <secrets>
+                <secrets
+                >
                     <!-- A simple passphrase. -->
                     <passphrase>secrets1</passphrase>
                 </secrets>
@@ -77,19 +78,29 @@
             </array>
         </mdadm>
         <fileSystems>
-            <fs source="boot" type="vfat">
+            <fs id="esp" source="boot" type="vfat">
                 <!-- Supports mkfs arguments. Leave off the filesystem type and device name, obviously;
                      those are handled by the above attributes. -->
                 <opt name="-F">32</opt>
                 <opt name="-n">ESP</opt>
             </fs>
-            <fs source="luks_secrets" type="ext4">
+            <fs id="luks" source="luks_secrets" type="ext4">
                 <opt name="-L">seekrit</opt>
             </fs>
+            <fs  id="swap" source="swap" type="swap"/>
+            <fs id="vg1-lv1" source="lv1" type="ext4"/>
+            <fs id="mdraid" source="mdadm1" type="ext4"/>
         </fileSystems>
         <mountPoints>
-            <!-- And you use the id to reference mountpoints as well. -->
-            <mount source="luks_secrets" target="/mnt/aif">
+            <!-- And you use the id to reference mountpoints as well. Important to note, we mount *filesystems*,
+                 not partitions/disks/etc. -->
+            <!-- Note that targets should be *outside* of the chroot!
+                 e.g. /aif/storage/mountPoints[@target="/mnt/aif/boot"]
+                      and
+                      /aif/system[@chrootPath="/mnt/aif"]
+                      would lead to the filesystem being accessible *inside* the chroot (and thus the completed install)
+                      at /boot. -->
+            <mount source="luks" target="/mnt/aif">
                 <opt name="rw"/>
                 <opt name="relatime"/>
                 <opt name="compress">lzo</opt>
@@ -98,10 +109,10 @@
                 <opt name="subvolid">5</opt>
                 <opt name="subvol">/</opt>
             </mount>
-            <mount source="boot" target="/mnt/aif/boot"/>
+            <mount source="esp" target="/mnt/aif/boot"/>
             <mount source="swap" target="swap"/>
-            <mount source="lv1" target="/mnt/aif/mnt/pool"/>
-            <mount source="mdadm1" target="/mnt/aif/mnt/raid"/>
+            <mount source="vg1-lv1" target="/mnt/aif/mnt/pool"/>
+            <mount source="mdraid" target="/mnt/aif/mnt/raid"/>
         </mountPoints>
     </storage>
     <network hostname="aiftest.square-r00t.net">

@@ -1,25 +1,14 @@
 import os
 import re
+import subprocess
+##
+import psutil
 
 
-def hasBin(binary_name):
-    paths = []
-    for p in os.environ.get('PATH', '/usr/bin:/bin').split(':'):
-        if binary_name in os.listdir(os.path.realpath(p)):
-            return(os.path.join(p, binary_name))
-    return(False)
-
-
-def xmlBool(xmlobj):
-    # https://bugs.launchpad.net/lxml/+bug/1850221
-    if isinstance(xmlobj, bool):
-        return (xmlobj)
-    if xmlobj.lower() in ('1', 'true'):
-        return(True)
-    elif xmlobj.lower() in ('0', 'false'):
-        return(False)
-    else:
-        return(None)
+def checkMounted(devpath):
+    if devpath in [p.device for p in psutil.disk_partitions(all = True)]:
+        raise RuntimeError('{0} is mounted; we are cowardly refusing to destructive operations on it'.format(devpath))
+    return()
 
 
 def collapseKeys(d, keylist = None):
@@ -43,6 +32,65 @@ def collapseValues(d, vallist = None):
         else:
             vallist.append(v)
     return(vallist)
+
+
+def hasBin(binary_name):
+    paths = []
+    for p in os.environ.get('PATH', '/usr/bin:/bin').split(':'):
+        if binary_name in os.listdir(os.path.realpath(p)):
+            return(os.path.join(p, binary_name))
+    return(False)
+
+
+def kernelFilesystems():
+    # I wish there was a better way of doing this.
+    # https://unix.stackexchange.com/a/98680
+    FS_FSTYPES = ['swap']
+    with open('/proc/filesystems', 'r') as fh:
+        for line in fh.readlines():
+            l = [i.strip() for i in line.split()]
+            if not l:
+                continue
+            if len(l) == 1:
+                FS_FSTYPES.append(l[0])
+            else:
+                FS_FSTYPES.append(l[1])
+    _mod_dir = os.path.join('/lib/modules',
+                            os.uname().release,
+                            'kernel/fs')
+    _strip_mod_suffix = re.compile(r'(?P<fsname>)\.ko(\.(x|g)?z)?$', re.IGNORECASE)
+    try:
+        for i in os.listdir(_mod_dir):
+            path = os.path.join(_mod_dir, i)
+            fs_name = None
+            if os.path.isdir(path):
+                fs_name = i
+            elif os.path.isfile(path):
+                mod_name = _strip_mod_suffix.search(i)
+                fs_name = mod_name.group('fsname')
+            if fs_name:
+                # The kernel *probably* has autoloading enabled, but in case it doesn't...
+                # TODO: logging!
+                if os.getuid() == 0:
+                    subprocess.run(['modprobe', fs_name])
+                    FS_FSTYPES.append(fs_name)
+    except FileNotFoundError:
+        # We're running on a kernel that doesn't have modules
+        pass
+    FS_FSTYPES = sorted(list(set(FS_FSTYPES)))
+    return(FS_FSTYPES)
+
+
+def xmlBool(xmlobj):
+    # https://bugs.launchpad.net/lxml/+bug/1850221
+    if isinstance(xmlobj, bool):
+        return (xmlobj)
+    if xmlobj.lower() in ('1', 'true'):
+        return(True)
+    elif xmlobj.lower() in ('0', 'false'):
+        return(False)
+    else:
+        return(None)
 
 
 class _Sizer(object):
@@ -188,6 +236,7 @@ size = _Sizer()
 
 
 # We do this as base level so they aren't compiled on every invocation/instantiation.
+# Unfortunately it has to be at the bottom so we can call the instantiated _Sizer() class.
 # parted lib can do SI or IEC. So can we.
 _pos_re = re.compile((r'^(?P<pos_or_neg>-|\+)?\s*'
                       r'(?P<size>[0-9]+)\s*'
@@ -212,3 +261,4 @@ def convertSizeUnit(pos):
     else:
         raise ValueError('Invalid size specified: {0}'.format(orig_pos))
     return((from_beginning, _size, amt_type))
+

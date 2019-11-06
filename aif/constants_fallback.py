@@ -19,6 +19,44 @@ EXTERNAL_DEPS = ['blkinfo',
                  'validators']
 # PARTED FLAG INDEXING
 PARTED_FSTYPES = sorted(list(dict(vars(parted.filesystem))['fileSystemType'].keys()))
+PARTED_FSTYPES_GUIDS = {'affs0': uuid.UUID(hex = '0FC63DAF-8483-4772-8E79-3D69D8477DE4'),
+                        'affs1': uuid.UUID(hex = '0FC63DAF-8483-4772-8E79-3D69D8477DE4'),
+                        'affs2': uuid.UUID(hex = '0FC63DAF-8483-4772-8E79-3D69D8477DE4'),
+                        'affs3': uuid.UUID(hex = '0FC63DAF-8483-4772-8E79-3D69D8477DE4'),
+                        'affs4': uuid.UUID(hex = '0FC63DAF-8483-4772-8E79-3D69D8477DE4'),
+                        'affs5': uuid.UUID(hex = '0FC63DAF-8483-4772-8E79-3D69D8477DE4'),
+                        'affs6': uuid.UUID(hex = '0FC63DAF-8483-4772-8E79-3D69D8477DE4'),
+                        'affs7': uuid.UUID(hex = '0FC63DAF-8483-4772-8E79-3D69D8477DE4'),
+                        'amufs': uuid.UUID(hex = '0FC63DAF-8483-4772-8E79-3D69D8477DE4'),
+                        'amufs0': uuid.UUID(hex = '0FC63DAF-8483-4772-8E79-3D69D8477DE4'),
+                        'amufs1': uuid.UUID(hex = '0FC63DAF-8483-4772-8E79-3D69D8477DE4'),
+                        'amufs2': uuid.UUID(hex = '0FC63DAF-8483-4772-8E79-3D69D8477DE4'),
+                        'amufs3': uuid.UUID(hex = '0FC63DAF-8483-4772-8E79-3D69D8477DE4'),
+                        'amufs4': uuid.UUID(hex = '0FC63DAF-8483-4772-8E79-3D69D8477DE4'),
+                        'amufs5': uuid.UUID(hex = '0FC63DAF-8483-4772-8E79-3D69D8477DE4'),
+                        'apfs1': uuid.UUID(hex = '0FC63DAF-8483-4772-8E79-3D69D8477DE4'),
+                        'apfs2': uuid.UUID(hex = '0FC63DAF-8483-4772-8E79-3D69D8477DE4'),
+                        'asfs': uuid.UUID(hex = '0FC63DAF-8483-4772-8E79-3D69D8477DE4'),
+                        'btrfs': uuid.UUID(hex = '0FC63DAF-8483-4772-8E79-3D69D8477DE4'),
+                        'ext2': uuid.UUID(hex = '0FC63DAF-8483-4772-8E79-3D69D8477DE4'),
+                        'ext3': uuid.UUID(hex = '0FC63DAF-8483-4772-8E79-3D69D8477DE4'),
+                        'ext4': uuid.UUID(hex = '0FC63DAF-8483-4772-8E79-3D69D8477DE4'),
+                        'fat16': uuid.UUID(hex = 'EBD0A0A2-B9E5-4433-87C0-68B6B72699C7'),
+                        'fat32': uuid.UUID(hex = 'EBD0A0A2-B9E5-4433-87C0-68B6B72699C7'),
+                        'hfs': uuid.UUID(hex = '48465300-0000-11AA-AA11-00306543ECAC'),
+                        'hfs+': uuid.UUID(hex = '48465300-0000-11AA-AA11-00306543ECAC'),
+                        'hfsx': uuid.UUID(hex = '48465300-0000-11AA-AA11-00306543ECAC'),
+                        'hp-ufs': uuid.UUID(hex = '0FC63DAF-8483-4772-8E79-3D69D8477DE4'),
+                        'jfs': uuid.UUID(hex = '0FC63DAF-8483-4772-8E79-3D69D8477DE4'),
+                        'linux-swap(v0)': uuid.UUID(hex = '0657FD6D-A4AB-43C4-84E5-0933C84B4F4F'),
+                        'linux-swap(v1)': uuid.UUID(hex = '0657FD6D-A4AB-43C4-84E5-0933C84B4F4F'),
+                        'nilfs2': uuid.UUID(hex = '0FC63DAF-8483-4772-8E79-3D69D8477DE4'),
+                        'ntfs': uuid.UUID(hex = 'EBD0A0A2-B9E5-4433-87C0-68B6B72699C7'),
+                        'reiserfs': uuid.UUID(hex = '0FC63DAF-8483-4772-8E79-3D69D8477DE4'),
+                        'sun-ufs': uuid.UUID(hex = '0FC63DAF-8483-4772-8E79-3D69D8477DE4'),
+                        'swsusp': uuid.UUID(hex = '0FC63DAF-8483-4772-8E79-3D69D8477DE4'),
+                        'udf': uuid.UUID(hex = 'EBD0A0A2-B9E5-4433-87C0-68B6B72699C7'),
+                        'xfs': uuid.UUID(hex = '0FC63DAF-8483-4772-8E79-3D69D8477DE4')}
 PARTED_FLAGS = sorted(list(parted.partition.partitionFlag.values()))
 PARTED_IDX_FLAG = dict(parted.partition.partitionFlag)
 PARTED_FLAG_IDX = {v: k for k, v in PARTED_IDX_FLAG.items()}
@@ -125,6 +163,7 @@ GPT_FSTYPE_GUIDS = ((1, 'EFI System', uuid.UUID(hex = 'C12A7328-F81F-11D2-BA4B-0
                     (87, 'Plan 9 partition', uuid.UUID(hex = 'C91818F9-8025-47AF-89D2-F030D7000C2C')),
                     (88, 'HiFive Unleashed FSBL', uuid.UUID(hex = '5B193300-FC78-40CD-8002-E86C45580B47')),
                     (89, 'HiFive Unleashed BBL', uuid.UUID(hex = '2E54B353-1271-4842-806F-E436D6AF6985')))
+GPT_GUID_IDX = {k[2]: k[0] for k in GPT_FSTYPE_GUIDS}
 # MSDOS FSTYPES IDENTIFIERS
 # Second verse, same as the first - kind of. The msdos type identifers just use a byte identifier rather than UUID.
 # https://git.kernel.org/pub/scm/utils/util-linux/util-linux.git/plain/include/pt-mbr-partnames.h

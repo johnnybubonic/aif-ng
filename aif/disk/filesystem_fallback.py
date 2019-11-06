@@ -1,5 +1,4 @@
 import os
-import re
 import subprocess
 ##
 import psutil
@@ -8,56 +7,26 @@ import aif.disk.block_fallback as block
 import aif.disk.luks_fallback as luks
 import aif.disk.lvm_fallback as lvm
 import aif.disk.mdadm_fallback as mdadm
+import aif.utils
 
-# I wish there was a better way of doing this.
-# https://unix.stackexchange.com/a/98680
-FS_FSTYPES = []
-with open('/proc/filesystems', 'r') as fh:
-    for line in fh.readlines():
-        l = [i.strip() for i in line.split()]
-        if not l:
-            continue
-        if len(l) == 1:
-            FS_FSTYPES.append(l[0])
-        else:
-            FS_FSTYPES.append(l[1])
-_mod_dir = os.path.join('/lib/modules',
-                        os.uname().release,
-                        'kernel/fs')
-_strip_mod_suffix = re.compile(r'(?P<fsname>)\.ko(\.(x|g)?z)?$', re.IGNORECASE)
-try:
-    for i in os.listdir(_mod_dir):
-        path = os.path.join(_mod_dir, i)
-        fs_name = None
-        if os.path.isdir(path):
-            fs_name = i
-        elif os.path.isfile(path):
-            mod_name = _strip_mod_suffix.search(i)
-            fs_name = mod_name.group('fsname')
-        if fs_name:
-            # The kernel *probably* has autoloading enabled, but in case it doesn't...
-            # TODO: logging!
-            if os.getuid() == 0:
-                subprocess.run(['modprobe', fs_name])
-                FS_FSTYPES.append(fs_name)
-except FileNotFoundError:
-    # We're running on a kernel that doesn't have modules
-    pass
+
+FS_FSTYPES = aif.utils.kernelFilesystems()
 
 
 class FS(object):
     def __init__(self, fs_xml, sourceobj):
         self.xml = fs_xml
-        if not isinstance(sourceobj, (aif.disk.block_fallback.Disk,
-                                      aif.disk.block_fallback.Partition,
-                                      aif.disk.luks_fallback.LUKS,
-                                      aif.disk.lvm_fallback.LV,
-                                      aif.disk.mdadm_fallback.Array)):
+        if not isinstance(sourceobj, (block.Disk,
+                                      block.Partition,
+                                      luks.LUKS,
+                                      lvm.LV,
+                                      mdadm.Array)):
             raise ValueError(('sourceobj must be of type '
                               'aif.disk.block.Partition, '
                               'aif.disk.luks.LUKS, '
                               'aif.disk.lvm.LV, or'
                               'aif.disk.mdadm.Array'))
+        self.id = self.xml.attrib['id']
         self.source = sourceobj
         self.devpath = sourceobj.devpath
         self.formatted = False
@@ -67,10 +36,7 @@ class FS(object):
         if self.formatted:
             return ()
         # This is a safeguard. We do *not* want to high-format a disk that is mounted.
-        for p in psutil.disk_partitions(all = True):
-            if self.devpath in p:
-                raise RuntimeError(('{0} is mounted;'
-                                    'we are cowardly refusing to apply a filesystem to it').format(self.devpath))
+        aif.utils.checkMounted(self.devpath)
         # TODO! Logging
         cmd = ['mkfs',
                '-t', self.fstype]
@@ -80,5 +46,67 @@ class FS(object):
                 cmd.append(o.text)
         cmd.append(self.devpath)
         subprocess.run(cmd)
-        self.is_hiformatted = True
+        self.formatted = True
+        return()
+
+
+class Mount(object):
+    def __init__(self, mount_xml, fsobj):
+        self.xml = mount_xml
+        self.id = self.xml.attrib['id']
+        if not isinstance(fsobj, FS):
+            raise ValueError('partobj must be of type aif.disk.filesystem.FS')
+        self.id = self.xml.attrib['id']
+        self.fs = fsobj
+        self.source = self.fs.devpath
+        self.target = os.path.realpath(self.xml.attrib['target'])
+        self.opts = {}
+        for o in self.xml.findall('opt'):
+            self.opts[o.attrib['name']] = o.text
+        self.mounted = False
+
+    def _parseOpts(self):
+        opts = []
+        for k, v in self.opts.items():
+            if v and v is not True:  # Python's boolean determination is weird sometimes.
+                opts.append('{0}={1}'.format(k, v))
+            else:
+                opts.append(k)
+        return(opts)
+
+    def mount(self):
+        if self.mounted:
+            return()
+        os.makedirs(self.target, exist_ok = True)
+        opts = self._parseOpts()
+        # TODO: logging
+        cmd = ['/usr/bin/mount',
+               '--types', self.fs.fstype]
+        if opts:
+            cmd.extend(['--options', ','.join(opts)])
+        cmd.extend([self.source, self.target])
+        subprocess.run(cmd)
+        self.mounted = True
+        return()
+
+    def unmount(self, lazy = False, force = False):
+        self.updateMount()
+        if not self.mounted and not force:
+            return()
+        # TODO: logging
+        cmd = ['/usr/bin/umount']
+        if lazy:
+            cmd.append('--lazy')
+        if force:
+            cmd.append('--force')
+        cmd.append(self.target)
+        subprocess.run(cmd)
+        self.mounted = False
+        return()
+
+    def updateMount(self):
+        if self.source in [p.device for p in psutil.disk_partitions(all = True)]:
+            self.mounted = True
+        else:
+            self.mounted = False
         return()
