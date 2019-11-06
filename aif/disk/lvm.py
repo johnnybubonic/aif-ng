@@ -107,12 +107,13 @@ class VG(object):
         self.name = self.xml.attrib('name')
         self.lvs = []
         self.pvs = []
-        self.tags = []
-        for te in self.xml.findall('tags/tag'):
-            self.tags.append(te.text)
+        # self.tags = []
+        # for te in self.xml.findall('tags/tag'):
+        #     self.tags.append(te.text)
         _common.addBDPlugin('lvm')
         self.devpath = self.name
         self.info = None
+        self.created = False
 
     def addPV(self, pvobj):
         if not isinstance(pvobj, PV):
@@ -128,26 +129,31 @@ class VG(object):
         # FUCK. LVM. You can't *specify* a UUID.
         # u = uuid.uuid4()
         # opts.append(_BlockDev.ExtraArg.new('--uuid', str(u)))
-        for t in self.tags:
-            opts.append(_BlockDev.ExtraArg.new('--addtag', t))
+        # for t in self.tags:
+        #     opts.append(_BlockDev.ExtraArg.new('--addtag', t))
         _BlockDev.lvm.vgcreate(self.name,
                                [p.devpath for p in self.pvs],
                                0,
                                opts)
         for p in self.pvs:
             p._parseMeta()
+        self.created = True
         self.updateInfo()
         return()
 
     def createLV(self, lv_xml = None):
+        if not self.created:
+            raise RuntimeError('VG must be created before LVs can be added')
         # If lv_xml is None, we loop through our own XML.
         if lv_xml:
             lv = LV(lv_xml, self)
             lv.create()
-            self.lvs.append(lv)
+            # self.lvs.append(lv)
         else:
             for le in self.xml.findall('logicalVolumes/lv'):
-                pass
+                lv = LV(le, self)
+                lv.create()
+                # self.lvs.append(lv)
         self.updateInfo()
         return()
 
@@ -162,6 +168,8 @@ class VG(object):
         return()
 
     def updateInfo(self):
+        if not self.created:
+            return()
         _info = _BlockDev.lvm.vginfo(self.name)
         # TODO: parity with lvm_fallback.VG.updateInfo
         #       key names currently (probably) don't match and need to confirm the information's all present
@@ -182,11 +190,78 @@ class LV(object):
         self.xml = lv_xml
         self.id = self.xml.attrib('id')
         self.name = self.xml.attrib('name')
-        self.size = self.xml.attrib('size')  # Convert to bytes. Can get max from _BlockDev.lvm.vginfo(<VG>).free
-        self.vg = vg_obj
+        self.size = self.xml.attrib('size')  # Convert to bytes. Can get max from _BlockDev.lvm.vginfo(<VG>).free TODO
+        self.vg = vgobj
+        self.pvs = []
         if not isinstance(self.vg, VG):
-            raise ValueError('vg_obj must be of type aif.disk.lvm.VG')
+            raise ValueError('vgobj must be of type aif.disk.lvm.VG')
         _common.addBDPlugin('lvm')
+        self.info = None
+        self.devpath = '/dev/{0}/{1}'.format(self.vg.name, self.name)
+        self.created = False
+        self.updateInfo()
+        self._initLV()
 
-        self.devpath = None
-        pass
+    def _initLV(self):
+        self.pvs = []
+        _indexed_pvs = {i.id: i for i in self.vg.pvs}
+        for pe in self.xml.findall('pvMember'):
+            pv_id = pe.attrib('source')
+            if pv_id in _indexed_pvs.keys():
+                self.pvs.append(_indexed_pvs[pv_id])
+        if not self.pvs:  # We get all in the VG instead since none were explicitly assigned
+            self.pvs = self.vg.pvs
+        return()
+
+    def create(self):
+        if not self.pvs:
+            raise RuntimeError('Cannot create LV with no associated LVs')
+        opts = [_BlockDev.ExtraArg.new('--reportformat', 'json')]
+        # FUCK. LVM. You can't *specify* a UUID.
+        # u = uuid.uuid4()
+        # opts.append(_BlockDev.ExtraArg.new('--uuid', str(u)))
+        # for t in self.tags:
+        #     opts.append(_BlockDev.ExtraArg.new('--addtag', t))
+        _BlockDev.lvm.lvcreate(self.vg.name,
+                               self.name,
+                               self.size,
+                               None,
+                               [i.devpath for i in self.pvs],
+                               opts)
+        self.vg.lvs.append(self)
+        self.created = True
+        self.updateInfo()
+        self.vg.updateInfo()
+        return()
+
+    def start(self):
+        _BlockDev.lvm.lvactivate(self.vg.name,
+                                 self.name,
+                                 True,
+                                 None)
+        self.updateInfo()
+        return()
+
+    def stop(self):
+        _BlockDev.lvm.lvdeactivate(self.vg.name,
+                                   self.name,
+                                   None)
+        self.updateInfo()
+        return()
+
+    def updateInfo(self):
+        if not self.created:
+            return()
+        _info = _BlockDev.lvm.lvinfo(self.vg.name, self.name)
+        # TODO: parity with lvm_fallback.LV.updateInfo
+        #       key names currently (probably) don't match and need to confirm the information's all present
+        info = {}
+        for k in dir(_info):
+            if k.startswith('_'):
+                continue
+            elif k in ('copy',):
+                continue
+            v = getattr(_info, k)
+            info[k] = v
+        self.info = info
+        return()

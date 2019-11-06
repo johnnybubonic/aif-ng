@@ -357,7 +357,7 @@
                     <xs:complexType>
                         <xs:all>
                             <!-- BEGIN BLOCKDEVICES -->
-                            <xs:element name="blockDevices" minOccurs="1">
+                            <xs:element name="blockDevices" minOccurs="0" maxOccurs="1">
                                 <xs:complexType>
                                     <xs:sequence minOccurs="1" maxOccurs="unbounded">
                                         <xs:element name="disk" minOccurs="1" maxOccurs="unbounded">
@@ -670,7 +670,7 @@
                 <xs:element name="system" maxOccurs="1" minOccurs="1">
                     <xs:complexType>
                         <xs:all>
-                            <xs:element name="rootPassword" minOccurs="1" maxOccurs="1"
+                            <xs:element name="rootPassword" minOccurs="0" maxOccurs="1"
                                         type="aif:t_nixpass"/>
                             <xs:element name="locales" minOccurs="1" maxOccurs="1">
                                 <xs:complexType>
@@ -687,10 +687,10 @@
                                     </xs:sequence>
                                 </xs:complexType>
                             </xs:element>
-                            <xs:element name="users" minOccurs="1" maxOccurs="1">
+                            <xs:element name="users" minOccurs="0" maxOccurs="1">
                                 <xs:complexType>
                                     <xs:sequence>
-                                        <xs:element name="user" minOccurs="0" maxOccurs="unbounded">
+                                        <xs:element name="user" minOccurs="1" maxOccurs="unbounded">
                                             <xs:complexType>
                                                 <xs:sequence>
                                                     <xs:element name="password" minOccurs="0" maxOccurs="1"
@@ -728,7 +728,7 @@
                             <xs:element name="services" minOccurs="0" maxOccurs="1">
                                 <xs:complexType>
                                     <xs:sequence>
-                                        <xs:element name="service" minOccurs="0" maxOccurs="unbounded">
+                                        <xs:element name="service" minOccurs="1" maxOccurs="unbounded">
                                             <xs:complexType>
                                                 <xs:simpleContent>
                                                     <xs:extension base="aif:t_nonempty">

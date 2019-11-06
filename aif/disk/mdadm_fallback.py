@@ -158,10 +158,10 @@ class Array(object):
                     self.layout = None  # TODO: log.warn?
         else:
             self.layout = None
-        self.devname = self.xml.attrib['name']
+        self.name = self.xml.attrib['name']
         self.devpath = devpath
         if not self.devpath:
-            self.devpath = '/dev/md/{0}'.format(self.devname)
+            self.devpath = '/dev/md/{0}'.format(self.name)
         self.updateStatus()
         self.homehost = homehost
         self.members = []
@@ -179,7 +179,7 @@ class Array(object):
         if not self.members:
             raise RuntimeError('Cannot create an array with no members')
         cmd = ['mdadm', '--create',
-               '--name={0}'.format(self.devname),
+               '--name={0}'.format(self.name),
                '--bitmap=internal',
                '--level={0}'.format(self.level),
                '--metadata={0}'.format(self.metadata),
@@ -224,7 +224,7 @@ class Array(object):
     def updateStatus(self):
         _info = mdstat.parse()
         for k, v in _info['devices'].items():
-            if k != self.devname:
+            if k != self.name:
                 del(_info['devices'][k])
         self.info = copy.deepcopy(_info)
         return()

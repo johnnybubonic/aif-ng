@@ -104,11 +104,11 @@ class Array(object):
                     self.layout = None  # TODO: log.warn?
         else:
             self.layout = None
-        self.devname = self.xml.attrib['name']
-        self.fulldevname = '{0}:{1}'.format(self.homehost, self.devname)
+        self.name = self.xml.attrib['name']
+        self.fullname = '{0}:{1}'.format(self.homehost, self.name)
         self.devpath = devpath
         if not self.devpath:
-            self.devpath = '/dev/md/{0}'.format(self.devname)
+            self.devpath = '/dev/md/{0}'.format(self.name)
         self.updateStatus()
         self.homehost = homehost
         self.members = []
@@ -128,11 +128,11 @@ class Array(object):
         opts = [_BlockDev.ExtraArg.new('--homehost',
                                        self.homehost),
                 _BlockDev.ExtraArg.new('--name',
-                                       self.devname)]
+                                       self.name)]
         if self.layout:
             opts.append(_BlockDev.ExtraArg.new('--layout',
                                                self.layout))
-        _BlockDev.md.create(self.devname,
+        _BlockDev.md.create(self.name,
                             str(self.level),
                             [i.devpath for i in self.members],
                             0,
@@ -154,7 +154,7 @@ class Array(object):
         if scan:
             target = None
         else:
-            target = self.devname
+            target = self.name
         _BlockDev.md.activate(target,
                               [i.devpath for i in self.members],  # Ignored if scan mode enabled
                               None,
@@ -164,12 +164,12 @@ class Array(object):
         return()
 
     def stop(self):
-        _BlockDev.md.deactivate(self.devname)
+        _BlockDev.md.deactivate(self.name)
         self.state = 'disassembled'
         return()
 
     def updateStatus(self):
-        _status = _BlockDev.md.detail(self.devname)
+        _status = _BlockDev.md.detail(self.name)
         # TODO: parity with mdadm_fallback.Array.updateStatus
         #       key names currently (probably) don't match and need to confirm the information's all present
         info = {}

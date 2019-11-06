@@ -31,15 +31,15 @@
             </disk>
         </blockDevices>
         <!-- "Special" devices are processed *in the order they are specified*. This is important if you wish to
-             e.g. layer LUKS on top of LVM - you would specify <lvm> before <luks> and reference the
-             <luksDev id="SOMETHING" ... > as <lvmLogical source="SOMETHING" ... />.
+             e.g. layer LVM on top of LUKS - you would specify <lvm> before <luks> and reference the
+             <luksDev id="SOMETHING" ... > as <pv source="SOMETHING" ... />.
              Of course, a limitation of this is you cannot e.g. first assemble a LUKS volume, then an LVM
-             group, and then another LUKS volume - so plan accordingly and/or perform this in a <post> script. -->
+             group, and then another LUKS volume - so plan accordingly and/or perform that in
+             a <post> script instead. -->
         <luks>
             <luksDev id="luks_secrets" name="secrets" source="secrets1">
                 <!-- You can assign multiple secrets (or "keys") to a LUKS volume. -->
-                <secrets
-                >
+                <secrets>
                     <!-- A simple passphrase. -->
                     <passphrase>secrets1</passphrase>
                 </secrets>
@@ -63,7 +63,7 @@
                 <logicalVolumes>
                     <!-- Default is to add all available PVs in PhysicalVolumes... -->
                     <lv id="lv1" name="logical1" size="80%"/>
-                    <!-- But you can also explicitly designate them. -->
+                    <!-- But you can also explicitly designate them. They have to still be in the same volumeGroup though. -->
                     <lv id="lv2" name="logical2" size="20%">
                         <pvMember source="pv1"/>
                     </lv>
@@ -88,7 +88,7 @@
             <fs id="luks" source="luks_secrets" type="ext4">
                 <opt name="-L">seekrit</opt>
             </fs>
-            <fs  id="swap" source="swap" type="swap"/>
+            <fs id="swap" source="swap" type="swap"/>
             <fs id="vg1-lv1" source="lv1" type="ext4"/>
             <fs id="mdraid" source="mdadm1" type="ext4"/>
         </fileSystems>
