@@ -48,7 +48,8 @@ class Member(object):
         if super.returncode != 0:
             # TODO: logging?
             self.is_superblocked = False
-            return(None)
+            self.superblock = None
+            return()
         block = {}
         for idx, line in enumerate(super.stdout.decode('utf-8').splitlines()):
             line = line.strip()
@@ -69,7 +70,7 @@ class Member(object):
                 local_to = re.sub(r'[()]', '', local_to)
                 v = (name, local_to)
             elif k == 'raid_level':
-                v = re.sub(r'^raid', '', v)
+                v = int(re.sub(r'^raid', '', v))
             elif k == 'checksum':
                 cksum, status = [i.strip() for i in v.split('-')]
                 v = (bytes.fromhex(cksum), status)
@@ -158,6 +159,8 @@ class Array(object):
             self.layout = None
         self.devname = self.xml.attrib['name']
         self.devpath = devpath
+        if not self.devpath:
+            self.devpath = '/dev/md/{0}'.format(self.devname)
         self.updateStatus()
         self.homehost = homehost
         self.members = []
@@ -175,6 +178,8 @@ class Array(object):
         if not self.members:
             raise RuntimeError('Cannot create an array with no members')
         cmd = ['mdadm', '--create',
+               '--name={0}'.format(self.devname),
+               '--bitmap=internal',
                '--level={0}'.format(self.level),
                '--metadata={0}'.format(self.metadata),
                '--chunk={0}'.format(self.chunksize),
@@ -187,6 +192,9 @@ class Array(object):
             cmd.append(m.devpath)
         # TODO: logging!
         subprocess.run(cmd)
+        for m in self.members:
+            m._parseDeviceBlock()
+        self.updateStatus()
         self.writeConf()
         self.state = 'new'
         return()
@@ -202,6 +210,7 @@ class Array(object):
             cmd.append('--scan')
         # TODO: logging!
         subprocess.run(cmd)
+        self.updateStatus()
         self.state = 'assembled'
         return()
 

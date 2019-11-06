@@ -4,6 +4,7 @@ import aif.disk.mdadm_fallback as mdadm
 
 
 class LUKS(object):
-    def __init__(self, partobj):
+    def __init__(self, luks_xml, partobj):
+        self.xml = luks_xml
         self.devpath = None
         pass
