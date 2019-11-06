@@ -490,6 +490,16 @@
                                                                 <xs:element name="lv" minOccurs="1"
                                                                             maxOccurs="unbounded">
                                                                     <xs:complexType>
+                                                                        <xs:sequence minOccurs="0"
+                                                                                     maxOccurs="unbounded">
+                                                                            <xs:element name="pvMember" minOccurs="1" maxOccurs="unbounded">
+                                                                                <xs:complexType>
+                                                                                    <xs:attribute name="source"
+                                                                                                  use="required"
+                                                                                                  type="xs:IDREF"/>
+                                                                                </xs:complexType>
+                                                                            </xs:element>
+                                                                        </xs:sequence>
                                                                         <xs:attribute name="id" type="xs:ID"
                                                                                       use="required"/>
                                                                         <xs:attribute name="name" type="aif:t_nonempty"
@@ -501,24 +511,10 @@
                                                             </xs:sequence>
                                                         </xs:complexType>
                                                     </xs:element>
-                                                    <!-- PV creation doesn't really support tags, it seems,
-                                                         in libblockdev. So we'll simplify and just skip them. -->
-<!--                                                    <xs:element name="tags" minOccurs="0" maxOccurs="1">-->
-<!--                                                        <xs:complexType>-->
-<!--                                                            <xs:sequence>-->
-<!--                                                                <xs:element name="tag" type="aif:t_nonempty"-->
-<!--                                                                            minOccurs="1" maxOccurs="unbounded"/>-->
-<!--                                                            </xs:sequence>-->
-<!--                                                        </xs:complexType>-->
-<!--                                                    </xs:element>-->
                                                 </xs:all>
                                                 <xs:attribute name="id" type="xs:ID" use="required"/>
                                                 <xs:attribute name="name" type="aif:t_nonempty" use="required"/>
                                             </xs:complexType>
-<!--                                            <xs:unique name="uniq_vg_tags">-->
-<!--                                                <xs:selector xpath="aif:tags"/>-->
-<!--                                                <xs:field xpath="tag"/>-->
-<!--                                            </xs:unique>-->
                                         </xs:element>
                                     </xs:sequence>
                                 </xs:complexType>
@@ -526,7 +522,6 @@
                                     <xs:selector xpath="aif:volumeGroup"/>
                                     <xs:field xpath="@name"/>
                                 </xs:unique>
-                                <!-- ??? doesn't seem to work. -->
                                 <xs:unique name="uniq_vg_lv">
                                     <xs:selector xpath=".//aif:lv"/>
                                     <xs:field xpath="@name"/>
