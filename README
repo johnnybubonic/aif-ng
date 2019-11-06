@@ -1,3 +1,5 @@
 AIF-NG (Arch Installation Framework, Next Generation) is a means to install Arch Linux (https://www.archlinux.org/) in an unattended and automated fashion. Think of it as something akin to RedHat's Kickstart or Debian's Preseed for Arch Linux.
 
+Be sure to import "aif" rather than importing any submodules directly, as deterministic logic is used to set up virtual names.
+
 See https://aif-ng.io/ for more information about this project.

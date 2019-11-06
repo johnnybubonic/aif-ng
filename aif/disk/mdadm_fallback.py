@@ -10,21 +10,9 @@ import mdstat
 import aif.disk.block_fallback as block
 import aif.disk.luks_fallback as luks
 import aif.disk.lvm_fallback as lvm
+import aif.utils
+import aif.constants
 
-
-SUPPORTED_LEVELS = (0, 1, 4, 5, 6, 10)
-SUPPORTED_METADATA = ('0', '0.90', '1', '1.0', '1.1', '1.2', 'default', 'ddf', 'imsm')
-SUPPORTED_LAYOUTS = {5: (re.compile(r'^((left|right)-a?symmetric|[lr][as]|'
-                                    r'parity-(fir|la)st|'
-                                    r'ddf-(N|zero)-restart|ddf-N-continue)$'),
-                         'left-symmetric'),
-                     6: (re.compile(r'^((left|right)-a?symmetric(-6)?|[lr][as]|'
-                                    r'parity-(fir|la)st|'
-                                    r'ddf-(N|zero)-restart|ddf-N-continue|'
-                                    r'parity-first-6)$'),
-                         None),
-                     10: (re.compile(r'^[nof][0-9]+$'),
-                          None)}
 
 _mdblock_size_re = re.compile(r'^(?P<sectors>[0-9]+)\s+'
                               r'\((?P<GiB>[0-9.]+)\s+GiB\s+'
@@ -34,16 +22,6 @@ _mdblock_unused_re = re.compile(r'^before=(?P<before>[0-9]+)\s+sectors,'
 _mdblock_badblock_re = re.compile(r'^(?P<entries>[0-9]+)\s+entries'
                                   r'[A-Za-z\s]+'
                                   r'(?P<offset>[0-9]+)\s+sectors$')
-
-def _itTakesTwo(n):
-    # So dumb.
-    isPowerOf2 = math.ceil(math.log(n, 2)) == math.floor(math.log(n, 2))
-    return(isPowerOf2)
-
-def _safeChunks(n):
-    if (n % 4) != 0:
-        return(False)
-    return(True)
 
 
 class Member(object):
@@ -151,23 +129,26 @@ class Array(object):
         self.xml = array_xml
         self.id = array_xml.attrib['id']
         self.level = int(self.xml.attrib['level'])
-        if self.level not in SUPPORTED_LEVELS:
-            raise ValueError('RAID level must be one of: {0}'.format(', '.join([str(i) for i in SUPPORTED_LEVELS])))
+        if self.level not in aif.constants.MDADM_SUPPORTED_LEVELS:
+            raise ValueError('RAID level must be one of: {0}'.format(', '.join([str(i)
+                                                                                for i in
+                                                                                aif.constants.MDADM_SUPPORTED_LEVELS])))
         self.metadata = self.xml.attrib.get('meta', '1.2')
-        if self.metadata not in SUPPORTED_METADATA:
-            raise ValueError('Metadata version must be one of: {0}'.format(', '.join(SUPPORTED_METADATA)))
+        if self.metadata not in aif.constants.MDADM_SUPPORTED_METADATA:
+            raise ValueError('Metadata version must be one of: {0}'.format(', '.join(
+                                                                            aif.constants.MDADM_SUPPORTED_METADATA)))
         self.chunksize = int(self.xml.attrib.get('chunkSize', 512))
         if self.level in (4, 5, 6, 10):
-            if not _itTakesTwo(self.chunksize):
+            if not aif.utils.isPowerofTwo(self.chunksize):
                 # TODO: log.warn instead of raise exception? Will mdadm lose its marbles if it *isn't* a proper number?
                 raise ValueError('chunksize must be a power of 2 for the RAID level you specified')
         if self.level in (0, 4, 5, 6, 10):
-            if not _safeChunks(self.chunksize):
+            if not aif.utils.hasSafeChunks(self.chunksize):
                 # TODO: log.warn instead of raise exception? Will mdadm lose its marbles if it *isn't* a proper number?
                 raise ValueError('chunksize must be divisible by 4 for the RAID level you specified')
         self.layout = self.xml.attrib.get('layout', 'none')
-        if self.level in SUPPORTED_LAYOUTS.keys():
-            matcher, layout_default = SUPPORTED_LAYOUTS[self.level]
+        if self.level in aif.constants.MDADM_SUPPORTED_LAYOUTS.keys():
+            matcher, layout_default = aif.constants.MDADM_SUPPORTED_LAYOUTS[self.level]
             if not matcher.search(self.layout):
                 if layout_default:
                     self.layout = layout_default
@@ -190,20 +171,6 @@ class Array(object):
         self.members.append(memberobj)
         return()
 
-    def start(self, scan = False):
-        if not any((self.members, self.devpath)):
-            raise RuntimeError('Cannot assemble an array with no members (for hints) or device path')
-        cmd = ['mdadm', '--assemble', self.devpath]
-        if not scan:
-            for m in self.members:
-                cmd.append(m.devpath)
-        else:
-            cmd.append('--scan')
-        # TODO: logging!
-        subprocess.run(cmd)
-        self.state = 'assembled'
-        return()
-
     def create(self):
         if not self.members:
             raise RuntimeError('Cannot create an array with no members')
@@ -222,6 +189,20 @@ class Array(object):
         subprocess.run(cmd)
         self.writeConf()
         self.state = 'new'
+        return()
+
+    def start(self, scan = False):
+        if not any((self.members, self.devpath)):
+            raise RuntimeError('Cannot assemble an array with no members (for hints) or device path')
+        cmd = ['mdadm', '--assemble', self.devpath]
+        if not scan:
+            for m in self.members:
+                cmd.append(m.devpath)
+        else:
+            cmd.append('--scan')
+        # TODO: logging!
+        subprocess.run(cmd)
+        self.state = 'assembled'
         return()
 
     def stop(self):

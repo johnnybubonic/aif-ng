@@ -1,3 +1,4 @@
+import math
 import os
 import re
 import subprocess
@@ -40,6 +41,18 @@ def hasBin(binary_name):
         if binary_name in os.listdir(os.path.realpath(p)):
             return(os.path.join(p, binary_name))
     return(False)
+
+
+def hasSafeChunks(n):
+    if (n % 4) != 0:
+        return(False)
+    return(True)
+
+
+def isPowerofTwo(n):
+    # So dumb.
+    isPowerOf2 = math.ceil(math.log(n, 2)) == math.floor(math.log(n, 2))
+    return(isPowerOf2)
 
 
 def kernelFilesystems():

@@ -1,3 +1,4 @@
+import re
 import uuid
 ##
 import parted  # https://www.gnu.org/software/parted/api/index.html
@@ -267,3 +268,16 @@ MSDOS_FSTYPE_IDS = ((1, 'Empty', b'\x00'),
                     (98, 'Linux raid autodetect', b'\xFD'),
                     (99, 'LANstep', b'\xFE'),
                     (100, 'BBT', b'\xFF'))
+MDADM_SUPPORTED_LEVELS = (0, 1, 4, 5, 6, 10)
+MDADM_SUPPORTED_METADATA = ('0', '0.90', '1', '1.0', '1.1', '1.2', 'default', 'ddf', 'imsm')
+MDADM_SUPPORTED_LAYOUTS = {5: (re.compile(r'^((left|right)-a?symmetric|[lr][as]|'
+                                          r'parity-(fir|la)st|'
+                                          r'ddf-(N|zero)-restart|ddf-N-continue)$'),
+                               'left-symmetric'),
+                           6: (re.compile(r'^((left|right)-a?symmetric(-6)?|[lr][as]|'
+                                          r'parity-(fir|la)st|'
+                                          r'ddf-(N|zero)-restart|ddf-N-continue|'
+                                          r'parity-first-6)$'),
+                               None),
+                           10: (re.compile(r'^[nof][0-9]+$'),
+                                None)}
