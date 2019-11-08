@@ -56,15 +56,18 @@
             </luksDev>
         </luks>
         <lvm>
-            <volumeGroup id="vg1" name="group1">
+            <volumeGroup id="vg1" name="group1" extentSize="4MiB">
                 <physicalVolumes>
                     <pv id="pv1" source="lvm_member1"/>
                 </physicalVolumes>
                 <logicalVolumes>
                     <!-- Default is to add all available PVs in PhysicalVolumes... -->
                     <lv id="lv1" name="logical1" size="80%"/>
-                    <!-- But you can also explicitly designate them. They have to still be in the same volumeGroup though. -->
-                    <lv id="lv2" name="logical2" size="20%">
+                    <lv id="lv2" name="logical2" size="512MiB">
+                        <!-- But you can also explicitly designate them. They have to still be in the same volumeGroup.
+                             This is generally speaking a *terrible* idea, though, because it makes getting the
+                             sizes right virtually *impossible*. If you do this, you should consistently ONLY use
+                             bytes for each LV size and know the size of the PVs/VGs ahead of time. -->
                         <pvMember source="pv1"/>
                     </lv>
                 </logicalVolumes>

@@ -20,9 +20,13 @@ class PV(object):
                               'aif.disk.block.Partition, '
                               'aif.disk.luks.LUKS, or'
                               'aif.disk.mdadm.Array'))
-        # TODO
         self.devpath = self.device.devpath
-        pass
+        self.is_pooled = False
+        self.meta = None
+        self._parseMeta()
+
+    def _parseMeta(self):
+        pass  # TODO
 
 
 class LV(object):

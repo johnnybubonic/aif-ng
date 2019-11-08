@@ -1,6 +1,7 @@
 import uuid
 ##
 from . import _common
+import aif.utils
 import aif.disk.block as block
 import aif.disk.luks as luks
 import aif.disk.mdadm as mdadm
@@ -105,6 +106,14 @@ class VG(object):
         self.xml = vg_xml
         self.id = self.xml.attrib('id')
         self.name = self.xml.attrib('name')
+        self.pe_size = self.xml.attrib.get('extentSize', 0)
+        if self.pe_size:
+            x = dict(zip(('from_bgn', 'size', 'type'),
+                         aif.utils.convertSizeUnit(self.pe_size)))
+            if x['type']:
+                self.pe_size = aif.utils.size.convertStorage(self.pe_size,
+                                                             x['type'],
+                                                             target = 'B')
         self.lvs = []
         self.pvs = []
         # self.tags = []
@@ -133,7 +142,7 @@ class VG(object):
         #     opts.append(_BlockDev.ExtraArg.new('--addtag', t))
         _BlockDev.lvm.vgcreate(self.name,
                                [p.devpath for p in self.pvs],
-                               0,
+                               self.pe_size,
                                opts)
         for p in self.pvs:
             p._parseMeta()
@@ -190,7 +199,6 @@ class LV(object):
         self.xml = lv_xml
         self.id = self.xml.attrib('id')
         self.name = self.xml.attrib('name')
-        self.size = self.xml.attrib('size')  # Convert to bytes. Can get max from _BlockDev.lvm.vginfo(<VG>).free TODO
         self.vg = vgobj
         self.pvs = []
         if not isinstance(self.vg, VG):
@@ -211,6 +219,33 @@ class LV(object):
                 self.pvs.append(_indexed_pvs[pv_id])
         if not self.pvs:  # We get all in the VG instead since none were explicitly assigned
             self.pvs = self.vg.pvs
+        # Size processing. We have to do this after indexing PVs.
+        # TODO: allow specify PE size (t_lvsize? as well?)?
+        # If not x['type'], assume *extents*, not sectors
+        self.size = self.xml.attrib('size')  # Convert to bytes. Can get max from _BlockDev.lvm.vginfo(<VG>).free TODO
+        x = dict(zip(('from_bgn', 'size', 'type'),
+                     aif.utils.convertSizeUnit(self.xml.attrib['size'])))
+        # self.size is bytes
+        self.size = x['size']
+        _extents = {'size': self.vg.info['extent_size'],
+                    'total': 0}  # We can't use self.vg.info['extent_count'] because selective PVs.
+        _sizes = {'total': 0,
+                  'free': 0}
+        _vg_pe = self.vg.info['extent_size']
+        for pv in self.pvs:
+            _sizes['total'] += pv.info['pv_size']
+            _sizes['free'] += pv.info['pv_free']
+            _extents['total'] += int(pv.info['pv_size'] / _extents['size'])
+        if x['type'] == '%':
+            self.size = int(_sizes['total'] * (0.01 * self.size))
+        elif x['type'] is None:
+            self.size = int(self.size * _extents['size'])
+        else:
+            self.size = int(aif.utils.size.convertStorage(x['size'],
+                                                          x['type'],
+                                                          target = 'B'))
+        if self.size >= _sizes['total']:
+            self.size = 0
         return()
 
     def create(self):

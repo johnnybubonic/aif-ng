@@ -30,6 +30,25 @@
         </xs:restriction>
     </xs:simpleType>
 
+    <xs:simpleType name="t_lvsize">
+        <!-- This is *basically* t_disksize except we don't want +/-. -->
+        <!-- If no suffix is provided, we assume the size is in *extents* instead of sectors like above. -->
+        <xs:restriction base="xs:string">
+            <xs:pattern value="\s*([0-9]+)\s*(%|((k|Ki)|[MGTPEZY]i?)?B?|)\s*"/>
+            <xs:whiteSpace value="collapse"/>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:simpleType name="t_pesize">
+        <!-- This is *basically* t_lvsize except we don't allow percentages. -->
+        <!-- If no suffix is provided, we assume the size is in sectors
+             UNLESS it's "0", which means use the default (which I *think* is dynamically generated). -->
+        <xs:restriction base="xs:string">
+            <xs:pattern value="\s*([0-9]+)\s*(((k|Ki)|[MGTPEZY]i?)?B?|)\s*"/>
+            <xs:whiteSpace value="collapse"/>
+        </xs:restriction>
+    </xs:simpleType>
+
     <xs:simpleType name="t_fstype">
         <xs:union>
             <xs:simpleType>
@@ -492,7 +511,8 @@
                                                                     <xs:complexType>
                                                                         <xs:sequence minOccurs="0"
                                                                                      maxOccurs="unbounded">
-                                                                            <xs:element name="pvMember" minOccurs="1" maxOccurs="unbounded">
+                                                                            <xs:element name="pvMember" minOccurs="1"
+                                                                                        maxOccurs="unbounded">
                                                                                 <xs:complexType>
                                                                                     <xs:attribute name="source"
                                                                                                   use="required"
@@ -504,7 +524,7 @@
                                                                                       use="required"/>
                                                                         <xs:attribute name="name" type="aif:t_nonempty"
                                                                                       use="required"/>
-                                                                        <xs:attribute name="size" type="aif:t_disksize"
+                                                                        <xs:attribute name="size" type="aif:t_lvsize"
                                                                                       use="required"/>
                                                                     </xs:complexType>
                                                                 </xs:element>
@@ -514,6 +534,7 @@
                                                 </xs:all>
                                                 <xs:attribute name="id" type="xs:ID" use="required"/>
                                                 <xs:attribute name="name" type="aif:t_nonempty" use="required"/>
+                                                <xs:attribute name="extentSize" type="aif:t_pesize" use="optional" default="0"/>
                                             </xs:complexType>
                                         </xs:element>
                                     </xs:sequence>

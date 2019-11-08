@@ -558,6 +558,12 @@ TL;DR: "It's the safest way to make sure your disk doesn't suffer massive degrad
 === "Why isn't my last GPT partition extending to the last sector?"
 See above.
 
+=== "Why do partitions take `start`/`stop` attributes but LVs take `size`?"
+Using `start`/`stop` attributes makes sense for disk partitions because they operate on actual geometry (positions on-disk); that is, this lets you create a "gap" between partitions on the disk which can be helpful if you want to do any modifications to the partition table afterwards (this is also why partitions are processed in the order they're specified).
+
+LVM (LVs, in particular), however, aren't consecutive. There *is* no concept of a "start" and "stop" for an LV; LVM uses chunks called "(physical) extents" rather than sectors, and VGs don't have geometry since they're essentially a pool of blocks. This is also why the modifiers like `-` and `+` aren't allowed for LV sizes - they're position-based.
+
+
 == Bug Reports/Feature Requests
 NOTE: It is possible to submit a bug or feature request without registering in my bugtracker. One of my pet peeves is needing to create an account/register on a bugtracker simply to report a bug! The following links only require an email address to file a bug (which is necessary in case I need any further clarification from you or to keep you updated on the status of the bug/feature request -- so please be sure to use a valid email address).
 
