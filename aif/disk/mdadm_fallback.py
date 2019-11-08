@@ -129,7 +129,7 @@ class Member(object):
 class Array(object):
     def __init__(self, array_xml, homehost, devpath = None):
         self.xml = array_xml
-        self.id = array_xml.attrib['id']
+        self.id = self.xml.attrib['id']
         self.level = int(self.xml.attrib['level'])
         if self.level not in aif.constants.MDADM_SUPPORTED_LEVELS:
             raise ValueError('RAID level must be one of: {0}'.format(', '.join([str(i)

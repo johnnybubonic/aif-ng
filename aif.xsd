@@ -452,6 +452,7 @@
                                                                 <xs:element name="passphrase" minOccurs="0"
                                                                             maxOccurs="unbounded"
                                                                             type="aif:t_nonempty"/>
+                                                                <!-- TODO: support URI to *read* bytes from? -->
                                                                 <xs:element name="keyFile" minOccurs="0"
                                                                             maxOccurs="unbounded">
                                                                     <xs:complexType>
@@ -471,6 +472,14 @@
                                                 <xs:attribute name="id" type="xs:ID" use="required"/>
                                                 <xs:attribute name="name" type="aif:t_nonempty" use="required"/>
                                                 <xs:attribute name="source" type="xs:IDREF" use="required"/>
+                                                <!-- It's too much of a PITA to validate the next three.
+                                                     We do it in runtime. -->
+                                                <xs:attribute name="cipher" type="aif:t_nonempty"
+                                                              use="optional" default="aes-xtc-plain64"/>
+                                                <xs:attribute name="keySize" type="xs:positiveInteger"
+                                                              use="optional" default="512"/>
+                                                <xs:attribute name="hash" type="aif:t_nonempty"
+                                                              use="optional" default="sha512"/>
                                             </xs:complexType>
                                         </xs:element>
                                     </xs:sequence>

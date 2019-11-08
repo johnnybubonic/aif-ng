@@ -22,7 +22,7 @@ class Partition(object):
                               'primary, extended, or logical partition for msdos partition tables'))
         aif.disk._common.addBDPlugin('part')
         self.xml = part_xml
-        self.id = part_xml.attrib['id']
+        self.id = self.xml.attrib['id']
         self.table_type = getattr(_BlockDev.PartTableType, tbltype.upper())
         if tbltype == 'msdos':
             # Could technically be _BlockDev.PartTypeReq.NEXT BUT that doesn't *quite* work
