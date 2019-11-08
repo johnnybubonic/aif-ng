@@ -88,7 +88,6 @@ class PV(object):
         except _BlockDev.LVMError:
             self.meta = None
             self.is_pooled = False
-        u = uuid.uuid4()
         opts = [_BlockDev.ExtraArg.new('--reportformat', 'json')]
         # FUCK. LVM. You can't *specify* a UUID.
         # u = uuid.uuid4()
@@ -114,13 +113,15 @@ class VG(object):
                 self.pe_size = aif.utils.size.convertStorage(self.pe_size,
                                                              x['type'],
                                                              target = 'B')
+        if not aif.utils.isPowerofTwo(self.pe_size):
+            raise ValueError('The PE size must be a power of two (in bytes)')
         self.lvs = []
         self.pvs = []
         # self.tags = []
         # for te in self.xml.findall('tags/tag'):
         #     self.tags.append(te.text)
         _common.addBDPlugin('lvm')
-        self.devpath = self.name
+        self.devpath = '/dev/{0}'.format(self.name)
         self.info = None
         self.created = False
 
@@ -144,8 +145,8 @@ class VG(object):
                                [p.devpath for p in self.pvs],
                                self.pe_size,
                                opts)
-        for p in self.pvs:
-            p._parseMeta()
+        for pv in self.pvs:
+            pv._parseMeta()
         self.created = True
         self.updateInfo()
         return()
@@ -200,6 +201,7 @@ class LV(object):
         self.id = self.xml.attrib('id')
         self.name = self.xml.attrib('name')
         self.vg = vgobj
+        self.qualified_name = '{0}/{1}'.format(self.vg.name, self.name)
         self.pvs = []
         if not isinstance(self.vg, VG):
             raise ValueError('vgobj must be of type aif.disk.lvm.VG')
@@ -220,7 +222,6 @@ class LV(object):
         if not self.pvs:  # We get all in the VG instead since none were explicitly assigned
             self.pvs = self.vg.pvs
         # Size processing. We have to do this after indexing PVs.
-        # TODO: allow specify PE size (t_lvsize? as well?)?
         # If not x['type'], assume *extents*, not sectors
         self.size = self.xml.attrib('size')  # Convert to bytes. Can get max from _BlockDev.lvm.vginfo(<VG>).free TODO
         x = dict(zip(('from_bgn', 'size', 'type'),

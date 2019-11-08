@@ -42,10 +42,10 @@ class Member(object):
 
     def _parseDeviceBlock(self):
         # I can't believe the mdstat module doesn't really have a way to do this.
-        super = subprocess.run(['mdadm', '--examine', self.devpath],
-                               stdout = subprocess.PIPE,
-                               stderr = subprocess.PIPE)
-        if super.returncode != 0:
+        _super = subprocess.run(['mdadm', '--examine', self.devpath],
+                                stdout = subprocess.PIPE,
+                                stderr = subprocess.PIPE)
+        if _super.returncode != 0:
             # TODO: logging?
             self.is_superblocked = False
             self.superblock = None
