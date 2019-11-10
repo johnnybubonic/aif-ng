@@ -266,7 +266,10 @@
         </xs:restriction>
     </xs:simpleType>
 
-    <!-- TODO: "enterprise" WPA2 (add'l details)? WPA3? -->
+    <!-- TODO: "enterprise" WPA2 (add'l details)?
+               WPA3?
+               EAP,
+               eduroam (https://github.com/rst0git/netctl-eduroam-config/blob/master/eduroam), etc. -->
     <xs:complexType name="t_wifi_crypto">
         <xs:all>
             <xs:element name="type" minOccurs="1" maxOccurs="1" default="wpa2">
