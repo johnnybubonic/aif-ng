@@ -159,7 +159,7 @@
         </xs:union>
     </xs:simpleType>
 
-    <xs:simpleType name="t_iface">
+    <xs:simpleType name="t_iface_name">
         <xs:restriction base="xs:token">
             <!-- https://github.com/systemd/systemd/blob/master/src/udev/udev-builtin-net_id.c.
                  I have no idea if this will work. TODO: simplify, validate in-code. -->
@@ -213,6 +213,115 @@
             <xs:whiteSpace value="collapse"/>
         </xs:restriction>
     </xs:simpleType>
+
+    <xs:complexType name="t_iface">
+        <xs:sequence>
+            <xs:choice maxOccurs="unbounded">
+                <xs:element name="addresses" minOccurs="0" maxOccurs="1">
+                    <xs:complexType>
+                        <xs:sequence minOccurs="1" maxOccurs="unbounded">
+                            <xs:element name="ipv4">
+                                <xs:complexType>
+                                    <xs:sequence>
+                                        <xs:element name="address" type="aif:t_address_ip4"
+                                                    minOccurs="1" maxOccurs="unbounded"/>
+                                    </xs:sequence>
+                                    <xs:attribute name="gateway" type="aif:t_address_ip4" use="optional"/>
+                                </xs:complexType>
+                            </xs:element>
+                            <xs:element name="ipv6">
+                                <xs:complexType>
+                                    <xs:sequence>
+                                        <xs:element name="address" type="aif:t_address_ip6"
+                                                    minOccurs="1" maxOccurs="unbounded"/>
+                                    </xs:sequence>
+                                    <xs:attribute name="gateway" type="aif:t_address_ip6" use="optional"/>
+                                </xs:complexType>
+                            </xs:element>
+                        </xs:sequence>
+                    </xs:complexType>
+                </xs:element>
+                <xs:element name="resolvers" minOccurs="0" maxOccurs="1">
+                    <xs:complexType>
+                        <xs:sequence minOccurs="1" maxOccurs="unbounded">
+                            <xs:element name="resolver" minOccurs="1" maxOccurs="unbounded"
+                                        type="aif:t_resolver_addr"/>
+                        </xs:sequence>
+                    </xs:complexType>
+                </xs:element>
+            </xs:choice>
+        </xs:sequence>
+        <xs:attribute name="device" type="aif:t_iface_name" use="required"/>
+        <xs:attribute name="defroute" type="xs:boolean" use="optional" default="false"/>
+    </xs:complexType>
+
+    <xs:simpleType name="t_mac_addr">
+        <xs:restriction base="xs:token">
+            <!-- EUI48[RFC7043§3] (previously MAC48[RFC7042§2.1]) -->
+            <xs:pattern value="([A-Fa-f0-9]{2}[:-]?){5}[A-Fa-f0-9]{2}"/>
+            <!-- EUI64[RFC7043§4, RFC4291§2.5.1] -->
+            <xs:pattern value="([A-Fa-f0-9]{2}[:-]?){3}[Ff]{3}[FfEe][:-]?([A-Fa-f0-9]{2}[:-]?){2}[A-Fa-f0-9]{2}"/>
+            <xs:pattern value="([A-Fa-f0-9]{2}[:-]?){3}[A-Fa-f0-9]{4}[:-]?([A-Fa-f0-9]{2}[:-]?){2}[A-Fa-f0-9]{2}"/>
+            <xs:whiteSpace value="collapse"/>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <!-- TODO: "enterprise" WPA2 (add'l details)? WPA3? -->
+    <xs:complexType name="t_wifi_crypto">
+        <xs:all>
+            <xs:element name="type" minOccurs="1" maxOccurs="1" default="wpa2">
+                <xs:simpleType>
+                    <xs:restriction base="xs:token">
+                        <xs:enumeration value="wep"/>
+                        <xs:enumeration value="wpa"/>
+                        <xs:enumeration value="wpa2"/>
+                        <!-- <xs:enumeration value="wpa3"/> -->
+                        <xs:whiteSpace value="collapse"/>
+                    </xs:restriction>
+                </xs:simpleType>
+            </xs:element>
+            <!-- "mode" only valid for WPA2 -->
+            <xs:element name="mode" minOccurs="0" maxOccurs="1" default="personal">
+                <xs:simpleType>
+                    <xs:restriction base="xs:token">
+                        <!-- PSK -->
+                        <xs:enumeration value="personal"/>
+                        <!-- RADIUS -->
+                        <xs:enumeration value="enterprise"/>
+                        <xs:whiteSpace value="collapse"/>
+                    </xs:restriction>
+                </xs:simpleType>
+            </xs:element>
+            <xs:element name="creds" minOccurs="1" maxOccurs="1">
+                <xs:complexType>
+                    <xs:simpleContent>
+                        <xs:extension base="xs:token">
+                            <xs:attribute name="type" use="optional" default="psk">
+                                <xs:simpleType>
+                                    <xs:restriction base="xs:token">
+                                        <xs:enumeration value="psk"/>
+                                        <xs:enumeration value="radius"/>
+                                    </xs:restriction>
+                                </xs:simpleType>
+                            </xs:attribute>
+                        </xs:extension>
+                    </xs:simpleContent>
+                </xs:complexType>
+            </xs:element>
+        </xs:all>
+    </xs:complexType>
+
+    <xs:complexType name="t_iface_wifi">
+        <xs:complexContent>
+            <xs:extension base="aif:t_iface">
+                <xs:sequence>
+                    <xs:element name="encryption" type="aif:t_wifi_crypto" minOccurs="0" maxOccurs="1"/>
+                </xs:sequence>
+                <xs:attribute name="essid" type="xs:string" use="required"/>
+                <xs:attribute name="bssid" type="xs:string" use="optional"/>
+            </xs:extension>
+        </xs:complexContent>
+    </xs:complexType>
 
     <xs:simpleType name="t_scripturi">
         <xs:restriction base="xs:anyURI">
@@ -536,7 +645,8 @@
                                                 </xs:all>
                                                 <xs:attribute name="id" type="xs:ID" use="required"/>
                                                 <xs:attribute name="name" type="aif:t_nonempty" use="required"/>
-                                                <xs:attribute name="extentSize" type="aif:t_pesize" use="optional" default="0"/>
+                                                <xs:attribute name="extentSize" type="aif:t_pesize" use="optional"
+                                                              default="0"/>
                                             </xs:complexType>
                                         </xs:element>
                                     </xs:sequence>
@@ -622,69 +732,24 @@
                 </xs:element>
                 <!-- END STORAGE -->
                 <!-- BEGIN NETWORK -->
+                <!-- TODO: make network optional? -->
                 <xs:element name="network" minOccurs="1" maxOccurs="1">
                     <xs:complexType>
-                        <xs:sequence>
-                            <xs:element name="iface" minOccurs="1" maxOccurs="unbounded">
-                                <xs:complexType>
-                                    <xs:all>
-                                        <xs:element name="addresses" minOccurs="0" maxOccurs="1">
-                                            <xs:complexType>
-                                                <xs:sequence minOccurs="1" maxOccurs="unbounded">
-                                                    <xs:element name="ipv4">
-                                                        <xs:complexType>
-                                                            <xs:sequence>
-                                                                <xs:element name="address" type="aif:t_address_ip4"
-                                                                            minOccurs="1" maxOccurs="unbounded"/>
-                                                            </xs:sequence>
-                                                            <xs:attribute name="gateway" type="aif:t_address_ip4"
-                                                                          use="optional"/>
-                                                        </xs:complexType>
-                                                    </xs:element>
-                                                    <xs:element name="ipv6">
-                                                        <xs:complexType>
-                                                            <xs:sequence>
-                                                                <xs:element name="address" type="aif:t_address_ip6"
-                                                                            minOccurs="1" maxOccurs="unbounded"/>
-                                                            </xs:sequence>
-                                                            <xs:attribute name="gateway" type="aif:t_address_ip6"
-                                                                          use="optional"/>
-                                                        </xs:complexType>
-                                                    </xs:element>
-                                                </xs:sequence>
-                                            </xs:complexType>
-                                            <xs:unique name="uniq_ip4">
-                                                <xs:selector xpath="aif:ipv4"/>
-                                                <xs:field xpath="address"/>
-                                            </xs:unique>
-                                            <xs:unique name="uniq_ip6">
-                                                <xs:selector xpath="aif:ipv6"/>
-                                                <xs:field xpath="address"/>
-                                            </xs:unique>
-                                        </xs:element>
-                                        <xs:element name="resolvers" minOccurs="0" maxOccurs="1">
-                                            <xs:complexType>
-                                                <xs:sequence minOccurs="1" maxOccurs="unbounded">
-                                                    <xs:element name="resolver" minOccurs="1" maxOccurs="unbounded"
-                                                                type="aif:t_resolver_addr"/>
-                                                </xs:sequence>
-                                            </xs:complexType>
-                                        </xs:element>
-                                    </xs:all>
-                                    <xs:attribute name="device" type="aif:t_iface" use="required"/>
-                                </xs:complexType>
-                                <xs:unique name="uniq_resolver">
-                                    <xs:selector xpath="aif:resolvers"/>
-                                    <xs:field xpath="resolver"/>
-                                </xs:unique>
+                        <xs:choice minOccurs="1" maxOccurs="unbounded">
+                            <xs:element name="ethernet" type="aif:t_iface" minOccurs="0" maxOccurs="unbounded"/>
+                            <xs:element name="wireless" type="aif:t_iface_wifi" minOccurs="0" maxOccurs="unbounded">
                             </xs:element>
-                        </xs:sequence>
+                        </xs:choice>
                         <!-- It's nearly impossible to validate FQDNs/hostnames in XSD, so we do it in-code. -->
                         <xs:attribute name="hostname" type="aif:t_nonempty" use="required"/>
                         <xs:attribute name="provider" type="aif:t_netprov" use="optional" default="netctl"/>
                     </xs:complexType>
-                    <xs:unique name="uniq_iface">
-                        <xs:selector xpath="aif:iface"/>
+                    <xs:unique name="uniq_iface_eth">
+                        <xs:selector xpath="aif:ethernet"/>
+                        <xs:field xpath="@device"/>
+                    </xs:unique>
+                    <xs:unique name="uniq_iface_wlan">
+                        <xs:selector xpath="aif:wireless"/>
                         <xs:field xpath="@device"/>
                     </xs:unique>
                 </xs:element>

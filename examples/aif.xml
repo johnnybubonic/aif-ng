@@ -119,8 +119,8 @@
             <mount source="mdraid" target="/mnt/aif/mnt/raid"/>
         </mountPoints>
     </storage>
-    <network hostname="aiftest.square-r00t.net">
-        <iface device="auto">
+    <network hostname="aiftest.square-r00t.net" provider="netctl">
+        <ethernet device="auto" defroute="true">
             <addresses>
                 <ipv4>
                     <address>dhcp</address>
@@ -133,7 +133,14 @@
             <resolvers>
                 <resolver>8.8.8.8</resolver>
             </resolvers>
-        </iface>
+        </ethernet>
+        <wireless device="wlp2s0" essid="MyWirelessLan" bssid="00-00-5E-00-53-00" defroute="false">
+            <encryption>
+                <type>wpa2</type>
+                <mode>personal</mode>
+                <creds type="psk">ABadWiFiPassword</creds>
+            </encryption>
+        </wireless>
     </network>
     <system timezone="EST5EDT" chrootPath="/mnt/aif" reboot="0">
         <rootPassword>
