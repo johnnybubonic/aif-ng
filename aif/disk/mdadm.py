@@ -1,4 +1,5 @@
 import datetime
+import os
 import re
 import uuid
 ##
@@ -191,6 +192,7 @@ class Array(object):
         return()
 
     def writeConf(self, conf = '/etc/mdadm.conf'):
+        conf = os.path.realpath(conf)
         with open(conf, 'r') as fh:
             conflines = fh.read().splitlines()
         arrayinfo = ('ARRAY '

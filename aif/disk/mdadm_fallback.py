@@ -1,6 +1,6 @@
 import copy
 import datetime
-import math
+import os
 import re
 import subprocess
 import uuid
@@ -126,6 +126,7 @@ class Member(object):
         self._parseDeviceBlock()
         return()
 
+
 class Array(object):
     def __init__(self, array_xml, homehost, devpath = None):
         self.xml = array_xml
@@ -230,6 +231,7 @@ class Array(object):
         return()
 
     def writeConf(self, conf = '/etc/mdadm.conf'):
+        conf = os.path.realpath(conf)
         with open(conf, 'r') as fh:
             conflines = fh.read().splitlines()
         # TODO: logging

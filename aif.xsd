@@ -442,11 +442,12 @@
                             <xs:element name="luks" minOccurs="0" maxOccurs="1">
                                 <xs:complexType>
                                     <xs:sequence>
+                                        <!-- TODO: add support for custom flags/opts? -->
                                         <xs:element name="luksDev" minOccurs="1" maxOccurs="unbounded">
                                             <xs:complexType>
                                                 <xs:sequence>
                                                     <xs:element name="secrets" minOccurs="1"
-                                                                maxOccurs="unbounded">
+                                                                maxOccurs="10">
                                                         <xs:complexType>
                                                             <xs:sequence minOccurs="1" maxOccurs="unbounded">
                                                                 <xs:element name="passphrase" minOccurs="0"
