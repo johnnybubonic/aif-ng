@@ -85,6 +85,14 @@ TIP: Your distro's package manager should have most if not all of these availabl
 
 NOTE: Some versions may be higher than actually needed.
 
+////
+Need to revamp. Recommended vs. fallback plus required for both
+
+Recommended:
+pygobject-introspection
+libblockdev
+libnm
+////
 
 === Necessary
 These are needed for using AIF-NG.

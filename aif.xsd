@@ -270,6 +270,7 @@
                WPA3?
                EAP,
                eduroam (https://github.com/rst0git/netctl-eduroam-config/blob/master/eduroam), etc. -->
+    <!-- wep64, wep128, wpa-psk:tkip, wpa-psk:aes, wpa2-psk:tkip, wpa2-psk:aes, wpa2-psk:tkip/aes -->
     <xs:complexType name="t_wifi_crypto">
         <xs:all>
             <xs:element name="type" minOccurs="1" maxOccurs="1" default="wpa2">
