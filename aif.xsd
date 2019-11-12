@@ -219,25 +219,35 @@
             <xs:choice maxOccurs="unbounded">
                 <xs:element name="addresses" minOccurs="0" maxOccurs="1">
                     <xs:complexType>
-                        <xs:sequence minOccurs="1" maxOccurs="unbounded">
-                            <xs:element name="ipv4">
-                                <xs:complexType>
-                                    <xs:sequence>
-                                        <xs:element name="address" type="aif:t_address_ip4"
-                                                    minOccurs="1" maxOccurs="unbounded"/>
-                                    </xs:sequence>
-                                    <xs:attribute name="gateway" type="aif:t_address_ip4" use="optional"/>
-                                </xs:complexType>
-                            </xs:element>
-                            <xs:element name="ipv6">
-                                <xs:complexType>
-                                    <xs:sequence>
-                                        <xs:element name="address" type="aif:t_address_ip6"
-                                                    minOccurs="1" maxOccurs="unbounded"/>
-                                    </xs:sequence>
-                                    <xs:attribute name="gateway" type="aif:t_address_ip6" use="optional"/>
-                                </xs:complexType>
-                            </xs:element>
+                        <xs:sequence>
+                            <xs:choice minOccurs="1" maxOccurs="unbounded">
+                                <xs:element name="ipv4">
+                                    <xs:complexType>
+                                        <xs:sequence>
+                                            <xs:element name="address" type="aif:t_address_ip4"
+                                                        minOccurs="0" maxOccurs="unbounded"/>
+                                        </xs:sequence>
+                                        <xs:attribute name="gateway" type="aif:t_address_ip4" use="optional"/>
+                                    </xs:complexType>
+                                    <xs:unique name="uniq_ipv4_addr">
+                                        <xs:selector xpath="aif:address"/>
+                                        <xs:field xpath="."/>
+                                    </xs:unique>
+                                </xs:element>
+                                <xs:element name="ipv6">
+                                    <xs:complexType>
+                                        <xs:sequence>
+                                            <xs:element name="address" type="aif:t_address_ip6"
+                                                        minOccurs="0" maxOccurs="unbounded"/>
+                                        </xs:sequence>
+                                        <xs:attribute name="gateway" type="aif:t_address_ip6" use="optional"/>
+                                    </xs:complexType>
+                                    <xs:unique name="uniq_ipv6_addr">
+                                        <xs:selector xpath="aif:address"/>
+                                        <xs:field xpath="."/>
+                                    </xs:unique>
+                                </xs:element>
+                            </xs:choice>
                         </xs:sequence>
                     </xs:complexType>
                 </xs:element>
@@ -749,11 +759,7 @@
                         <xs:attribute name="provider" type="aif:t_netprov" use="optional" default="netctl"/>
                     </xs:complexType>
                     <xs:unique name="uniq_iface_eth">
-                        <xs:selector xpath="aif:ethernet"/>
-                        <xs:field xpath="@device"/>
-                    </xs:unique>
-                    <xs:unique name="uniq_iface_wlan">
-                        <xs:selector xpath="aif:wireless"/>
+                        <xs:selector xpath="aif:ethernet|aif:wireless"/>
                         <xs:field xpath="@device"/>
                     </xs:unique>
                 </xs:element>

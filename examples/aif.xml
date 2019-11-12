@@ -124,6 +124,7 @@
             <addresses>
                 <ipv4>
                     <address>dhcp</address>
+                    <address>192.168.1.5/24</address>
                 </ipv4>
                 <ipv6>
                     <address>slaac</address>
@@ -135,6 +136,11 @@
             </resolvers>
         </ethernet>
         <wireless device="wlp2s0" essid="MyWirelessLan" bssid="00-00-5E-00-53-00" defroute="false">
+            <addresses>
+                <ipv4>
+                    <address>dhcp</address>
+                </ipv4>
+            </addresses>
             <encryption>
                 <type>wpa2</type>
                 <mode>personal</mode>

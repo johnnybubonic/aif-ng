@@ -5,15 +5,20 @@ class Network(object):
         self.provider = self.xml.attrib.get('provider', 'netctl')
         handler = None
         if self.provider == 'netctl':
-            from . import netctl as handler
+            import aif.network.netctl as handler
         elif self.provider == 'nm':
-            from . import networkmanager as handler
+            import aif.network.networkmanager as handler
         elif self.provider == 'systemd':
-            from . import networkd as handler
+            import aif.network.networkd as handler
         self.provider = handler
         if not self.provider:
             raise RuntimeError('Could not determine handler')
         self.connections = []
 
     def _initConns(self):
-        pass
+        for e in self.xml.xpath('ethernet|wireless'):
+            if e.tag == 'ethernet':
+                conn = self.provider.Ethernet(e)
+            elif e.tag == 'wireless':
+                conn = self.provider.Wireless(e)
+            self.connections.append(conn)
