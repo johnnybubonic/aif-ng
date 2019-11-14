@@ -1,4 +1,5 @@
 import ipaddress
+import uuid
 ##
 from . import _common
 
@@ -14,6 +15,7 @@ class Connection(object):
         self.addrs = {'ipv4': [],
                       'ipv6': []}
         self.resolvers = []
+        self.uuid = uuid.uuid4()
         self._initAddrs()
         self._initResolvers()
 

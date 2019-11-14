@@ -3,3 +3,7 @@ https://lazka.github.io/pgi-docs/
 
 example of using above for LVM:
 https://github.com/storaged-project/libblockdev/blob/master/tests/lvm_test.py
+
+
+using libnm with pygobject-introspection examples:
+https://gitlab.freedesktop.org/NetworkManager/NetworkManager/blob/master/examples/python/gi/
