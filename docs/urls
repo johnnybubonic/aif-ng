@@ -7,3 +7,5 @@ https://github.com/storaged-project/libblockdev/blob/master/tests/lvm_test.py
 
 using libnm with pygobject-introspection examples:
 https://gitlab.freedesktop.org/NetworkManager/NetworkManager/blob/master/examples/python/gi/
+NM.SETTING_CONNECTION_TYPE = https://developer.gnome.org/NetworkManager/stable/ch01.html
+https://developer.gnome.org/libnm/stable/ch03.html

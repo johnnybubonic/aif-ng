@@ -17,5 +17,6 @@
 *.zip
 .*.swp
 .editix
+.idea/
 __pycache__/
 test.py
