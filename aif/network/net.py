@@ -14,9 +14,11 @@ class Network(object):
         if not self.provider:
             raise RuntimeError('Could not determine handler')
         self.connections = []
+        self._initConns()
 
     def _initConns(self):
         for e in self.xml.xpath('ethernet|wireless'):
+            conn = None
             if e.tag == 'ethernet':
                 conn = self.provider.Ethernet(e)
             elif e.tag == 'wireless':

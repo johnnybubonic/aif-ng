@@ -120,22 +120,25 @@
         </mountPoints>
     </storage>
     <network hostname="aiftest.square-r00t.net" provider="netctl">
-        <ethernet device="auto" defroute="true">
+        <ethernet id="lan" device="auto" defroute="true" searchDomain="domain.tld">
             <addresses>
                 <ipv4>
                     <address>dhcp</address>
-                    <address>192.168.1.5/24</address>
+                    <address gateway="192.168.1.1">192.168.1.5/24</address>
                 </ipv4>
                 <ipv6>
                     <address>slaac</address>
                     <address>fde4:16b9:654b:bbfa::15/64</address>
                 </ipv6>
             </addresses>
-            <resolvers>
+            <resolvers noAuto="true">
+                <resolver>64.6.64.6</resolver>
+                <resolver>4.2.2.1</resolver>
                 <resolver>8.8.8.8</resolver>
             </resolvers>
         </ethernet>
-        <wireless device="wlp2s0" essid="MyWirelessLan" bssid="00-00-5E-00-53-00" defroute="false">
+        <wireless id="wlan" device="wlp2s0" essid="MyWirelessLan"
+                  bssid="00-00-5E-00-53-00" defroute="false" searchDomain="wifi.lan">
             <addresses>
                 <ipv4>
                     <address>dhcp</address>

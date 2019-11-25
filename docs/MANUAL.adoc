@@ -571,6 +571,15 @@ Using `start`/`stop` attributes makes sense for disk partitions because they ope
 
 LVM (LVs, in particular), however, aren't consecutive. There *is* no concept of a "start" and "stop" for an LV; LVM uses chunks called "(physical) extents" rather than sectors, and VGs don't have geometry since they're essentially a pool of blocks. This is also why the modifiers like `-` and `+` aren't allowed for LV sizes - they're position-based.
 
+=== "Why aren't the network settings in <network> being applied during install?"
+Simply put, a logical race condition. In order for probably 90+% of AIF-NG deploys to bootstrap, they fetch their XML configuration via a network URI (rather than a file URI). This means it needs a network connection that pre-exists in the *install environment* (LiveCD, LiveUSB, PXE/iPXE, etc.) before it even knows what network configuration you want the *persistent environment* to have.
+
+Granted, this is a moot point if you're using a *`file://`* URI for the XML configuration, but this is not a very flexible means regardless. If demand increases for this, future releases may include this functionality.
+
+If you desire the configuration to be applied *during* the install, you can do it yourself in an `/aif/scripts/pre/script` or `/aif/scripts/pkg/script` script. The fetched XML file can be found at `/var/tmp/AIF.xml` in the install environment. (Alternatively, configure the network yourself procedurally using one of those scripts).
+
+If you wish to SSH into the install environment to check the status/progress of the install, it is recommended that you set up a static lease (if using DHCP) or use SLAAC (if using IPv6) beforehand and configure your install environment beforehand. Remember, AIF-NG only *installs* Arch Linux; it tries very hard to *not* interact with the install environment.
+
 
 == Bug Reports/Feature Requests
 NOTE: It is possible to submit a bug or feature request without registering in my bugtracker. One of my pet peeves is needing to create an account/register on a bugtracker simply to report a bug! The following links only require an email address to file a bug (which is necessary in case I need any further clarification from you or to keep you updated on the status of the bug/feature request -- so please be sure to use a valid email address).

@@ -1,7 +1,7 @@
-try:
-    from . import _common
-except ImportError:
-    pass  # GI isn't supported, so we don't even use a fallback.
+# try:
+#     from . import _common
+# except ImportError:
+#     pass  # GI isn't supported, so we don't even use a fallback.
 
 from . import netctl
 
@@ -15,10 +15,5 @@ try:
 except ImportError:
     from . import networkd_fallback as networkd
 
-
-try:
-    from . import networkmanager
-except ImportError:
-    from . import networkmanager_fallback
-
+from . import networkmanager
 from . import net

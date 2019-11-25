@@ -28,9 +28,11 @@
 	tmp on /mnt/aif/tmp type tmpfs (rw,nosuid,nodev)
   OR just use pyalpm
 
-DOCUMENTATION: aif-config.py (and note sample json as well)
+DOCUMENTATION:
+- https://stackoverflow.com/questions/237938/how-to-convert-xsd-to-human-readable-documentation ?
+- (*) https://stackoverflow.com/a/6686367
 
-for network configuration, add in support for using a device's MAC address instead of interface name
+for network configuration, add in support for using a device's MAC address instead of interface name?
 
 also:
 -create boot media with bdisk since default arch doesn't even have python 3

@@ -178,11 +178,29 @@
         </xs:restriction>
     </xs:simpleType>
 
+    <xs:simpleType name="t_gw_ip4">
+        <xs:restriction base="xs:string">
+            <!-- This is a REALLY LAZY regex. Matching IPv4 in regex is ugly as heck, so we do that in-code.
+                 This is just a gatekeeper. -->
+            <xs:pattern value="[0-9.]{7,15}"/>
+            <xs:whiteSpace value="collapse"/>
+        </xs:restriction>
+    </xs:simpleType>
+
     <xs:simpleType name="t_address_ip6">
         <xs:restriction base="xs:string">
             <!-- This is a REALLY LAZY regex. Matching IPv6 in regex is ugly as heck, so we do that in-code.
                  This is just a gatekeeper. -->
             <xs:pattern value="(dhcp6|slaac|([A-Za-z0-9:]+)/[0-9]+)"/>
+            <xs:whiteSpace value="collapse"/>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:simpleType name="t_gw_ip6">
+        <xs:restriction base="xs:string">
+            <!-- This is a REALLY LAZY regex. Matching IPv6 in regex is ugly as heck, so we do that in-code.
+                 This is just a gatekeeper. -->
+            <xs:pattern value="[A-Za-z0-9:]+"/>
             <xs:whiteSpace value="collapse"/>
         </xs:restriction>
     </xs:simpleType>
@@ -224,10 +242,18 @@
                                 <xs:element name="ipv4">
                                     <xs:complexType>
                                         <xs:sequence>
-                                            <xs:element name="address" type="aif:t_address_ip4"
-                                                        minOccurs="0" maxOccurs="unbounded"/>
+                                            <xs:element name="address" minOccurs="0" maxOccurs="unbounded">
+                                                <xs:complexType>
+                                                    <xs:simpleContent>
+                                                        <xs:extension base="aif:t_address_ip4">
+                                                            <xs:attribute name="gateway"
+                                                                          type="aif:t_gw_ip4"
+                                                                          use="optional"/>
+                                                        </xs:extension>
+                                                    </xs:simpleContent>
+                                                </xs:complexType>
+                                            </xs:element>
                                         </xs:sequence>
-                                        <xs:attribute name="gateway" type="aif:t_address_ip4" use="optional"/>
                                     </xs:complexType>
                                     <xs:unique name="uniq_ipv4_addr">
                                         <xs:selector xpath="aif:address"/>
@@ -237,10 +263,18 @@
                                 <xs:element name="ipv6">
                                     <xs:complexType>
                                         <xs:sequence>
-                                            <xs:element name="address" type="aif:t_address_ip6"
-                                                        minOccurs="0" maxOccurs="unbounded"/>
+                                            <xs:element name="address" minOccurs="0" maxOccurs="unbounded">
+                                                <xs:complexType>
+                                                    <xs:simpleContent>
+                                                        <xs:extension base="aif:t_address_ip6">
+                                                            <xs:attribute name="gateway"
+                                                                          type="aif:t_gw_ip6"
+                                                                          use="optional"/>
+                                                        </xs:extension>
+                                                    </xs:simpleContent>
+                                                </xs:complexType>
+                                            </xs:element>
                                         </xs:sequence>
-                                        <xs:attribute name="gateway" type="aif:t_address_ip6" use="optional"/>
                                     </xs:complexType>
                                     <xs:unique name="uniq_ipv6_addr">
                                         <xs:selector xpath="aif:address"/>
@@ -257,12 +291,15 @@
                             <xs:element name="resolver" minOccurs="1" maxOccurs="unbounded"
                                         type="aif:t_resolver_addr"/>
                         </xs:sequence>
+                        <xs:attribute name="noAuto" type="xs:boolean" use="optional" default="false"/>
                     </xs:complexType>
                 </xs:element>
             </xs:choice>
         </xs:sequence>
+        <xs:attribute name="id" type="xs:ID" use="required"/>
         <xs:attribute name="device" type="aif:t_iface_name" use="required"/>
         <xs:attribute name="defroute" type="xs:boolean" use="optional" default="false"/>
+        <xs:attribute name="searchDomain" type="aif:t_nonempty" use="optional"/>
     </xs:complexType>
 
     <xs:simpleType name="t_mac_addr">
