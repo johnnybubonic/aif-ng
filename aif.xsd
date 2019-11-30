@@ -244,7 +244,7 @@
         <xs:restriction base="xs:token">
             <xs:enumeration value="netctl"/>
             <xs:enumeration value="nm"/>
-            <xs:enumeration value="systemd"/>
+            <xs:enumeration value="networkd"/>
             <xs:whiteSpace value="collapse"/>
         </xs:restriction>
     </xs:simpleType>
@@ -465,6 +465,7 @@
                 </xs:sequence>
                 <xs:attribute name="essid" type="xs:string" use="required"/>
                 <xs:attribute name="bssid" type="aif:t_mac_addr" use="optional"/>
+                <xs:attribute name="hidden" type="xs:boolean" use="optional" default="false"/>
             </xs:extension>
         </xs:complexContent>
     </xs:complexType>
@@ -887,7 +888,7 @@
                         </xs:choice>
                         <!-- It's nearly impossible to validate FQDNs/hostnames in XSD, so we do it in-code. -->
                         <xs:attribute name="hostname" type="aif:t_nonempty" use="required"/>
-                        <xs:attribute name="provider" type="aif:t_netprov" use="optional" default="systemd"/>
+                        <xs:attribute name="provider" type="aif:t_netprov" use="optional" default="networkd"/>
                         <xs:attribute name="dhcpClient" type="aif:t_dhcp_clients" use="optional" default="dhcpcd"/>
                     </xs:complexType>
                     <xs:unique name="uniq_iface_eth">

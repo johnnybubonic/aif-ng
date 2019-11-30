@@ -589,7 +589,7 @@ This is going to be highly unpredictable based on the networking provider you ch
 === "I'm using netctl as my network provider, and-"
 I'ma let you finish, but netctl is a *really* simple network provider. I mean REALLY simple. As such, a lot of things (like mixing auto DNS and non-auto addressing) don't work at all feasibly, and probably might not ever. It's great for simple and flat configurations (i.e. all static everything, all automatic everything, etc.) and I even use it on my own machines where I can, but it just simply doesn't make allowances for more complex setups. (This is why init scripts were replaced by systemd for init, remember? Script-and-shell-based utilities, such as netctl -- seriously, the entire thing's written in Bash -- just can't handle more complex jobs reliably.)
 
-If you need more advanced functionality but don't want a lot of cruft or bloat, I recommend `systemd` as your network provider. It requires no extra packages (other than wpa_supplicant, if you're using wireless) because it's part of the systemd package (which is part of the most basic install of Arch) and handles more advanced configurations a lot more reliably.
+If you need more advanced functionality but don't want a lot of cruft or bloat, I recommend `networkd` as your network provider. It requires no extra packages (other than wpa_supplicant, if you're using wireless) because it's part of the systemd package (which is part of the most basic install of Arch) and handles more advanced configurations a lot more reliably.
 
 === "How do I specify WEP for a wireless network?"
 You can't. WEP's pretty broken. I understand some legacy networks may still use it, but I'm incredibly uncomfortable supporting it.

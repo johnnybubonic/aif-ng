@@ -275,3 +275,29 @@ class Wireless(Connection):
         super().__init__(iface_xml)
         self.connection_type = 'wireless'
         self._initCfg()
+        self._initConnCfg()
+
+    def _initConnCfg(self):
+        self._cfg['BASE']['ESSID'] = "'{0}'".format(self.xml.attrib['essid'])
+        hidden = aif.utils.xmlBool(self.xml.attrib.get('hidden', 'false'))
+        if hidden:
+            self._cfg['BASE']['Hidden'] = 'yes'
+        try:
+            bssid = self.xml.attrib.get('bssid').strip()
+        except AttributeError:
+            bssid = None
+        if bssid:
+            bssid = aif.network._common.canonizeEUI(bssid)
+            self._cfg['BASE']['AP'] = bssid
+        crypto = self.xml.find('encryption')
+        if crypto:
+            self.packages.add('wpa_supplicant')
+            crypto = aif.network._common.convertWifiCrypto(crypto)
+            # if crypto['type'] in ('wpa', 'wpa2', 'wpa3'):
+            if crypto['type'] in ('wpa', 'wpa2'):
+                # TODO: WPA2 enterprise
+                self._cfg['BASE']['Security'] = 'wpa'
+            # if crypto['type'] in ('wep', 'wpa', 'wpa2', 'wpa3'):
+            if crypto['type'] in ('wpa', 'wpa2'):
+                self._cfg['BASE']['Key'] = crypto['auth']['psk']
+        return()

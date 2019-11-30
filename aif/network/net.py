@@ -5,13 +5,13 @@ class Network(object):
     def __init__(self, network_xml):
         self.xml = network_xml
         self.hostname = self.xml.attrib['hostname'].strip()
-        self.provider = self.xml.attrib.get('provider', 'systemd').strip()
+        self.provider = self.xml.attrib.get('provider', 'networkd').strip()
         handler = None
         if self.provider == 'netctl':
             import aif.network.netctl as handler
         elif self.provider == 'nm':
             import aif.network.networkmanager as handler
-        elif self.provider == 'systemd':
+        elif self.provider == 'networkd':
             import aif.network.networkd as handler
         self.provider = handler
         if not self.provider:
