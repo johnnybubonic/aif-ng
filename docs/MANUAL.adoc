@@ -571,6 +571,9 @@ Using `start`/`stop` attributes makes sense for disk partitions because they ope
 
 LVM (LVs, in particular), however, aren't consecutive. There *is* no concept of a "start" and "stop" for an LV; LVM uses chunks called "(physical) extents" rather than sectors, and VGs don't have geometry since they're essentially a pool of blocks. This is also why the modifiers like `-` and `+` aren't allowed for LV sizes - they're position-based.
 
+=== "How do I specify packages from the AUR?"
+You'd have to https://wiki.archlinux.org/index.php/Makepkg[build the package(s)^], https://wiki.archlinux.org/index.php/Pacman/Tips_and_tricks#Custom_local_repository[set up a repository^], serve it via e.g. https://www.nginx.com/[nginx^], and add it as a repo (`/aif/pacman/repos/repo`) first. Then you can specify the package as normal as a `/aif/pacman/software/package` item.
+
 === "Why aren't the network settings in <network> being applied during install?"
 Simply put, a logical race condition. In order for probably 90+% of AIF-NG deploys to bootstrap, they fetch their XML configuration via a network URI (rather than a file URI). This means it needs a network connection that pre-exists in the *install environment* (LiveCD, LiveUSB, PXE/iPXE, etc.) before it even knows what network configuration you want the *persistent environment* to have.
 
@@ -580,6 +583,23 @@ If you desire the configuration to be applied *during* the install, you can do i
 
 If you wish to SSH into the install environment to check the status/progress of the install, it is recommended that you set up a static lease (if using DHCP) or use SLAAC (if using IPv6) beforehand and configure your install environment beforehand. Remember, AIF-NG only *installs* Arch Linux; it tries very hard to *not* interact with the install environment.
 
+=== "Why isn't enabling/disabling automatic DNS resolvers working?"
+This is going to be highly unpredictable based on the networking provider you choose. This is a limitation of underlying network provider intercompatibility, resolver libraries, and technology architecture. This may be changed in the future, but because of how DNS servers are handled via DHCP/RDNSS and glibc (and the fact that IPv4 resolver addresses can serve IPv6 -- e.g. AAAA -- records and vice versa) and inherent limitations in some network providers like netctl, I wouldn't hold your breath.
+
+=== "I'm using netctl as my network provider, and-"
+I'ma let you finish, but netctl is a *really* simple network provider. I mean REALLY simple. As such, a lot of things (like mixing auto DNS and non-auto addressing) don't work at all feasibly, and probably might not ever. It's great for simple and flat configurations (i.e. all static everything, all automatic everything, etc.) and I even use it on my own machines where I can, but it just simply doesn't make allowances for more complex setups. (This is why init scripts were replaced by systemd for init, remember? Script-and-shell-based utilities, such as netctl -- seriously, the entire thing's written in Bash -- just can't handle more complex jobs reliably.)
+
+If you need more advanced functionality but don't want a lot of cruft or bloat, I recommend `systemd` as your network provider. It requires no extra packages (other than wpa_supplicant, if you're using wireless) because it's part of the systemd package (which is part of the most basic install of Arch) and handles more advanced configurations a lot more reliably.
+
+=== "How do I specify WEP for a wireless network?"
+You can't. WEP's pretty broken. I understand some legacy networks may still use it, but I'm incredibly uncomfortable supporting it.
+
+If absolutely necessary, you can manually configure it yourself via a `/aif/scripts/post/script` script.
+
+=== "How do I connect to a WPA2 Enterprise network?"
+You can't, currently; support is only stubbed out for now. If absolutely necessary, you can manually configure it yourself via a `/aif/scripts/post/script` script.
+
+This hopefully will be changed in the future, however, as I'm interested in adding support. For now, WPA/WPA2 PSK only are considered supported.
 
 == Bug Reports/Feature Requests
 NOTE: It is possible to submit a bug or feature request without registering in my bugtracker. One of my pet peeves is needing to create an account/register on a bugtracker simply to report a bug! The following links only require an email address to file a bug (which is necessary in case I need any further clarification from you or to keep you updated on the status of the bug/feature request -- so please be sure to use a valid email address).

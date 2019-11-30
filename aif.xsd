@@ -169,11 +169,11 @@
         </xs:restriction>
     </xs:simpleType>
 
-    <xs:simpleType name="t_address_ip4">
+    <xs:simpleType name="t_addr_ip4">
+        <!-- This is a REALLY LAZY regex. Matching IPv4 in regex is ugly as heck, so we do that in-code.
+             This is just a gatekeeper. -->
         <xs:restriction base="xs:string">
-            <!-- This is a REALLY LAZY regex. Matching IPv4 in regex is ugly as heck, so we do that in-code.
-                 This is just a gatekeeper. -->
-            <xs:pattern value="(dhcp|[0-9.]{7,15}/[0-9]{1,2})"/>
+            <xs:pattern value="[0-9.]{7,15}/[0-9]{1,2}"/>
             <xs:whiteSpace value="collapse"/>
         </xs:restriction>
     </xs:simpleType>
@@ -187,11 +187,11 @@
         </xs:restriction>
     </xs:simpleType>
 
-    <xs:simpleType name="t_address_ip6">
+    <xs:simpleType name="t_addr_ip6">
+        <!-- This is a REALLY LAZY regex. Matching IPv6 in regex is ugly as heck, so we do that in-code.
+             This is just a gatekeeper. -->
         <xs:restriction base="xs:string">
-            <!-- This is a REALLY LAZY regex. Matching IPv6 in regex is ugly as heck, so we do that in-code.
-                 This is just a gatekeeper. -->
-            <xs:pattern value="(dhcp6|slaac|([A-Za-z0-9:]+)/[0-9]+)"/>
+            <xs:pattern value="[A-Za-z0-9:]+/[0-9]{1,3}"/>
             <xs:whiteSpace value="collapse"/>
         </xs:restriction>
     </xs:simpleType>
@@ -205,12 +205,21 @@
         </xs:restriction>
     </xs:simpleType>
 
-    <xs:simpleType name="t_resolver_addr">
+    <xs:simpleType name="t_both_addr">
+        <xs:union memberTypes="aif:t_addr_ip4 aif:t_addr_ip6"/>
+    </xs:simpleType>
+
+    <xs:simpleType name="t_both_gw">
+        <xs:union memberTypes="aif:t_gw_ip4 aif:t_gw_ip6"/>
+    </xs:simpleType>
+
+    <xs:simpleType name="t_ipv6_auto">
         <xs:restriction base="xs:string">
-            <!-- This is a REALLY LAZY regex. Matching IPv4/IPv6 in regex is ugly as heck, so we do that in-code.
-                 This is just a gatekeeper. -->
-            <xs:pattern value="([0-9.]{7,15}|[A-Za-z0-9:]+)"/>
-            <xs:whiteSpace value="collapse"/>
+            <xs:enumeration value="slaac"/>
+            <xs:enumeration value="dhcp6"/>
+            <xs:enumeration value="false"/>
+            <xs:enumeration value="none"/>
+            <xs:enumeration value="0"/>
         </xs:restriction>
     </xs:simpleType>
 
@@ -220,6 +229,14 @@
             <xs:enumeration value="ipv4"/>
             <xs:enumeration value="ipv6"/>
             <xs:whiteSpace value="collapse"/>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:simpleType name="t_dhcp_clients">
+        <!-- Only valid for netctl. We use the internal daemons for systemd-networkd and NM. -->
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="dhcpcd"/>
+            <xs:enumeration value="dhclient"/>
         </xs:restriction>
     </xs:simpleType>
 
@@ -245,7 +262,7 @@
                                             <xs:element name="address" minOccurs="0" maxOccurs="unbounded">
                                                 <xs:complexType>
                                                     <xs:simpleContent>
-                                                        <xs:extension base="aif:t_address_ip4">
+                                                        <xs:extension base="aif:t_addr_ip4">
                                                             <xs:attribute name="gateway"
                                                                           type="aif:t_gw_ip4"
                                                                           use="optional"/>
@@ -254,6 +271,7 @@
                                                 </xs:complexType>
                                             </xs:element>
                                         </xs:sequence>
+                                        <xs:attribute name="auto" type="xs:boolean" use="optional" default="true"/>
                                     </xs:complexType>
                                     <xs:unique name="uniq_ipv4_addr">
                                         <xs:selector xpath="aif:address"/>
@@ -266,7 +284,7 @@
                                             <xs:element name="address" minOccurs="0" maxOccurs="unbounded">
                                                 <xs:complexType>
                                                     <xs:simpleContent>
-                                                        <xs:extension base="aif:t_address_ip6">
+                                                        <xs:extension base="aif:t_addr_ip6">
                                                             <xs:attribute name="gateway"
                                                                           type="aif:t_gw_ip6"
                                                                           use="optional"/>
@@ -275,6 +293,8 @@
                                                 </xs:complexType>
                                             </xs:element>
                                         </xs:sequence>
+                                        <xs:attribute name="auto" type="aif:t_ipv6_auto"
+                                                      use="optional" default="slaac"/>
                                     </xs:complexType>
                                     <xs:unique name="uniq_ipv6_addr">
                                         <xs:selector xpath="aif:address"/>
@@ -288,10 +308,85 @@
                 <xs:element name="resolvers" minOccurs="0" maxOccurs="1">
                     <xs:complexType>
                         <xs:sequence minOccurs="1" maxOccurs="unbounded">
-                            <xs:element name="resolver" minOccurs="1" maxOccurs="unbounded"
-                                        type="aif:t_resolver_addr"/>
+                            <xs:choice minOccurs="1" maxOccurs="unbounded">
+                                <xs:element name="resolver" minOccurs="1" maxOccurs="unbounded"
+                                            type="aif:t_both_gw"/>
+                                <xs:element name="ipv4" minOccurs="0" maxOccurs="1">
+                                    <xs:complexType>
+                                        <xs:attribute name="auto" type="xs:boolean"
+                                                      use="required"/>
+                                    </xs:complexType>
+                                </xs:element>
+                                <xs:element name="ipv6" minOccurs="0" maxOccurs="1">
+                                    <xs:complexType>
+                                        <xs:attribute name="auto" type="xs:boolean"
+                                                      use="required"/>
+                                    </xs:complexType>
+                                </xs:element>
+                            </xs:choice>
                         </xs:sequence>
-                        <xs:attribute name="noAuto" type="xs:boolean" use="optional" default="false"/>
+                    </xs:complexType>
+                </xs:element>
+                <xs:element name="routes" minOccurs="0" maxOccurs="1">
+                    <xs:complexType>
+                        <xs:sequence minOccurs="1" maxOccurs="unbounded">
+                            <xs:choice minOccurs="1" maxOccurs="unbounded">
+                                <xs:element name="ipv4">
+                                    <xs:complexType>
+                                        <xs:sequence>
+                                            <xs:element name="route" minOccurs="0" maxOccurs="unbounded">
+                                                <xs:complexType>
+                                                    <xs:simpleContent>
+                                                        <xs:extension base="aif:t_addr_ip4">
+                                                            <xs:attribute name="gateway"
+                                                                          type="aif:t_gw_ip4"
+                                                                          use="required"/>
+                                                        </xs:extension>
+                                                    </xs:simpleContent>
+                                                </xs:complexType>
+                                            </xs:element>
+                                        </xs:sequence>
+                                        <xs:attribute name="auto" type="xs:boolean" use="optional" default="true"/>
+                                        <xs:attribute name="defaultGateway" type="xs:boolean"
+                                                      use="optional" default="false"/>
+                                    </xs:complexType>
+                                    <xs:unique name="uniq_ipv4_route">
+                                        <xs:selector xpath="aif:route"/>
+                                        <xs:field xpath="."/>
+                                    </xs:unique>
+                                </xs:element>
+                                <xs:element name="ipv6">
+                                    <xs:complexType>
+                                        <xs:sequence>
+                                            <xs:element name="address" minOccurs="0" maxOccurs="unbounded">
+                                                <xs:complexType>
+                                                    <xs:simpleContent>
+                                                        <xs:extension base="aif:t_addr_ip6">
+                                                            <xs:attribute name="gateway"
+                                                                          type="aif:t_gw_ip6"
+                                                                          use="required"/>
+                                                        </xs:extension>
+                                                    </xs:simpleContent>
+                                                </xs:complexType>
+                                            </xs:element>
+                                        </xs:sequence>
+                                        <!-- DHCPv6 does not have an option to send routes,
+                                             so you need to use RAs. -->
+                                        <!-- See https://www.isc.org/blogs/routing-configuration-over-dhcpv6-2/
+                                             for more information. -->
+                                        <!-- https://datatracker.ietf.org/doc/draft-ietf-mif-dhcpv6-route-option/
+                                             expired. Shame, that. -->
+                                        <xs:attribute name="auto" type="xs:boolean" use="optional" default="true"/>
+                                        <xs:attribute name="defaultGateway" type="xs:boolean"
+                                                      use="optional" default="false"/>
+                                    </xs:complexType>
+                                    <xs:unique name="uniq_ipv6_route">
+                                        <xs:selector xpath="aif:route"/>
+                                        <xs:field xpath="."/>
+                                    </xs:unique>
+                                </xs:element>
+                            </xs:choice>
+                        </xs:sequence>
                     </xs:complexType>
                 </xs:element>
             </xs:choice>
@@ -323,7 +418,7 @@
             <xs:element name="type" minOccurs="1" maxOccurs="1" default="wpa2">
                 <xs:simpleType>
                     <xs:restriction base="xs:token">
-                        <xs:enumeration value="wep"/>
+                        <!-- <xs:enumeration value="wep"/> -->
                         <xs:enumeration value="wpa"/>
                         <xs:enumeration value="wpa2"/>
                         <!-- <xs:enumeration value="wpa3"/> -->
@@ -331,14 +426,14 @@
                     </xs:restriction>
                 </xs:simpleType>
             </xs:element>
-            <!-- "mode" only valid for WPA2 -->
+            <!-- "mode" only valid for WPA/WPA2 (and maybe WPA3 once supported?) -->
             <xs:element name="mode" minOccurs="0" maxOccurs="1" default="personal">
                 <xs:simpleType>
                     <xs:restriction base="xs:token">
                         <!-- PSK -->
                         <xs:enumeration value="personal"/>
-                        <!-- RADIUS -->
-                        <xs:enumeration value="enterprise"/>
+                        <!-- RADIUS, etc. -->
+                        <!-- <xs:enumeration value="enterprise"/> -->
                         <xs:whiteSpace value="collapse"/>
                     </xs:restriction>
                 </xs:simpleType>
@@ -351,7 +446,7 @@
                                 <xs:simpleType>
                                     <xs:restriction base="xs:token">
                                         <xs:enumeration value="psk"/>
-                                        <xs:enumeration value="radius"/>
+                                        <!-- <xs:enumeration value="radius"/> -->
                                     </xs:restriction>
                                 </xs:simpleType>
                             </xs:attribute>
@@ -369,7 +464,7 @@
                     <xs:element name="encryption" type="aif:t_wifi_crypto" minOccurs="0" maxOccurs="1"/>
                 </xs:sequence>
                 <xs:attribute name="essid" type="xs:string" use="required"/>
-                <xs:attribute name="bssid" type="xs:string" use="optional"/>
+                <xs:attribute name="bssid" type="aif:t_mac_addr" use="optional"/>
             </xs:extension>
         </xs:complexContent>
     </xs:complexType>
@@ -783,7 +878,6 @@
                 </xs:element>
                 <!-- END STORAGE -->
                 <!-- BEGIN NETWORK -->
-                <!-- TODO: make network optional? -->
                 <xs:element name="network" minOccurs="1" maxOccurs="1">
                     <xs:complexType>
                         <xs:choice minOccurs="1" maxOccurs="unbounded">
@@ -793,7 +887,8 @@
                         </xs:choice>
                         <!-- It's nearly impossible to validate FQDNs/hostnames in XSD, so we do it in-code. -->
                         <xs:attribute name="hostname" type="aif:t_nonempty" use="required"/>
-                        <xs:attribute name="provider" type="aif:t_netprov" use="optional" default="netctl"/>
+                        <xs:attribute name="provider" type="aif:t_netprov" use="optional" default="systemd"/>
+                        <xs:attribute name="dhcpClient" type="aif:t_dhcp_clients" use="optional" default="dhcpcd"/>
                     </xs:complexType>
                     <xs:unique name="uniq_iface_eth">
                         <xs:selector xpath="aif:ethernet|aif:wireless"/>

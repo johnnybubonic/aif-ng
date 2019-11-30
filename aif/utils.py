@@ -1,6 +1,8 @@
 import math
 import os
+import pathlib
 import re
+import shlex
 import subprocess
 ##
 import psutil
@@ -53,6 +55,22 @@ def isPowerofTwo(n):
     # So dumb.
     isPowerOf2 = math.ceil(math.log(n, 2)) == math.floor(math.log(n, 2))
     return(isPowerOf2)
+
+
+def kernelCmdline(chroot_base = '/'):
+    cmds = {}
+    chroot_base = pathlib.PosixPath(chroot_base)
+    cmdline = chroot_base.joinpath('proc', 'cmdline')
+    if not os.path.isfile(cmdline):
+        return(cmds)
+    with open(cmdline, 'r') as fh:
+        raw_cmds = fh.read().strip()
+    for c in shlex.split(raw_cmds):
+        l = c.split('=', 1)
+        if len(l) < 2:
+            l.append(None)
+        cmds[l[0]] = l[1]
+    return(cmds)
 
 
 def kernelFilesystems():

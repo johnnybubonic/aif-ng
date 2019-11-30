@@ -122,16 +122,23 @@
     <network hostname="aiftest.square-r00t.net" provider="netctl">
         <ethernet id="lan" device="auto" defroute="true" searchDomain="domain.tld">
             <addresses>
-                <ipv4>
-                    <address>dhcp</address>
+                <ipv4 auto="true">
                     <address gateway="192.168.1.1">192.168.1.5/24</address>
                 </ipv4>
-                <ipv6>
-                    <address>slaac</address>
+                <ipv6 auto="slaac">
                     <address>fde4:16b9:654b:bbfa::15/64</address>
                 </ipv6>
             </addresses>
-            <resolvers noAuto="true">
+            <routes>
+                <ipv4 defaultGateway="true" auto="true">
+                    <route gateway="192.168.1.1">10.1.1.0/24</route>
+                    <route gateway="10.1.1.4">172.16.1.20/32</route>
+                </ipv4>
+                <ipv6 defaultGateway="false" auto="true"/>
+            </routes>
+            <resolvers>
+                <ipv4 auto="false"/>
+                <ipv6 auto="false"/>
                 <resolver>64.6.64.6</resolver>
                 <resolver>4.2.2.1</resolver>
                 <resolver>8.8.8.8</resolver>
@@ -140,10 +147,11 @@
         <wireless id="wlan" device="wlp2s0" essid="MyWirelessLan"
                   bssid="00-00-5E-00-53-00" defroute="false" searchDomain="wifi.lan">
             <addresses>
-                <ipv4>
-                    <address>dhcp</address>
-                </ipv4>
+                <ipv4 auto="true"/>
             </addresses>
+            <routes>
+                <ipv6 defaultGateway="true" auto="true"/>
+            </routes>
             <encryption>
                 <type>wpa2</type>
                 <mode>personal</mode>

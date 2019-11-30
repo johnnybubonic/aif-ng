@@ -10,6 +10,7 @@ VERSION = '0.2.0'
 # blkinfo, mdstat, and pyparted are only needed for the non-gi fallbacks.
 EXTERNAL_DEPS = ['blkinfo',
                  'gpg',
+                 'jinja2',
                  'lxml',
                  'mdstat',
                  'parse',

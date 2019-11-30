@@ -1,59 +1,33 @@
 import configparser
 import datetime
-import ipaddress
 import os
 import uuid
 ##
 import aif.utils
+import aif.network._common
 
-# TODO: auto dev assignment
 
-
-class Connection(object):
+class Connection(aif.network._common.BaseConnection):
     def __init__(self, iface_xml):
-        self.xml = iface_xml
-        self.id = self.xml.attrib['id']
-        self.device = self.xml.attrib['device']
-        self.is_defroute = aif.utils.xmlBool(self.xml.attrib.get('defroute', 'false'))
-        self.domain = self.xml.attrib.get('searchDomain', None)
-        self._cfg = None
-        self.connection_type = None
+        super().__init__(iface_xml)
         self.provider_type = 'NetworkManager'
-        self.addrs = {'ipv4': set(),
-                      'ipv6': set()}
-        self.resolvers = []
+        self.packages = set('networkmanager')
+        self.services = {
+            ('/usr/lib/systemd/system/NetworkManager.service'): ('etc/systemd/system/'
+                                                                 'multi-user.target.wants/'
+                                                                 'NetworkManager.service'),
+            ('/usr/lib/systemd/system/NetworkManager-dispatcher.service'): ('etc/systemd/system/'
+                                                                            'dbus-org.freedesktop.'
+                                                                            'nm-dispatcher.service'),
+            ('/usr/lib/systemd/system/NetworkManager-wait-online.service'): ('etc/systemd/'
+                                                                             'system/'
+                                                                             'network-online.target.wants/'
+                                                                             'NetworkManager-wait-online.service')}
         self.uuid = uuid.uuid4()
-        self._initAddrs()
-        self._initResolvers()
-
-    def _initAddrs(self):
-        # These tuples follow either:
-        #   ('dhcp'/'dhcp6'/'slaac', None, None) for auto configuration
-        #   (ipaddress.IPv4/6Address(IP), CIDR, ipaddress.IPv4/6Address(GW)) for static configuration
-        for addrtype in ('ipv4', 'ipv6'):
-            for a in self.xml.findall('addresses/{0}/address'.format(addrtype)):
-                if a.text in ('dhcp', 'dhcp6', 'slaac'):
-                    addr = a.text
-                    net = None
-                    gw = None
-                else:
-                    components = a.text.split('/')
-                    if len(components) > 2:
-                        raise ValueError('Invalid IP/CIDR format: {0}'.format(a.text))
-                    if len(components) == 1:
-                        addr = components[0]
-                        if addrtype == 'ipv4':
-                            components.append('24')
-                        elif addrtype == 'ipv6':
-                            components.append('64')
-                    addr = ipaddress.ip_address(components[0])
-                    net = ipaddress.ip_network('/'.join(components), strict = False)
-                    gw = ipaddress.ip_address(a.attrib.get('gateway'))
-                self.addrs[addrtype].add((addr, net, gw))
-            self.addrs[addrtype] = list(self.addrs[addrtype])
-        return()
 
     def _initCfg(self):
+        if self.device == 'auto':
+            self.device = aif.network._common.getDefIface(self.connection_type)
         self._cfg = configparser.ConfigParser()
         self._cfg.optionxform = str
         self._cfg['connection'] = {'id': self.id,
@@ -63,59 +37,58 @@ class Connection(object):
                                    'permissions': '',
                                    'timestamp': datetime.datetime.utcnow().timestamp()}
         # We *theoretically* could do this in _initAddrs() but we do it separately so we can trim out duplicates.
+        # TODO: rework this? we technically don't need to split in ipv4/ipv6 since ipaddress does that for us.
         for addrtype, addrs in self.addrs.items():
             self._cfg[addrtype] = {}
             cidr_gws = {}
+            # Routing
+            if not self.is_defroute:
+                self._cfg[addrtype]['never-default'] = 'true'
+            if not self.auto['routes'][addrtype]:
+                self._cfg[addrtype]['ignore-auto-routes'] = 'true'
+            # DNS
             self._cfg[addrtype]['dns-search'] = (self.domain if self.domain else '')
+            if not self.auto['resolvers'][addrtype]:
+                self._cfg[addrtype]['ignore-auto-dns'] = 'true'
+            # Address handling
             if addrtype == 'ipv6':
                 self._cfg[addrtype]['addr-gen-mode'] = 'stable-privacy'
-            if not addrs:
+            if not addrs and not self.auto['addresses'][addrtype]:
                 self._cfg[addrtype]['method'] = 'ignore'
+            elif self.auto['addresses'][addrtype]:
+                if addrtype == 'ipv4':
+                    self._cfg[addrtype]['method'] = 'auto'
+                else:
+                    self._cfg[addrtype]['method'] = ('auto' if self.auto['addresses'][addrtype] == 'slaac'
+                                                     else 'dhcp6')
             else:
                 self._cfg[addrtype]['method'] = 'manual'
-                for idx, (ip, cidr, gw) in enumerate(addrs):
-                    if cidr not in cidr_gws.keys():
-                        cidr_gws[cidr] = gw
-                        new_cidr = True
-                    else:
-                        new_cidr = False
-                    if addrtype == 'ipv4':
-                        if ip == 'dhcp':
-                            self._cfg[addrtype]['method'] = 'auto'
-                            continue
-                    elif addrtype == 'ipv6':
-                        if ip == 'dhcp6':
-                            self._cfg[addrtype]['method'] = 'dhcp'
-                            continue
-                        elif ip == 'slaac':
-                            self._cfg[addrtype]['method'] = 'auto'
-                            continue
-                    addrnum = idx + 1
-                    addr_str = '{0}/{1}'.format(str(ip), str(cidr.prefixlen))
-                    if new_cidr:
-                        addr_str = '{0},{1}'.format(addr_str, str(gw))
-                    self._cfg[addrtype]['address{0}'.format(addrnum)] = addr_str
-            for r in self.resolvers:
-                if addrtype == 'ipv{0}'.format(r.version):
+            for idx, (ip, cidr, gw) in enumerate(addrs):
+                if cidr not in cidr_gws.keys():
+                    cidr_gws[cidr] = gw
+                    new_cidr = True
+                else:
+                    new_cidr = False
+                addrnum = idx + 1
+                addr_str = '{0}/{1}'.format(str(ip), str(cidr.prefixlen))
+                if new_cidr:
+                    addr_str = '{0},{1}'.format(addr_str, str(gw))
+                self._cfg[addrtype]['address{0}'.format(addrnum)] = addr_str
+            # Resolvers
+            for resolver in self.resolvers:
+                if addrtype == 'ipv{0}'.format(resolver.version):
                     if 'dns' not in self._cfg[addrtype]:
                         self._cfg[addrtype]['dns'] = []
-                    self._cfg[addrtype]['dns'].append(str(r))
+                    self._cfg[addrtype]['dns'].append(str(resolver))
             if 'dns' in self._cfg[addrtype].keys():
                 self._cfg[addrtype]['dns'] = '{0};'.format(';'.join(self._cfg[addrtype]['dns']))
+            # Routes
+            for idx, (dest, net, gw) in self.routes[addrtype]:
+                routenum = idx + 1
+                self._cfg[addrtype]['route{0}'.format(routenum)] = '{0}/{1},{2}'.format(str(dest),
+                                                                                        str(net.prefixlen),
+                                                                                        str(gw))
         self._initConnCfg()
-        return()
-
-    def _initConnCfg(self):
-        # A dummy method; this is overridden by the subclasses.
-        # It's honestly here to make my IDE stop complaining. :)
-        pass
-        return()
-
-    def _initResolvers(self):
-        for r in self.xml.findall('resolvers/resolver'):
-            resolver = ipaddress.ip_address(r.text)
-            if resolver not in self.resolvers:
-                self.resolvers.append(resolver)
         return()
 
     def writeConf(self, chroot_base):
@@ -146,7 +119,8 @@ class Ethernet(Connection):
         self._initCfg()
 
     def _initConnCfg(self):
-        pass
+        self._cfg[self.connection_type] = {'mac-address-blacklist': ''}
+        return()
 
 
 class Wireless(Connection):
@@ -156,4 +130,27 @@ class Wireless(Connection):
         self._initCfg()
 
     def _initConnCfg(self):
-        pass
+        self._cfg['wifi'] = {'mac-address-blacklist': '',
+                             'mode': 'infrastructure',
+                             'ssid': self.xml.attrib['essid']}
+        try:
+            bssid = self.xml.attrib.get('bssid').strip()
+        except AttributeError:
+            bssid = None
+        if bssid:
+            bssid = aif.network._common.canonizeEUI(bssid)
+            self._cfg['wifi']['bssid'] = bssid
+            self._cfg['wifi']['seen-bssids'] = '{0};'.format(bssid)
+        crypto = self.xml.find('encryption')
+        if crypto:
+            self.packages.add('wpa_supplicant')
+            self._cfg['wifi-security'] = {}
+            crypto = aif.network._common.convertWifiCrypto(crypto)
+            # if crypto['type'] in ('wpa', 'wpa2', 'wpa3'):
+            if crypto['type'] in ('wpa', 'wpa2'):
+                # TODO: WPA2 enterprise
+                self._cfg['wifi-security']['key-mgmt'] = 'wpa-psk'
+            # if crypto['type'] in ('wep', 'wpa', 'wpa2', 'wpa3'):
+            if crypto['type'] in ('wpa', 'wpa2'):
+                self._cfg['wifi-security']['psk'] = crypto['auth']['psk']
+        return()
