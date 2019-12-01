@@ -57,6 +57,20 @@ def isPowerofTwo(n):
     return(isPowerOf2)
 
 
+# custom Jinja2 filters
+def j2_isDict(value):
+    return(isinstance(value, dict))
+
+
+def j2_isList(value):
+    return(isinstance(value, list))
+
+
+j2_filters = {'isDict': j2_isDict,
+              'isList': j2_isList}
+# end custom Jinja2 filters
+
+
 def kernelCmdline(chroot_base = '/'):
     cmds = {}
     chroot_base = pathlib.PosixPath(chroot_base)

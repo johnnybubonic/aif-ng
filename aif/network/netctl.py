@@ -274,6 +274,7 @@ class Wireless(Connection):
     def __init__(self, iface_xml):
         super().__init__(iface_xml)
         self.connection_type = 'wireless'
+        self.packages.add('wpa_supplicant')
         self._initCfg()
         self._initConnCfg()
 
@@ -291,8 +292,7 @@ class Wireless(Connection):
             self._cfg['BASE']['AP'] = bssid
         crypto = self.xml.find('encryption')
         if crypto:
-            self.packages.add('wpa_supplicant')
-            crypto = aif.network._common.convertWifiCrypto(crypto)
+            crypto = aif.network._common.convertWifiCrypto(crypto, self.xml.attrib['essid'])
             # if crypto['type'] in ('wpa', 'wpa2', 'wpa3'):
             if crypto['type'] in ('wpa', 'wpa2'):
                 # TODO: WPA2 enterprise

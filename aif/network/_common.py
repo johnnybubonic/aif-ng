@@ -1,8 +1,10 @@
+import binascii
 import ipaddress
 import os
 import pathlib
 import re
 ##
+from passlib.crypto.digest import pbkdf2_hmac
 from pyroute2 import IPDB
 ##
 import aif.utils
@@ -47,7 +49,22 @@ def convertIpTuples(addr_xmlobj):
     return((addr, net, gw))
 
 
-def convertWifiCrypto(crypto_xmlobj):
+def convertPSK(ssid, passphrase):
+    try:
+        passphrase = passphrase.encode('utf-8').decode('ascii').strip('\r').strip('\n')
+    except UnicodeDecodeError:
+        raise ValueError('passphrase must be an ASCII string')
+    if len(ssid) > 32:
+        raise ValueError('ssid must be <= 32 characters')
+    if not 7 < len(passphrase) < 64:
+        raise ValueError('passphrase must be >= 8 and <= 32 characters')
+    raw_psk = pbkdf2_hmac('sha1', str(passphrase), str(ssid), 4096, 32)
+    hex_psk = binascii.hexlify(raw_psk)
+    str_psk = hex_psk.decode('utf-8')
+    return(str_psk)
+
+
+def convertWifiCrypto(crypto_xmlobj, ssid):
     crypto = {'type': crypto_xmlobj.find('type').text.strip()}
     # if crypto['type'] in ('wpa', 'wpa2', 'wpa3'):
     if crypto['type'] in ('wpa', 'wpa2'):
@@ -61,7 +78,8 @@ def convertWifiCrypto(crypto_xmlobj):
     creds = crypto_xmlobj.find('creds')
     crypto['auth'] = {'type': creds.attrib.get('type', 'psk').strip()}
     if crypto['auth']['type'] == 'psk':
-        crypto['auth']['psk'] = creds.text
+        crypto['auth']['passphrase'] = creds.text.strip('\r').strip('\n')
+        crypto['auth']['psk'] = convertPSK(ssid, creds.text)
     # TODO: enterprise support
     return(crypto)
 
@@ -210,4 +228,9 @@ class BaseConnection(object):
                     addrset = convertIpTuples(a)
                     if addrset not in self.routes[addrtype]:
                         self.routes[addrtype].append(addrset)
+        return()
+
+    def _writeConnCfg(self, chroot_base = None):
+        # Dummy method.
+        pass
         return()

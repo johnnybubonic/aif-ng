@@ -130,11 +130,11 @@
                 </ipv6>
             </addresses>
             <routes>
-                <ipv4 defaultGateway="true" auto="true">
+                <ipv4 auto="true">
                     <route gateway="192.168.1.1">10.1.1.0/24</route>
                     <route gateway="10.1.1.4">172.16.1.20/32</route>
                 </ipv4>
-                <ipv6 defaultGateway="false" auto="true"/>
+                <ipv6 auto="true"/>
             </routes>
             <resolvers>
                 <ipv4 auto="false"/>

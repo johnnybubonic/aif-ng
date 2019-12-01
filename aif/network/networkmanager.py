@@ -145,7 +145,7 @@ class Wireless(Connection):
         if crypto:
             self.packages.add('wpa_supplicant')
             self._cfg['wifi-security'] = {}
-            crypto = aif.network._common.convertWifiCrypto(crypto)
+            crypto = aif.network._common.convertWifiCrypto(crypto, self._cfg['wifi']['ssid'])
             # if crypto['type'] in ('wpa', 'wpa2', 'wpa3'):
             if crypto['type'] in ('wpa', 'wpa2'):
                 # TODO: WPA2 enterprise

@@ -347,8 +347,6 @@
                                             </xs:element>
                                         </xs:sequence>
                                         <xs:attribute name="auto" type="xs:boolean" use="optional" default="true"/>
-                                        <xs:attribute name="defaultGateway" type="xs:boolean"
-                                                      use="optional" default="false"/>
                                     </xs:complexType>
                                     <xs:unique name="uniq_ipv4_route">
                                         <xs:selector xpath="aif:route"/>
@@ -377,8 +375,6 @@
                                         <!-- https://datatracker.ietf.org/doc/draft-ietf-mif-dhcpv6-route-option/
                                              expired. Shame, that. -->
                                         <xs:attribute name="auto" type="xs:boolean" use="optional" default="true"/>
-                                        <xs:attribute name="defaultGateway" type="xs:boolean"
-                                                      use="optional" default="false"/>
                                     </xs:complexType>
                                     <xs:unique name="uniq_ipv6_route">
                                         <xs:selector xpath="aif:route"/>
@@ -443,6 +439,12 @@
                     <xs:simpleContent>
                         <xs:extension base="xs:token">
                             <xs:attribute name="type" use="optional" default="psk">
+                                <!-- TODO: change this to sub-elements. <psk> or a <radius> thinger. -->
+                                <!-- <psk raw="false">PSK_HERE</psk> -->
+                                <!-- or e.g. wpa_passphrase test testingpsk -->
+                                <!-- <psk raw="true">
+                                     124153ff24015a16d1993323b1840f3e6309ae24c07df7007d9fff8cff22f74c
+                                     </psk> -->
                                 <xs:simpleType>
                                     <xs:restriction base="xs:token">
                                         <xs:enumeration value="psk"/>
