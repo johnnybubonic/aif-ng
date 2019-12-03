@@ -422,38 +422,25 @@
                     </xs:restriction>
                 </xs:simpleType>
             </xs:element>
-            <!-- "mode" only valid for WPA/WPA2 (and maybe WPA3 once supported?) -->
-            <xs:element name="mode" minOccurs="0" maxOccurs="1" default="personal">
-                <xs:simpleType>
-                    <xs:restriction base="xs:token">
-                        <!-- PSK -->
-                        <xs:enumeration value="personal"/>
-                        <!-- RADIUS, etc. -->
-                        <!-- <xs:enumeration value="enterprise"/> -->
-                        <xs:whiteSpace value="collapse"/>
-                    </xs:restriction>
-                </xs:simpleType>
-            </xs:element>
+            <!-- only valid for WPA/WPA2 (and maybe WPA3 once supported?) -->
             <xs:element name="creds" minOccurs="1" maxOccurs="1">
                 <xs:complexType>
-                    <xs:simpleContent>
-                        <xs:extension base="xs:token">
-                            <xs:attribute name="type" use="optional" default="psk">
-                                <!-- TODO: change this to sub-elements. <psk> or a <radius> thinger. -->
-                                <!-- <psk raw="false">PSK_HERE</psk> -->
-                                <!-- or e.g. wpa_passphrase test testingpsk -->
-                                <!-- <psk raw="true">
-                                     124153ff24015a16d1993323b1840f3e6309ae24c07df7007d9fff8cff22f74c
-                                     </psk> -->
-                                <xs:simpleType>
-                                    <xs:restriction base="xs:token">
-                                        <xs:enumeration value="psk"/>
-                                        <!-- <xs:enumeration value="radius"/> -->
-                                    </xs:restriction>
-                                </xs:simpleType>
-                            </xs:attribute>
-                        </xs:extension>
-                    </xs:simpleContent>
+                    <xs:choice minOccurs="1" maxOccurs="1">
+                        <!-- "personal" -->
+                        <xs:element name="psk">
+                            <xs:complexType>
+                                <xs:simpleContent>
+                                    <xs:extension base="xs:string">
+                                        <!-- a key can be generated via "wpa_passphrase <ssid> <passphrase>" -->
+                                        <!-- or via genPSK.py in extras/ -->
+                                        <xs:attribute name="isKey" type="xs:boolean" use="optional" default="false"/>
+                                    </xs:extension>
+                                </xs:simpleContent>
+                            </xs:complexType>
+                        </xs:element>
+                        <!-- TODO -->
+                        <!-- <xs:element name="enterprise"></xs:element> -->
+                    </xs:choice>
                 </xs:complexType>
             </xs:element>
         </xs:all>
@@ -465,6 +452,7 @@
                 <xs:sequence>
                     <xs:element name="encryption" type="aif:t_wifi_crypto" minOccurs="0" maxOccurs="1"/>
                 </xs:sequence>
+                <!-- TODO: SSID needs to support unicode chars in both XML(/XSD type=?) and python -->
                 <xs:attribute name="essid" type="xs:string" use="required"/>
                 <xs:attribute name="bssid" type="aif:t_mac_addr" use="optional"/>
                 <xs:attribute name="hidden" type="xs:boolean" use="optional" default="false"/>

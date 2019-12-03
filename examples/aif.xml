@@ -150,12 +150,15 @@
                 <ipv4 auto="true"/>
             </addresses>
             <routes>
-                <ipv6 defaultGateway="true" auto="true"/>
+                <ipv6 auto="true"/>
             </routes>
             <encryption>
                 <type>wpa2</type>
-                <mode>personal</mode>
-                <creds type="psk">ABadWiFiPassword</creds>
+                <creds>
+                    <psk isKey="false">ABadWiFiPassword</psk>
+                    <!-- Or the key itself. See the manual for ways to generate this. -->
+                    <!-- <psk isKey="true">ca8981cbe55374c7408af0174604588111b4611832969f87fc5604fe4c36365c</psk> -->
+                </creds>
             </encryption>
         </wireless>
     </network>

@@ -65,22 +65,29 @@ def convertPSK(ssid, passphrase):
 
 
 def convertWifiCrypto(crypto_xmlobj, ssid):
-    crypto = {'type': crypto_xmlobj.find('type').text.strip()}
+    crypto = {'type': crypto_xmlobj.find('type').text.strip(),
+              'auth': {}}
+    creds_xml = crypto_xmlobj.xpath('psk|enterprise')[0]
     # if crypto['type'] in ('wpa', 'wpa2', 'wpa3'):
     if crypto['type'] in ('wpa', 'wpa2'):
-        crypto['mode'] = crypto_xmlobj.find('mode')
-        if not crypto['mode']:
+        crypto['mode'] = creds_xml.tag
+        if crypto['mode'] == 'psk':
             crypto['mode'] = 'personal'
-        else:
-            crypto['mode'] = crypto['mode'].text.strip()
     else:
         crypto['mode'] = None
-    creds = crypto_xmlobj.find('creds')
-    crypto['auth'] = {'type': creds.attrib.get('type', 'psk').strip()}
-    if crypto['auth']['type'] == 'psk':
-        crypto['auth']['passphrase'] = creds.text.strip('\r').strip('\n')
-        crypto['auth']['psk'] = convertPSK(ssid, creds.text)
+    if crypto['mode'] == 'personal':
+        psk_xml = creds_xml.find('psk')
+        if aif.utils.xmlBool(psk_xml.attrib.get('isKey', 'false')):
+            try:
+                crypto['auth']['passphrase'] = psk_xml.text.strip('\r').strip('\n')
+            except UnicodeDecodeError:
+                raise ValueError('WPA-PSK passphrases must be ASCII')
+            crypto['auth']['psk'] = convertPSK(ssid, crypto['auth']['passphrase'])
+        else:
+            crypto['auth']['psk'] = psk_xml.text.strip().lower()
     # TODO: enterprise support
+    # elif crypto['mode'] == 'enterprise':
+    #     pass
     return(crypto)
 
 
@@ -230,7 +237,7 @@ class BaseConnection(object):
                         self.routes[addrtype].append(addrset)
         return()
 
-    def _writeConnCfg(self, chroot_base = None):
+    def _writeConnCfg(self, chroot_base):
         # Dummy method.
         pass
         return()

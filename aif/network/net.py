@@ -34,7 +34,9 @@ class Network(object):
             fh.write('{0}\n'.format(self.hostname))
         os.chown(cfg, 0, 0)
         os.chmod(cfg, 0o0644)
-        # TODO: symlinks for systemd for provider
-        # TODO: writeConf for provider
-
+        for iface in self.connections:
+            for src, dest in iface.services.items():
+                realdest = os.path.join(chroot_base, dest)
+                os.symlink(src, realdest)
+            iface.writeConf(chroot_base)
         return()

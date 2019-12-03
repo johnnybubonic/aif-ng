@@ -128,7 +128,7 @@ class Wireless(Connection):
         self._initCfg()
 
     def _initConnCfg(self):
-        self._wpasupp['ssid'] = self.xml.attrib['essid']
+        self._wpasupp['ssid'] = '"{0}"'.format(self.xml.attrib['essid'])
         hidden = aif.utils.xmlBool(self.xml.attrib.get('hidden', 'false'))
         if hidden:
             self._wpasupp['scan_ssid'] = 1
@@ -138,20 +138,33 @@ class Wireless(Connection):
             bssid = None
         if bssid:
             bssid = aif.network._common.canonizeEUI(bssid)
-            self._cfg['BASE']['AP'] = bssid
+            self._wpasupp['bssid'] = bssid
+            self._wpasupp['bssid_whitelist'] = bssid
         crypto = self.xml.find('encryption')
         if crypto:
             crypto = aif.network._common.convertWifiCrypto(crypto, self._cfg['BASE']['ESSID'])
             # if crypto['type'] in ('wpa', 'wpa2', 'wpa3'):
+            # TODO: WPA2 enterprise
             if crypto['type'] in ('wpa', 'wpa2'):
-                # TODO: WPA2 enterprise
-                self._cfg['BASE']['Security'] = 'wpa'
-            # if crypto['type'] in ('wep', 'wpa', 'wpa2', 'wpa3'):
-            if crypto['type'] in ('wpa', 'wpa2'):
-                self._cfg['BASE']['Key'] = crypto['auth']['psk']
+                self._wpasupp['psk'] = crypto['auth']['psk']
+        else:
+            self._wpasupp['key_mgmt'] = 'NONE'
+        self.wpasupp_tpl = self.j2_env.get_template('wpa_supplicant.conf.j2')
+        self.services[('/usr/lib/systemd/system/wpa_supplicant@.service')] = ('etc/systemd/'
+                                                                              'system/'
+                                                                              'multi-user.target.wants/'
+                                                                              'wpa_supplicant@'
+                                                                              '{0}.service').format(self.device)
         return()
 
     def _writeConnCfg(self, chroot_base):
         cfgroot = os.path.join(chroot_base, 'etc', 'wpa_supplicant')
-        cfgbase = os.path.join(cfgroot, 'wpa_supplicant.conf')
-        cfgfile = os.path.join(cfgroot, self.id)
+        cfgfile = os.path.join(cfgroot, 'wpa_supplicant-{0}.conf'.format(self.device))
+        os.makedirs(cfgroot, exist_ok = True)
+        os.chown(cfgroot, 0, 0)
+        os.chmod(cfgroot, 0o0755)
+        with open(cfgfile, 'w') as fh:
+            fh.write(self.wpasupp_tpl.render(wpa = self._wpasupp))
+        os.chown(cfgfile, 0, 0)
+        os.chmod(cfgfile, 0o0640)
+        return()
