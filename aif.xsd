@@ -497,6 +497,14 @@
         </xs:restriction>
     </xs:simpleType>
 
+    <xs:simpleType name="t_pageformats">
+        <xs:restriction base="xs:positiveInteger">
+            <xs:enumeration value="8"/>
+            <xs:enumeration value="14"/>
+            <xs:enumeration value="16"/>
+        </xs:restriction>
+    </xs:simpleType>
+
     <xs:simpleType name="t_bootloaders">
         <!-- TODO: expand?
              https://wiki.archlinux.org/index.php/Category:Boot_loaders
@@ -908,6 +916,38 @@
                                     </xs:sequence>
                                 </xs:complexType>
                             </xs:element>
+                            <xs:element name="console" minOccurs="0" maxOccurs="1">
+                                <!-- vconsole.conf(5) -->
+                                <!-- timezone and kbd/xkbd are validated in-code. -->
+                                <xs:complexType>
+                                    <xs:all minOccurs="1">
+                                        <!-- These are validated in-code -->
+                                        <xs:element name="keyboard" minOccurs="1" maxOccurs="1">
+                                            <xs:complexType>
+                                                <xs:choice>
+                                                    <xs:element name="map" minOccurs="0" maxOccurs="1"
+                                                                type="aif:t_nonempty" default="us"/>
+                                                    <xs:element name="toggle" minOccurs="0" maxOccurs="1"
+                                                                type="aif:t_nonempty"/>
+
+                                                </xs:choice>
+                                            </xs:complexType>
+                                        </xs:element>
+                                        <xs:element name="text" minOccurs="0" maxOccurs="1">
+                                            <xs:complexType>
+                                                <xs:choice minOccurs="1" maxOccurs="3">
+                                                    <xs:element name="font" minOccurs="0" maxOccurs="1"
+                                                                type="aif:t_nonempty"/>
+                                                    <xs:element name="map" minOccurs="0" maxOccurs="1"
+                                                                type="aif:t_nonempty"/>
+                                                    <xs:element name="unicodeMap" minOccurs="0" maxOccurs="1"
+                                                                type="aif:t_nonempty"/>
+                                                </xs:choice>
+                                            </xs:complexType>
+                                        </xs:element>
+                                    </xs:all>
+                                </xs:complexType>
+                            </xs:element>
                             <xs:element name="users" minOccurs="0" maxOccurs="1">
                                 <xs:complexType>
                                     <xs:sequence>
@@ -967,11 +1007,8 @@
                                 </xs:complexType>
                             </xs:element>
                         </xs:all>
-                        <!-- timezone and kbd/xkbd are validated in-code. -->
                         <xs:attribute name="timezone" type="aif:t_nonempty" use="required"/>
                         <xs:attribute name="chrootPath" type="aif:t_filepath" use="required"/>
-                        <xs:attribute name="kbd" type="aif:t_nonempty" use="optional" default="us"/>
-                        <xs:attribute name="xkbd" type="aif:t_nonempty" use="optional" default="us"/>
                         <xs:attribute name="reboot" type="xs:boolean" use="optional" default="0"/>
                     </xs:complexType>
                 </xs:element>

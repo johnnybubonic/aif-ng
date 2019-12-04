@@ -169,7 +169,15 @@
         <locales>
             <locale name="LANG">en_US.UTF-8</locale>
         </locales>
-        <!-- Note: The password hashe below is "test"; don't waste your time trying to crack. :) -->
+        <console>
+            <text>
+                <font>default8x16</font>
+            </text>
+            <keyboard>
+                <map>us</map>
+            </keyboard>
+        </console>
+        <!-- Note: The password hash below is "test"; don't waste your time trying to crack. :) -->
         <users>
             <user name="aifusr"
                   home="/opt/aifusr"

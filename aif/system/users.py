@@ -7,3 +7,19 @@
 import os
 ##
 import passlib  # validate password hash/gen hash
+
+
+class Password(object):
+    def __init__(self):
+        pass
+
+
+class RootUser(object):
+    def __init__(self):
+        pass
+
+
+class User(object):
+    def __init__(self):
+        pass
+

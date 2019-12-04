@@ -1,3 +1,4 @@
+import os
 import re
 import subprocess  # I wish there was a better way to get the supported LUKS ciphers.
 import uuid
