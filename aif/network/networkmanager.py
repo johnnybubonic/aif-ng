@@ -4,10 +4,10 @@ import os
 import uuid
 ##
 import aif.utils
-import aif.network._common
+from . import _common
 
 
-class Connection(aif.network._common.BaseConnection):
+class Connection(_common.BaseConnection):
     def __init__(self, iface_xml):
         super().__init__(iface_xml)
         self.provider_type = 'NetworkManager'
@@ -27,7 +27,7 @@ class Connection(aif.network._common.BaseConnection):
 
     def _initCfg(self):
         if self.device == 'auto':
-            self.device = aif.network._common.getDefIface(self.connection_type)
+            self.device = _common.getDefIface(self.connection_type)
         self._cfg = configparser.ConfigParser()
         self._cfg.optionxform = str
         self._cfg['connection'] = {'id': self.id,
@@ -138,14 +138,14 @@ class Wireless(Connection):
         except AttributeError:
             bssid = None
         if bssid:
-            bssid = aif.network._common.canonizeEUI(bssid)
+            bssid = _common.canonizeEUI(bssid)
             self._cfg['wifi']['bssid'] = bssid
             self._cfg['wifi']['seen-bssids'] = '{0};'.format(bssid)
         crypto = self.xml.find('encryption')
         if crypto:
             self.packages.add('wpa_supplicant')
             self._cfg['wifi-security'] = {}
-            crypto = aif.network._common.convertWifiCrypto(crypto, self._cfg['wifi']['ssid'])
+            crypto = _common.convertWifiCrypto(crypto, self._cfg['wifi']['ssid'])
             # if crypto['type'] in ('wpa', 'wpa2', 'wpa3'):
             if crypto['type'] in ('wpa', 'wpa2'):
                 # TODO: WPA2 enterprise

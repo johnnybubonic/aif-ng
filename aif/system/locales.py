@@ -5,7 +5,7 @@ import re
 import shutil
 import subprocess
 
-
+# TODO: time
 _locale_re = re.compile(r'^(?!#\s|)$')
 _locale_def_re = re.compile(r'([^.]*)[^@]*(.*)')
 

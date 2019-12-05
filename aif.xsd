@@ -477,11 +477,37 @@
         </xs:restriction>
     </xs:simpleType>
 
+    <xs:simpleType name="t_passwd_hashtypes">
+        <xs:restriction>
+            <xs:enumeration value="md5"/>
+            <!-- Unsupported in glibc. libxcrypt (https://github.com/besser82/libxcrypt/) has additional support. -->
+            <!-- <xs:enumeration value="des"/> -->
+            <!-- bcrypt/blowfish are the same. -->
+            <!-- <xs:enumeration value="bcrypt"/> -->
+            <!-- <xs:enumeration value="blowfish"/> -->
+            <!-- <xs:enumeration value="scrypt"/> -->
+            <xs:enumeration value="sha256"/>
+            <xs:enumeration value="sha512"/>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:simpleType name="t_passwd_hashtypes_detect">
+        <xs:union memberTypes="aif:t_passwd_hashtypes">
+            <xs:simpleType>
+                <xs:restriction base="xs:simpleType">
+                    <xs:enumeration value="(detect)"/>
+                </xs:restriction>
+            </xs:simpleType>
+        </xs:union>
+    </xs:simpleType>
+
     <xs:simpleType name="t_shadowhash">
         <!-- http://man7.org/linux/man-pages/man3/crypt.3.html#NOTES -->
         <xs:restriction base="xs:token">
             <xs:pattern value="($1)?($[a-zA-Z0-9./]{1,16})$[a-zA-Z0-9./]{22}"/><!-- md5 -->
-            <xs:pattern value="($2[abxy]?)?($[0-9]+)$[a-zA-Z0-9./]{53}"/><!-- Blowfish -->
+            <!-- Not available in glibc, but is in libxcrypt (https://github.com/besser82/libxcrypt/). -->
+            <!-- Blowfish/bcrypt -->
+            <!-- <xs:pattern value="($2[abxy]?)?($[0-9]+)$[a-zA-Z0-9./]{53}"/> -->
             <xs:pattern value="($5)?($[a-zA-Z0-9./]{1,16})$[a-zA-Z0-9./]{43}"/><!-- sha256 -->
             <xs:pattern value="($6)?($[a-zA-Z0-9./]{1,16})$[a-zA-Z0-9./]{86}"/><!-- sha512 -->
             <xs:whiteSpace value="collapse"/>
@@ -587,27 +613,30 @@
 
     <xs:complexType name="t_nixpass">
         <xs:choice minOccurs="1" maxOccurs="1">
-            <xs:element name="passwordPlain" type="t_nonempty"/>
+            <!-- TODO: add attrs that control hash generation. rounds, hash algo, etc. -->
+            <xs:element name="passwordPlain">
+                <xs:complexType>
+                    <xs:simpleContent>
+                        <xs:extension base="xs:string">
+                            <xs:attribute name="hashType" use="optional" default="sha512"
+                                          type="aif:t_passwd_hashtypes"/>
+                            <xs:attribute name="rounds" use="optional" default="5000" type="xs:positiveInteger"/>
+                        </xs:extension>
+                    </xs:simpleContent>
+                </xs:complexType>
+            </xs:element>
             <xs:element name="passwordHash">
                 <xs:complexType>
                     <xs:simpleContent>
                         <xs:extension base="aif:t_shadowhash">
-                            <xs:attribute name="hashType" use="optional" default="(detect)">
-                                <xs:simpleType>
-                                    <xs:restriction base="aif:t_nonempty">
-                                        <xs:enumeration value="md5"/>
-                                        <xs:enumeration value="bcrypt"/><!-- "blowfish" in crypt(3) -->
-                                        <xs:enumeration value="sha256"/>
-                                        <xs:enumeration value="sha512"/>
-                                        <xs:enumeration value="(detect)"/>
-                                    </xs:restriction>
-                                </xs:simpleType>
-                            </xs:attribute>
+                            <xs:attribute name="hashType" use="optional" default="(detect)"
+                                          type="aif:t_passwd_hashtypes_detect"/>
                         </xs:extension>
                     </xs:simpleContent>
                 </xs:complexType>
             </xs:element>
         </xs:choice>
+        <xs:attribute name="locked" use="optional" default="false" type="xs:boolean"/>
     </xs:complexType>
 
     <xs:complexType name="t_provscript">
@@ -620,6 +649,11 @@
             </xs:extension>
         </xs:simpleContent>
     </xs:complexType>
+
+    <xs:simpleType name="t_epoch_or_iso">
+        <!-- positiveInteger is used for UNIX Epoch. -->
+        <xs:union memberTypes="xs:dateTime xs:positiveInteger"/>
+    </xs:simpleType>
 
     <!-- ROOT -->
     <xs:element name="aif">
@@ -961,8 +995,9 @@
                                                             <xs:attribute name="name" type="aif:t_posixUserGroup"
                                                                           use="required"/>
                                                             <xs:attribute name="create" type="xs:boolean" use="optional"
-                                                                          default="0"/>
-                                                            <xs:attribute name="gid" type="xs:positiveInteger"/>
+                                                                          default="false"/>
+                                                            <xs:attribute name="gid" type="xs:positiveInteger"
+                                                                          use="optional"/>
                                                         </xs:complexType>
                                                         <xs:unique name="uniq_grp">
                                                             <xs:selector xpath="aif:xGroup"/>
@@ -976,7 +1011,21 @@
                                                 <xs:attribute name="group" type="aif:t_posixUserGroup" use="optional"/>
                                                 <xs:attribute name="gid" type="xs:positiveInteger" use="optional"/>
                                                 <xs:attribute name="comment" type="aif:t_nonempty" use="optional"/>
-                                                <xs:attribute name="sudo" type="xs:boolean" use="optional" default="0"/>
+                                                <xs:attribute name="sudo" type="xs:boolean" use="optional"
+                                                              default="false"/>
+                                                <xs:attribute name="shell" type="aif:t_filepath" use="optional"
+                                                              default="/bin/bash"/>
+                                                <!-- TODO: change the positiveIntegers to xs:duration? or union? -->
+                                                <!-- Might be pointless since the smallest increment is 1 day in
+                                                     shadow(5). -->
+                                                <xs:attribute name="minAge" type="xs:positiveInteger" use="optional"/>
+                                                <xs:attribute name="maxAge" type="xs:positiveInteger" use="optional"/>
+                                                <xs:attribute name="warnDays" type="xs:positiveInteger"
+                                                              use="optional"/>
+                                                <xs:attribute name="inactiveDays" type="xs:positiveInteger"
+                                                              use="optional"/>
+                                                <xs:attribute name="expireDate" type="aif:t_epoch_or_iso"
+                                                              use="optional"/>
                                             </xs:complexType>
                                         </xs:element>
                                     </xs:sequence>

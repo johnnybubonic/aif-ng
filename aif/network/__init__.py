@@ -2,7 +2,7 @@ from . import _common
 from . import netctl
 from . import networkd
 from . import networkmanager
-from . import net
+from . import main
 
 # No longer necessary:
 # try:

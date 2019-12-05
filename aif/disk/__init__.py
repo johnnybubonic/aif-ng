@@ -27,3 +27,5 @@ try:
     from . import mdadm
 except ImportError:
     from . import mdadm_fallback as mdadm
+
+from . import main
