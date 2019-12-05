@@ -478,7 +478,7 @@
     </xs:simpleType>
 
     <xs:simpleType name="t_passwd_hashtypes">
-        <xs:restriction>
+        <xs:restriction base="xs:string">
             <xs:enumeration value="md5"/>
             <!-- Unsupported in glibc. libxcrypt (https://github.com/besser82/libxcrypt/) has additional support. -->
             <!-- <xs:enumeration value="des"/> -->
@@ -915,8 +915,7 @@
                     <xs:complexType>
                         <xs:choice minOccurs="1" maxOccurs="unbounded">
                             <xs:element name="ethernet" type="aif:t_iface" minOccurs="0" maxOccurs="unbounded"/>
-                            <xs:element name="wireless" type="aif:t_iface_wifi" minOccurs="0" maxOccurs="unbounded">
-                            </xs:element>
+                            <xs:element name="wireless" type="aif:t_iface_wifi" minOccurs="0" maxOccurs="unbounded"/>
                         </xs:choice>
                         <!-- It's nearly impossible to validate FQDNs/hostnames in XSD, so we do it in-code. -->
                         <xs:attribute name="hostname" type="aif:t_nonempty" use="required"/>
