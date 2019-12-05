@@ -494,7 +494,7 @@
     <xs:simpleType name="t_passwd_hashtypes_detect">
         <xs:union memberTypes="aif:t_passwd_hashtypes">
             <xs:simpleType>
-                <xs:restriction base="xs:simpleType">
+                <xs:restriction base="xs:string">
                     <xs:enumeration value="(detect)"/>
                 </xs:restriction>
             </xs:simpleType>
