@@ -13,12 +13,15 @@ import passlib.context
 import passlib.hash
 ##
 import aif.utils
+import aif.constants_fallback
 
 
 _skipline_re = re.compile(r'^\s*(#|$)')
 _now = datetime.datetime.utcnow()
 _epoch = datetime.datetime.fromtimestamp(0)
 _since_epoch = _now - _epoch
+
+# TODO: still need to generate UID/GIDs for new groups and users
 
 
 class Group(object):
@@ -28,56 +31,109 @@ class Group(object):
         self.gid = None
         self.password = None
         self.create = False
+        self.admins = set()
         self.members = set()
-        if self.xml:
+        self.group_entry = []
+        self.gshadow_entry = []
+        if self.xml is not None:
             self.name = self.xml.attrib['name']
             self.gid = self.xml.attrib.get('gid')
-            self.password = self.xml.attrib.get('password', 'x')
+            # TODO: add to XML?
+            self.password = Password(self.xml.attrib.get('password'), gshadow = True)
+            self.password.detectHashType()
             self.create = aif.utils.xmlBool(self.xml.attrib.get('create', 'false'))
             if self.gid:
                 self.gid = int(self.gid)
         else:
             if not self.password:
-                self.password = 'x'
+                self.password = '!!'
+
+    def genFileLine(self):
+        if not self.gid:
+            raise RuntimeError(('Group objects must have a gid set before their '
+                                'group/gshadow entries can be generated'))
+        # group(5)
+        self.group_entry = [self.name,  # Group name
+                            'x',  # Password, normally, but we use shadow for this
+                            self.gid,  # GID
+                            ','.join(self.members)]  # Comma-separated members
+        # gshadow(5)
+        self.gshadow_entry = [self.name,  # Group name
+                              (self.password.hash if self.password.hash else '!!'),  # Password hash (if it has one)
+                              ','.join(self.admins),  # Users with administrative control of group
+                              ','.join(self.members)]  # Comma-separated members of group
+        return()
+
+    def parseGroupLine(self, line):
+        groupdict = dict(zip(['name', 'password', 'gid', 'members'],
+                             line.split(':')))
+        members = [i for i in groupdict['members'].split(',') if i.strip() != '']
+        if members:
+            self.members = set(members)
+        self.gid = int(groupdict['gid'])
+        self.name = groupdict['name']
+        return()
+
+    def parseGshadowLine(self, line):
+        groupdict = dict(zip(['name', 'password', 'admins', 'members'],
+                             line.split(':')))
+        self.password = Password(None, gshadow = True)
+        self.password.hash = groupdict['password']
+        self.password.detectHashType()
+        admins = [i for i in groupdict['admins'].split(',') if i.strip() != '']
+        members = [i for i in groupdict['members'].split(',') if i.strip() != '']
+        if admins:
+            self.admins = set(admins)
+        if members:
+            self.members = set(members)
+        return()
 
 
 class Password(object):
-    def __init__(self, password_xml):
+    def __init__(self, password_xml, gshadow = False):
         self.xml = password_xml
-        self.disabled = False
+        self._is_gshadow = gshadow
+        if not self._is_gshadow:
+            self.disabled = False
         self.password = None
         self.hash = None
         self.hash_type = None
         self.hash_rounds = None
-        self._pass_context = passlib.context.CryptContext(schemes = ['sha512_crypt', 'sha256_crypt', 'md5_crypt'])
-        if self.xml:
-            self.disabled = aif.utils.xmlBool(self.xml.attrib.get('locked', 'false'))
+        self._pass_context = passlib.context.CryptContext(schemes = ['{0}_crypt'.format(i)
+                                                                     for i in
+                                                                     aif.constants_fallback.CRYPT_SUPPORTED_HASHTYPES])
+        if self.xml is not None:
+            if not self._is_gshadow:
+                self.disabled = aif.utils.xmlBool(self.xml.attrib.get('locked', 'false'))
             self._password_xml = self.xml.xpath('passwordPlain|passwordHash')
-            if self._password_xml:
+            if self._password_xml is not None:
                 self._password_xml = self._password_xml[0]
                 if self._password_xml.tag == 'passwordPlain':
-                    self.password = self._password_xml.text
+                    self.password = self._password_xml.text.strip()
                     self.hash_type = self._password_xml.attrib.get('hashType', 'sha512')
                     # 5000 rounds is the crypt(3) default.
                     self.hash_rounds = int(self._password_xml.get('rounds', 5000))
                     self._pass_context.update(default = '{0}_crypt'.format(self.hash_type))
                     self.hash = passlib.hash.sha512_crypt.using(rounds = self.hash_rounds).hash(self.password)
                 else:
-                    self.hash = self._password_xml.text
+                    self.hash = self._password_xml.text.strip()
                     self.hash_type = self._password_xml.attrib.get('hashType', '(detect)')
                     if self.hash_type == '(detect)':
                         self.detectHashType()
         else:
-            self.disabled = True
+            if not self._is_gshadow:
+                self.disabled = True
             self.hash = ''
 
     def detectHashType(self):
-        if self.hash.startswith(('!', 'x')):
-            self.disabled = True
-            self.hash = re.sub(r'^[!x]+', '', self.hash)
-        self.hash_type = re.sub(r'_crypt$', '', self._pass_context.identify(self.hash))
-        if not self.hash_type:
-            warnings.warn('Could not determine hash type')
+        if not self.hash.startswith('$'):
+            if not self._is_gshadow:
+                self.disabled = True
+            self.hash = re.sub(r'^[^$]+($)?', r'\g<1>', self.hash)
+        if self.hash not in ('', None):
+            self.hash_type = re.sub(r'_crypt$', '', self._pass_context.identify(self.hash))
+            if not self.hash_type:
+                warnings.warn('Could not determine hash type')
         return()
 
 
@@ -86,7 +142,6 @@ class User(object):
         self.xml = user_xml
         self.name = None
         self.uid = None
-        self.gid = None
         self.primary_group = None
         self.password = None
         self.sudo = None
@@ -103,7 +158,7 @@ class User(object):
         self._initVals()
 
     def _initVals(self):
-        if isinstance(self, RootUser) or not self.xml:
+        if self.xml is None:
             # We manually assign these.
             return()
         self.name = self.xml.attrib['name']
@@ -111,12 +166,12 @@ class User(object):
         self.sudo = aif.utils.xmlBool(self.xml.attrib.get('sudo', 'false'))
         self.home = self.xml.attrib.get('home', '/home/{0}'.format(self.name))
         self.uid = self.xml.attrib.get('uid')
-        if self.uid:
+        if self.uid is not None:
             self.uid = int(self.uid)
         self.primary_group = Group(None)
         self.primary_group.name = self.xml.attrib.get('group', self.name)
         self.primary_group.gid = self.xml.attrib.get('gid')
-        if self.primary_group.gid:
+        if self.primary_group.gid is not None:
             self.primary_group.gid = int(self.primary_group.gid)
         self.primary_group.create = True
         self.primary_group.members.add(self.name)
@@ -128,7 +183,7 @@ class User(object):
         self.inactive_period = int(self.xml.attrib.get('inactiveDays', 0))
         self.expire_date = self.xml.attrib.get('expireDate')
         self.last_change = _since_epoch.days - 1
-        if self.expire_date:
+        if self.expire_date is not None:
             # https://www.w3.org/TR/xmlschema-2/#dateTime
             try:
                 self.expire_date = datetime.datetime.fromtimestamp(int(self.expire_date))  # It's an Epoch
@@ -149,13 +204,10 @@ class User(object):
             self.groups.append(g)
         return()
 
-    def genShadow(self):
-        if not all((self.uid, self.gid)):
-            raise RuntimeError(('User objects must have a UID and GID set before their '
+    def genFileLine(self):
+        if not all((self.uid, self.primary_group.gid)):
+            raise RuntimeError(('User objects must have a uid and primary_group.gid set before their '
                                 'passwd/shadow entries can be generated'))
-        if isinstance(self, RootUser):
-            # This is handled manually.
-            return()
         # passwd(5)
         self.passwd_entry = [self.name,  # Username
                              'x',  # self.password.hash is not used because shadow, but this would be password
@@ -172,47 +224,62 @@ class User(object):
                              (str(self.maximum_age) if self.maximum_age else ''),  # Maximum password age
                              (str(self.warning_period) if self.warning_period else ''),  # Passwd expiry warning period
                              (str(self.inactive_period) if self.inactive_period else ''),  # Password inactivity period
-                             (str(self.expire_date.timestamp()) if self.expire_date else ''),  # Expiration date
+                             (str((self.expire_date - _epoch).days) if self.expire_date else ''),  # Expiration date
                              '']  # "Reserved"
         return()
 
+    def parseShadowLine(self, line):
+        shadowdict = dict(zip(['name', 'password', 'last_change', 'minimum_age', 'maximum_age', 'warning_period',
+                               'inactive_period', 'expire_date', 'RESERVED'],
+                              line.split(':')))
+        self.name = shadowdict['name']
+        self.password = Password(None)
+        self.password.hash = shadowdict['password']
+        self.password.detectHashType()
+        for i in ('last_change', 'minimum_age', 'maximum_age', 'warning_period', 'inactive_period'):
+            if shadowdict[i].strip() == '':
+                setattr(self, i, None)
+            else:
+                setattr(self, i, int(shadowdict[i]))
+        if shadowdict['expire_date'].strip() == '':
+            self.expire_date = None
+        else:
+            self.expire_date = datetime.datetime.fromtimestamp(shadowdict['expire_date'])
+        return(shadowdict)
 
-class RootUser(User):
-    def __init__(self, rootpassword_xml):
-        super().__init__(None)
-        self.xml = rootpassword_xml
-        self.name = 'root'
-        self.password = Password(self.xml)
-        self.uid = 0
-        self.gid = 0
-        self.primary_group = Group(None)
-        self.primary_group.gid = 0
-        self.primary_group.name = 'root'
-        self.home = '/root'
-        self.shell = '/bin/bash'
-        self.passwd_entry = [self.name, 'x', str(self.uid), str(self.gid), '', self.home, self.shell]
-        self.shadow_entry = [self.name, self.password.hash, str(_since_epoch.days - 1), '', '', '', '', '', '']
+    def parsePasswdLine(self, line):
+        userdict = dict(zip(['name', 'password', 'uid', 'gid', 'comment', 'home', 'shell'],
+                            line.split(':')))
+        self.name = userdict['name']
+        self.primary_group = int(userdict['gid'])  # This gets transformed by UserDB() to the proper Group() obj
+        self.uid = int(userdict['uid'])
+        for k in ('home', 'shell'):
+            if userdict[k].strip() != '':
+                setattr(self, k, userdict[k])
+        return()
 
 
 class UserDB(object):
-    def __init__(self, chroot_base, rootpassword_xml, users_xml):
-        self.root = RootUser(rootpassword_xml)
-        self.users = []
-        self.defined_groups = []
+    def __init__(self, chroot_base, rootpass_xml, users_xml):
+        self.rootpass = Password(rootpass_xml)
+        self.xml = users_xml
         self.sys_users = []
         self.sys_groups = []
-        for user_xml in users_xml.findall('user'):
-            u = User(user_xml)
-            self.users.append(u)
-            self.defined_groups.append(u.primary_group)
-            self.defined_groups.extend(u.groups)
+        self.new_users = []
+        self.new_groups = []
+        self._valid_uids = {'sys': set(),
+                            'user': set()}
+        self._valid_gids = {'sys': set(),
+                            'user': set()}
         self.passwd_file = os.path.join(chroot_base, 'etc', 'passwd')
         self.shadow_file = os.path.join(chroot_base, 'etc', 'shadow')
         self.group_file = os.path.join(chroot_base, 'etc', 'group')
+        self.gshadow_file = os.path.join(chroot_base, 'etc', 'gshadow')
         self.logindefs_file = os.path.join(chroot_base, 'etc', 'login.defs')
         self.login_defaults = {}
         self._parseLoginDefs()
         self._parseShadow()
+        self._parseXML()
 
     def _parseLoginDefs(self):
         with open(self.logindefs_file, 'r') as fh:
@@ -253,68 +320,95 @@ class UserDB(object):
         return()
 
     def _parseShadow(self):
-        def parseShadowLine(line):
-            shadowdict = dict(zip(['name', 'password', 'last_change', 'minimum_age', 'maximum_age', 'warning_period',
-                                   'inactive_period', 'expire_date', 'RESERVED'],
-                                  line))
-            p = Password(None)
-            p.hash = shadowdict['password']
-            p.detectHashType()
-            shadowdict['password'] = p
-            del(shadowdict['RESERVED'])
-            for i in ('last_change', 'minimum_age', 'maximum_age', 'warning_period', 'inactive_period'):
-                if shadowdict[i].strip() == '':
-                    shadowdict[i] = None
-                else:
-                    shadowdict[i] = int(shadowdict[i])
-            if shadowdict['expire_date'].strip() == '':
-                shadowdict['expire_date'] = None
-            else:
-                shadowdict['expire_date'] = datetime.datetime.fromtimestamp(shadowdict['expire_date'])
-            return(shadowdict)
-
-        def parseUserLine(line):
-            userdict = dict(zip(['name', 'password', 'uid', 'gid', 'comment', 'home', 'shell'], line))
-            del(userdict['password'])  # We don't use this because shadow
-            for i in ('uid', 'gid'):
-                userdict[k] = int(userdict[k])
-            if userdict['comment'].strip() == '':
-                userdict['comment'] = None
-            return(userdict)
-
-        def parseGroupLine(line):
-            groupdict = dict(zip(['name', 'password', 'gid', 'members'], line))
-            groupdict['members'] = set(','.split(groupdict['members']))
-            return(groupdict)
-
         sys_shadow = {}
         users = {}
         groups = {}
-        for f in ('shadow', 'passwd', 'group'):
+        for f in ('shadow', 'passwd', 'group', 'gshadow'):
             sys_shadow[f] = []
             with open(getattr(self, '{0}_file'.format(f)), 'r') as fh:
                 for line in fh.read().splitlines():
                     if _skipline_re.search(line):
                         continue
-                    sys_shadow[f].append(line.split(':'))
-        # TODO: iterate through sys_shadow, convert passwd + shadow into a User obj, convert group into Group objs,
-        #  and associate between the two. might require a couple iterations...
+                    sys_shadow[f].append(line)
         for groupline in sys_shadow['group']:
-            group = parseGroupLine(groupline)
             g = Group(None)
-            for k, v in group.items():
-                setattr(g, k, v)
+            g.parseGroupLine(groupline)
+            groups[g.gid] = g
+        for gshadowline in sys_shadow['gshadow']:
+            g = [i for i in groups.values() if i.name == gshadowline.split(':')[0]][0]
+            g.parseGshadowLine(gshadowline)
             self.sys_groups.append(g)
-            groups[g.name] = g
+            self.new_groups.append(g)
         for userline in sys_shadow['passwd']:
-            user = parseUserLine(userline)
-            users[user['name']] = user
-        for shadowline in sys_shadow['shadow']:
-            user = parseShadowLine(shadowline)
-            udict = users[user['name']]
-            udict.update(user)
             u = User(None)
-            for k, v in udict.items():
-                setattr(u, k, v)
+            u.parsePasswdLine(userline)
+            users[u.name] = u
+        for shadowline in sys_shadow['shadow']:
+            u = users[shadowline.split(':')[0]]
+            u.parseShadowLine(shadowline)
             self.sys_users.append(u)
+            self.new_users.append(u)
+        # Now that we've native-ized the above, we need to do some associations.
+        for user in self.sys_users:
+            for group in self.sys_groups:
+                if not isinstance(user.primary_group, Group) and user.primary_group == group.gid:
+                    user.primary_group = group
+                if user.name in group.members and group != user.primary_group:
+                    user.groups.append(group)
+        if self.rootpass:
+            rootuser = users['root']
+            rootuser.password = self.rootpass
+            rootuser.password.detectHashType()
         return()
+
+    def _parseXML(self):
+        for user_xml in self.xml.findall('user'):
+            u = User(user_xml)
+            # TODO: need to do unique checks for users and groups (especially for groups if create = True)
+            # TODO: writer? sort by uid/gid? group membership parsing with create = False?
+            # TODO: system accounts?
+            if not u.uid:
+                u.uid = self.getAvailUID()
+            if not u.primary_group.gid:
+                u.primary_group.gid = self.getAvailGID()
+            self.new_users.append(u)
+            self.new_groups.append(u.primary_group)
+            for g in u.groups:
+                if not g.gid:
+                    g.gid = self.getAvailGID()
+            self.new_groups.extend(u.groups)
+        return()
+
+    def getAvailUID(self, system = False):
+        if not self.login_defaults:
+            self._parseLoginDefs()
+        if system:
+            def_min = int(self.login_defaults.get('SYS_UID_MIN', 500))
+            def_max = int(self.login_defaults.get('SYS_UID_MAX', 999))
+            k = 'sys'
+        else:
+            def_min = int(self.login_defaults.get('UID_MIN', 1000))
+            def_max = int(self.login_defaults.get('UID_MAX', 60000))
+            k = 'user'
+        if not self._valid_uids[k]:
+            self._valid_uids[k] = set(i for i in range(def_min, (def_max + 1)))
+        current_uids = set(i.uid for i in self.new_users)
+        uid = min(self._valid_uids[k] - current_uids)
+        return(uid)
+
+    def getAvailGID(self, system = False):
+        if not self.login_defaults:
+            self._parseLoginDefs()
+        if system:
+            def_min = int(self.login_defaults.get('SYS_GID_MIN', 500))
+            def_max = int(self.login_defaults.get('SYS_GID_MAX', 999))
+            k = 'sys'
+        else:
+            def_min = int(self.login_defaults.get('GID_MIN', 1000))
+            def_max = int(self.login_defaults.get('GID_MAX', 60000))
+            k = 'user'
+        if not self._valid_gids[k]:
+            self._valid_gids[k] = set(i for i in range(def_min, (def_max + 1)))
+        current_gids = set(i.gid for i in self.new_groups)
+        gid = min(self._valid_gids[k] - current_gids)
+        return(gid)

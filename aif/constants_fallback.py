@@ -285,3 +285,5 @@ MDADM_SUPPORTED_LAYOUTS = {5: (re.compile(r'^((left|right)-a?symmetric|[lr][as]|
                                None),
                            10: (re.compile(r'^[nof][0-9]+$'),
                                 None)}
+# glibc doesn't support bcrypt/blowfish nor des (nor any of the others, like e.g. scrypt)
+CRYPT_SUPPORTED_HASHTYPES = ('sha512', 'sha256', 'md5')
