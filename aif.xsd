@@ -1043,7 +1043,8 @@
                                             <xs:complexType>
                                                 <xs:simpleContent>
                                                     <xs:extension base="aif:t_nonempty">
-                                                        <xs:attribute name="status" type="xs:boolean" use="required"/>
+                                                        <xs:attribute name="status" type="xs:boolean" use="optional"
+                                                                      default="true"/>
                                                     </xs:extension>
                                                 </xs:simpleContent>
                                             </xs:complexType>

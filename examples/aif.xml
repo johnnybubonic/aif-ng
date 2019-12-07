@@ -194,7 +194,7 @@
             </user>
         </users>
         <services>
-            <service status="1">sshd</service>
+            <service status="true">sshd</service>
         </services>
     </system>
     <pacman>
