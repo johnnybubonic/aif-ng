@@ -7,6 +7,7 @@
 import datetime
 import os
 import re
+import shutil
 import warnings
 ##
 import passlib.context
@@ -20,8 +21,6 @@ _skipline_re = re.compile(r'^\s*(#|$)')
 _now = datetime.datetime.utcnow()
 _epoch = datetime.datetime.fromtimestamp(0)
 _since_epoch = _now - _epoch
-
-# TODO: still need to generate UID/GIDs for new groups and users
 
 
 class Group(object):
@@ -145,6 +144,7 @@ class User(object):
         self.primary_group = None
         self.password = None
         self.sudo = None
+        self.sudoPassword = True
         self.comment = None
         self.shell = None
         self.minimum_age = None
@@ -152,6 +152,7 @@ class User(object):
         self.warning_period = None
         self.inactive_period = None
         self.expire_date = None
+        self.new = False
         self.groups = []
         self.passwd_entry = []
         self.shadow_entry = []
@@ -162,8 +163,11 @@ class User(object):
             # We manually assign these.
             return()
         self.name = self.xml.attrib['name']
+        # XML declared users are always new.
+        self.new = True
         self.password = Password(self.xml.find('password'))
         self.sudo = aif.utils.xmlBool(self.xml.attrib.get('sudo', 'false'))
+        self.sudoPassword = aif.utils.xmlBool(self.xml.attrib.get('sudoPassword', 'true'))
         self.home = self.xml.attrib.get('home', '/home/{0}'.format(self.name))
         self.uid = self.xml.attrib.get('uid')
         if self.uid is not None:
@@ -263,6 +267,7 @@ class UserDB(object):
     def __init__(self, chroot_base, rootpass_xml, users_xml):
         self.rootpass = Password(rootpass_xml)
         self.xml = users_xml
+        self.chroot_base = chroot_base
         self.sys_users = []
         self.sys_groups = []
         self.new_users = []
@@ -364,19 +369,30 @@ class UserDB(object):
     def _parseXML(self):
         for user_xml in self.xml.findall('user'):
             u = User(user_xml)
-            # TODO: need to do unique checks for users and groups (especially for groups if create = True)
-            # TODO: writer? sort by uid/gid? group membership parsing with create = False?
             # TODO: system accounts?
+            if u.name in [i.name for i in self.new_users]:
+                warnings.warn(('User {0} already specified; skipping').format(u.name))
+                continue
             if not u.uid:
                 u.uid = self.getAvailUID()
             if not u.primary_group.gid:
-                u.primary_group.gid = self.getAvailGID()
+                new_group = [i.name for i in self.new_groups]
+                if u.primary_group.name not in new_group:
+                    if not u.primary_group.gid:
+                        u.primary_group.gid = self.getAvailGID()
+                    self.new_groups.append(u.primary_group)
+                else:
+                    u.primary_group = new_group[0]
+            for idx, g in enumerate(u.groups[:]):
+                new_group = [i.name for i in self.new_groups]
+                if g.name not in new_group:
+                    if not g.gid:
+                        g.gid = self.getAvailGID()
+                    self.new_groups.append(g)
+                else:
+                    if not g.create:
+                        u.groups[idx] = new_group[0]
             self.new_users.append(u)
-            self.new_groups.append(u.primary_group)
-            for g in u.groups:
-                if not g.gid:
-                    g.gid = self.getAvailGID()
-            self.new_groups.extend(u.groups)
         return()
 
     def getAvailUID(self, system = False):
@@ -412,3 +428,66 @@ class UserDB(object):
         current_gids = set(i.gid for i in self.new_groups)
         gid = min(self._valid_gids[k] - current_gids)
         return(gid)
+
+    def writeConf(self):
+        # We shouldn't really use this, because root should be at the beginning.
+        users_by_name = sorted(self.new_users, key = lambda x: x.name)
+        # This automatically puts root first (uid = 0)
+        users_by_uid = sorted(self.new_users, key = lambda x: x.uid)
+        # Ditto.
+        groups_by_name = sorted(self.new_groups, key = lambda x: x.name)
+        groups_by_gid = sorted(self.new_groups, key = lambda x: x.gid)
+        for x in (self.new_users, self.new_groups):
+            for i in x:
+                i.genFileLine()
+        for f in (self.passwd_file, self.shadow_file, self.group_file, self.gshadow_file):
+            backup = '{0}-'.format(f)
+            shutil.copy2(f, backup)
+        with open(self.passwd_file, 'w') as fh:
+            for u in users_by_uid:
+                fh.write(':'.join(u.passwd_entry))
+                fh.write('\n')
+        with open(self.shadow_file, 'w') as fh:
+            for u in self.new_users:
+                fh.write(':'.join(u.shadow_entry))
+                fh.write('\n')
+        with open(self.group_file, 'w') as fh:
+            for g in groups_by_gid:
+                fh.write(':'.join(g.group_entry))
+                fh.write('\n')
+        with open(self.gshadow_file, 'w') as fh:
+            for g in self.new_users:
+                fh.write(':'.join(g.gshadow_entry))
+                fh.write('\n')
+        for u in self.new_users:
+            if u.new:
+                homedir = os.path.join(self.chroot_base, u.home)
+                # We only set perms for the homedir itself. It's up to the user to specify in a post script if this
+                # needs to be different.
+                if os.path.isdir(homedir):
+                    os.stat(homedir)
+                    # TODO: log original owner, permissions, etc.
+                os.makedirs(homedir, exist_ok = True)
+                shutil.copytree(os.path.join(self.chroot_base, 'etc', 'skel'), homedir)
+                os.chown(homedir, u.uid, u.primary_group.gid)
+                os.chmod(homedir, 0o0750)
+                for root, dirs, files in os.walk(homedir):
+                    for d in dirs:
+                        dpath = os.path.join(root, d)
+                        os.chown(dpath, u.uid, u.primary_group.gid)
+                        os.chmod(dpath, 0o0700)
+                    for f in files:
+                        fpath = os.path.join(root, f)
+                        os.chown(fpath, u.uid, u.primary_group.gid)
+                        os.chmod(fpath, 0o0600)
+            if not u.sudo:
+                continue
+            sudo_file = os.path.join(self.chroot_base, 'etc', 'sudoers.d', u.name)
+            with open(sudo_file, 'w') as fh:
+                fh.write(('# Generated by AIF-NG.\n'
+                          'Defaults:{0} !lecture\n'
+                          '{0} ALL=(ALL) {1}ALL\n').format(u.name,
+                                                           ('NOPASSWD: ' if not u.sudoPassword else '')))
+            os.chown(sudo_file, 0, 0)
+            os.chmod(sudo_file, 0o0440)
+        return()

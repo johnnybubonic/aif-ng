@@ -1012,6 +1012,8 @@
                                                 <xs:attribute name="comment" type="aif:t_nonempty" use="optional"/>
                                                 <xs:attribute name="sudo" type="xs:boolean" use="optional"
                                                               default="false"/>
+                                                <xs:attribute name="sudoPassword" type="xs:boolean" use="optional"
+                                                              default="true"/>
                                                 <xs:attribute name="shell" type="aif:t_filepath" use="optional"
                                                               default="/bin/bash"/>
                                                 <!-- TODO: change the positiveIntegers to xs:duration? or union? -->
