@@ -2,7 +2,9 @@
 <aif xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
      xmlns="http://aif-ng.io/"
      xsi:schemaLocation="http://aif-ng.io/ http://aif-ng.io/aif.xsd"
-     version="v2_rewrite"><!-- When we release, this should match the tagged release (e.g. 0.2.0) -->
+     version="v2_rewrite"
+     chrootPath="/mnt/aif"
+     reboot="false"><!-- When we release, this should match the tagged release (e.g. 0.2.0) -->
     <storage>
         <blockDevices>
             <disk id="sda" device="/dev/sda" diskFormat="gpt">
@@ -162,7 +164,7 @@
             </encryption>
         </wireless>
     </network>
-    <system timezone="EST5EDT" chrootPath="/mnt/aif" reboot="0">
+    <system timezone="EST5EDT">
         <rootPassword>
             <passwordPlain>1ns3cur3p4ssw0rd</passwordPlain>
         </rootPassword>

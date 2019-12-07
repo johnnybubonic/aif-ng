@@ -105,3 +105,23 @@ class Locale(object):
         os.chmod(cfg, 0o0644)
         os.chown(cfg, 0, 0)
         return()
+
+
+class Timezone(object):
+    def __init__(self, timezone):
+        self.tz = timezone.strip().replace('.', '/')
+
+    def _verify(self, chroot_base):
+        tzfilebase = os.path.join('usr', 'share', 'zoneinfo', self.tz)
+        tzfile = os.path.join(chroot_base, tzfilebase)
+        if not os.path.isfile(tzfile):
+            raise ValueError('Invalid timezone')
+        return(tzfilebase)
+
+    def apply(self, chroot_base):
+        tzsrcfile = os.path.join('/', self._verify(chroot_base))
+        tzdestfile = os.path.join(chroot_base, 'etc', 'localtime')
+        if os.path.isfile(tzdestfile):
+            os.remove(tzdestfile)
+        os.symlink(tzsrcfile, tzdestfile)
+        return()

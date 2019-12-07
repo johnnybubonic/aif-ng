@@ -1058,9 +1058,7 @@
                                 </xs:complexType>
                             </xs:element>
                         </xs:all>
-                        <xs:attribute name="timezone" type="aif:t_nonempty" use="required"/>
-                        <xs:attribute name="chrootPath" type="aif:t_filepath" use="required"/>
-                        <xs:attribute name="reboot" type="xs:boolean" use="optional" default="0"/>
+                        <xs:attribute name="timezone" type="aif:t_nonempty" use="optional" default="UTC"/>
                     </xs:complexType>
                 </xs:element>
                 <!-- END SYSTEM -->
@@ -1165,6 +1163,8 @@
                 <!-- END SCRIPTS -->
             </xs:all>
             <xs:attribute name="version" type="aif:t_nonempty" use="optional" default="master"/>
+            <xs:attribute name="chrootPath" type="aif:t_filepath" use="required"/>
+            <xs:attribute name="reboot" type="xs:boolean" use="optional" default="false"/>
         </xs:complexType>
     </xs:element>
 </xs:schema>
