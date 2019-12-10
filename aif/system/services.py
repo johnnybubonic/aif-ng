@@ -37,7 +37,7 @@ class Service(object):
 
 
 class ServiceDB(object):
-    def __init__(self, services_xml, chroot_base):
+    def __init__(self, chroot_base, services_xml):
         self.xml = services_xml
         self.chroot_base = chroot_base
         self.systemd_sys = os.path.join(self.chroot_base, 'usr', 'lib', 'systemd', 'system')

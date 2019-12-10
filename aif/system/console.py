@@ -34,8 +34,9 @@ class Font(object):
 
 
 class Keyboard(object):
-    def __init__(self, keyboard_xml):
+    def __init__(self, chroot_base, keyboard_xml):
         self.xml = keyboard_xml
+        self.chroot_base = chroot_base
         self.settings = {}
         if self.xml:
             chk = {'KEYMAP': self.xml.find('map'),
@@ -44,14 +45,14 @@ class Keyboard(object):
                 if xml:
                     self.settings[setting] = xml.text.strip()
 
-    def verify(self, chroot_base):
+    def verify(self):
         kbdnames = []
         for i in ('KEYMAP', 'KEYMAP_TOGGLE'):
             if i in self.settings.keys():
                 kbdnames.append(self.settings[i])
         if not kbdnames:
             return(None)
-        keymapdir = os.path.join(chroot_base, 'usr', 'share', 'kbd', 'keymaps')
+        keymapdir = os.path.join(self.chroot_base, 'usr', 'share', 'kbd', 'keymaps')
         kbdmaps = []
         for root, dirs, files in os.walk(keymapdir, topdown = True):
             if root.endswith('/include'):
@@ -69,8 +70,9 @@ class Keyboard(object):
 
 
 class Console(object):
-    def __init__(self, console_xml):
+    def __init__(self, chroot_base, console_xml):
         self.xml = console_xml
+        self.chroot_base = chroot_base
         self._cfg = configparser.ConfigParser()
         self._cfg.optionxform(str)
         self.keyboard = Keyboard(self.xml.find('keyboard'))
@@ -79,10 +81,10 @@ class Console(object):
         for i in (self.keyboard, self.font):
             self._cfg['BASE'].update(i.settings)
 
-    def writeConf(self, chroot_base):
+    def writeConf(self):
         for x in (self.font, self.keyboard):
-            x.verify(chroot_base)
-        cfg = os.path.join(chroot_base, 'etc', 'vconsole.conf')
+            x.verify()
+        cfg = os.path.join(self.chroot_base, 'etc', 'vconsole.conf')
         # We have to strip out the section from the ini.
         cfgbuf = io.StringIO()
         self._cfg.write(cfgbuf, space_around_delimiters = False)

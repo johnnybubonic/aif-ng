@@ -1,10 +1,23 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <aif xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-     xmlns="http://aif-ng.io/"
-     xsi:schemaLocation="http://aif-ng.io/ http://aif-ng.io/aif.xsd"
-     version="v2_rewrite"
+     xmlns="https://aif-ng.io/"
+     xsi:schemaLocation="https://aif-ng.io/ https://schema.xml.r00t2.io/projects/aif.xsd"
      chrootPath="/mnt/aif"
-     reboot="false"><!-- When we release, this should match the tagged release (e.g. 0.2.0) -->
+     reboot="false">
+    <bootstrap>
+        <tarball>https://arch.mirror.square-r00t.net/iso/latest/archlinux-bootstrap-2019.12.01-x86_64.tar.gz</tarball>
+        <verify>
+            <gpg>
+                <signatureFile>
+                    https://arch.mirror.square-r00t.net/iso/latest/archlinux-bootstrap-2019.12.01-x86_64.tar.gz.sig
+                </signatureFile>
+            </gpg>
+            <hash>
+                <checksumFile hashType="md5">http://arch.mirror.square-r00t.net/iso/latest/md5sums.txt</checksumFile>
+                <checksumFile hashType="sha1">http://arch.mirror.square-r00t.net/iso/latest/sha1sums.txt</checksumFile>
+            </hash>
+        </verify>
+    </bootstrap>
     <storage>
         <blockDevices>
             <disk id="sda" device="/dev/sda" diskFormat="gpt">
