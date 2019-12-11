@@ -1,4 +1,4 @@
-import os
+import hashlib
 import re
 import subprocess  # I wish there was a better way to get the supported LUKS ciphers.
 import uuid
@@ -287,3 +287,6 @@ MDADM_SUPPORTED_LAYOUTS = {5: (re.compile(r'^((left|right)-a?symmetric|[lr][as]|
                                 None)}
 # glibc doesn't support bcrypt/blowfish nor des (nor any of the others, like e.g. scrypt)
 CRYPT_SUPPORTED_HASHTYPES = ('sha512', 'sha256', 'md5')
+HASH_BUILTIN_SUPPORTED_TYPES = tuple(sorted(list(hashlib.algorithms_available)))
+HASH_EXTRA_SUPPORTED_TYPES = set(('adler32', 'crc32'))
+HASH_SUPPORTED_TYPES = tuple(sorted(list(hashlib.algorithms_available.union(HASH_EXTRA_SUPPORTED_TYPES))))
