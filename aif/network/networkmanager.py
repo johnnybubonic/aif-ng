@@ -89,7 +89,7 @@ class Connection(_common.BaseConnection):
                                                                                         str(net.prefixlen),
                                                                                         str(gw))
         self._initConnCfg()
-        return()
+        return(None)
 
     def writeConf(self, chroot_base):
         cfgroot = os.path.join(chroot_base, 'etc', 'NetworkManager')
@@ -109,7 +109,7 @@ class Connection(_common.BaseConnection):
         os.chmod(cfgroot, 0o0755)
         os.chmod(cfgdir, 0o0700)
         os.chmod(cfgpath, 0o0600)
-        return()
+        return(None)
 
 
 class Ethernet(Connection):
@@ -120,7 +120,7 @@ class Ethernet(Connection):
 
     def _initConnCfg(self):
         self._cfg[self.connection_type] = {'mac-address-blacklist': ''}
-        return()
+        return(None)
 
 
 class Wireless(Connection):
@@ -153,4 +153,4 @@ class Wireless(Connection):
             # if crypto['type'] in ('wep', 'wpa', 'wpa2', 'wpa3'):
             if crypto['type'] in ('wpa', 'wpa2'):
                 self._cfg['wifi-security']['psk'] = crypto['auth']['psk']
-        return()
+        return(None)

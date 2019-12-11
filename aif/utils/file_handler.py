@@ -40,4 +40,4 @@ class Directory(object):
                     self.dirs.append(dirs)
         self.dirs.sort()
         self.files.sort()
-        return()
+        return(None)

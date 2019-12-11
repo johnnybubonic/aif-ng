@@ -86,7 +86,7 @@ class Partition(object):
             else:
                 continue
             self.flags.append(_BlockDev.PartFlag(flag_id))
-        return()
+        return(None)
 
     def _initFstype(self):
         _err = ('{0} is not a valid partition filesystem type; '
@@ -102,7 +102,7 @@ class Partition(object):
                 raise ValueError(_err)
             if self.fs_type not in aif.constants.GPT_GUID_IDX.keys():
                 raise ValueError(_err)
-        return()
+        return(None)
 
     def format(self):
         # This is a safeguard. We do *not* want to partition a disk that is mounted.
@@ -119,7 +119,7 @@ class Partition(object):
         if self.flags:
             for f in self.flags:
                 _BlockDev.part.set_part_flag(self.device, self.devpath, f, True)
-        return()
+        return(None)
 
     #
     # def detect(self):
@@ -155,7 +155,7 @@ class Disk(object):
         self.is_hiformatted = False
         self.is_partitioned = False
         self.partitions = []
-        return()
+        return(None)
 
     def diskFormat(self):
         if self.is_lowformatted:
@@ -170,7 +170,7 @@ class Disk(object):
         _BlockDev.part.create_table(self.devpath, self.table_type, True)
         self.is_lowformatted = True
         self.is_partitioned = False
-        return()
+        return(None)
 
     def getPartitions(self):
         # For GPT, this *technically* should be 34 -- or, more precisely, 2048 (see FAQ in manual), but the alignment
@@ -196,11 +196,11 @@ class Disk(object):
                 p = Partition(part, self.disk, start_sector, partnum, self.table_type, part_type = parttype)
             start_sector = p.end + 1
             self.partitions.append(p)
-        return()
+        return(None)
 
     def partFormat(self):
         if self.is_partitioned:
-            return()
+            return(None)
         if not self.is_lowformatted:
             self.diskFormat()
         # This is a safeguard. We do *not* want to partition a disk that is mounted.
@@ -208,7 +208,7 @@ class Disk(object):
         if not self.partitions:
             self.getPartitions()
         if not self.partitions:
-            return()
+            return(None)
         for p in self.partitions:
             p.format()
             p.is_hiformatted = True

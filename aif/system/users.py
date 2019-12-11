@@ -61,7 +61,7 @@ class Group(object):
                               (self.password.hash if self.password.hash else '!!'),  # Password hash (if it has one)
                               ','.join(self.admins),  # Users with administrative control of group
                               ','.join(self.members)]  # Comma-separated members of group
-        return()
+        return(None)
 
     def parseGroupLine(self, line):
         groupdict = dict(zip(['name', 'password', 'gid', 'members'],
@@ -71,7 +71,7 @@ class Group(object):
             self.members = set(members)
         self.gid = int(groupdict['gid'])
         self.name = groupdict['name']
-        return()
+        return(None)
 
     def parseGshadowLine(self, line):
         groupdict = dict(zip(['name', 'password', 'admins', 'members'],
@@ -85,7 +85,7 @@ class Group(object):
             self.admins = set(admins)
         if members:
             self.members = set(members)
-        return()
+        return(None)
 
 
 class Password(object):
@@ -133,7 +133,7 @@ class Password(object):
             self.hash_type = re.sub(r'_crypt$', '', self._pass_context.identify(self.hash))
             if not self.hash_type:
                 warnings.warn('Could not determine hash type')
-        return()
+        return(None)
 
 
 class User(object):
@@ -161,7 +161,7 @@ class User(object):
     def _initVals(self):
         if self.xml is None:
             # We manually assign these.
-            return()
+            return(None)
         self.name = self.xml.attrib['name']
         # XML declared users are always new.
         self.new = True
@@ -206,7 +206,7 @@ class User(object):
             g = Group(group_xml)
             g.members.add(self.name)
             self.groups.append(g)
-        return()
+        return(None)
 
     def genFileLine(self):
         if not all((self.uid, self.primary_group.gid)):
@@ -230,7 +230,7 @@ class User(object):
                              (str(self.inactive_period) if self.inactive_period else ''),  # Password inactivity period
                              (str((self.expire_date - _epoch).days) if self.expire_date else ''),  # Expiration date
                              '']  # "Reserved"
-        return()
+        return(None)
 
     def parseShadowLine(self, line):
         shadowdict = dict(zip(['name', 'password', 'last_change', 'minimum_age', 'maximum_age', 'warning_period',
@@ -260,7 +260,7 @@ class User(object):
         for k in ('home', 'shell'):
             if userdict[k].strip() != '':
                 setattr(self, k, userdict[k])
-        return()
+        return(None)
 
 
 class UserDB(object):
@@ -322,7 +322,7 @@ class UserDB(object):
             if k in self.login_defaults.keys():
                 v = self.login_defaults[k].lower()
                 self.login_defaults[k] = (True if v == 'yes' else False)
-        return()
+        return(None)
 
     def _parseShadow(self):
         sys_shadow = {}
@@ -364,7 +364,7 @@ class UserDB(object):
             rootuser = users['root']
             rootuser.password = self.rootpass
             rootuser.password.detectHashType()
-        return()
+        return(None)
 
     def _parseXML(self):
         for user_xml in self.xml.findall('user'):
@@ -393,7 +393,7 @@ class UserDB(object):
                     if not g.create:
                         u.groups[idx] = new_group[0]
             self.new_users.append(u)
-        return()
+        return(None)
 
     def getAvailUID(self, system = False):
         if not self.login_defaults:
@@ -490,4 +490,4 @@ class UserDB(object):
                                                            ('NOPASSWD: ' if not u.sudoPassword else '')))
             os.chown(sudo_file, 0, 0)
             os.chmod(sudo_file, 0o0440)
-        return()
+        return(None)

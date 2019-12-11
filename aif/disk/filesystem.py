@@ -56,7 +56,7 @@ class FS(object):
         cmd.append(self.devpath)
         subprocess.run(cmd)
         self.formatted = True
-        return()
+        return(None)
 
 
 class Mount(object):
@@ -86,7 +86,7 @@ class Mount(object):
 
     def mount(self):
         if self.mounted:
-            return()
+            return(None)
         os.makedirs(self.target, exist_ok = True)
         opts = self._parseOpts()
         _BlockDev.fs.mount(self.source,
@@ -94,21 +94,21 @@ class Mount(object):
                            self.fs.fstype,
                            (','.join(opts) if opts else None))
         self.mounted = True
-        return()
+        return(None)
 
     def unmount(self, lazy = False, force = False):
         self.updateMount()
         if not self.mounted and not force:
-            return()
+            return(None)
         _BlockDev.fs.unmount(self.target,
                              lazy,
                              force)
         self.mounted = False
-        return()
+        return(None)
 
     def updateMount(self):
         if self.source in [p.device for p in psutil.disk_partitions(all = True)]:
             self.mounted = True
         else:
             self.mounted = False
-        return()
+        return(None)

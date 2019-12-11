@@ -44,7 +44,7 @@ class Member(object):
         except _BlockDev.MDRaidError:
             self.is_superblocked = False
             self.superblock = None
-            return()
+            return(None)
         for k in dir(_block):
             if k.startswith('_'):
                 continue
@@ -60,7 +60,7 @@ class Member(object):
             block[k] = v
         self.superblock = block
         self.is_superblocked = True
-        return()
+        return(None)
 
     def prepare(self):
         try:
@@ -69,7 +69,7 @@ class Member(object):
             pass
         _BlockDev.md.destroy(self.devpath)
         self._parseDeviceBlock()
-        return()
+        return(None)
 
 
 class Array(object):
@@ -121,7 +121,7 @@ class Array(object):
             raise ValueError('memberobj must be of type aif.disk.mdadm.Member')
         memberobj.prepare()
         self.members.append(memberobj)
-        return()
+        return(None)
 
     def create(self):
         if not self.members:
@@ -147,7 +147,7 @@ class Array(object):
         self.writeConf()
         self.devpath = self.info['device']
         self.state = 'new'
-        return()
+        return(None)
 
     def start(self, scan = False):
         if not any((self.members, self.devpath)):
@@ -162,12 +162,12 @@ class Array(object):
                               True,
                               None)
         self.state = 'assembled'
-        return()
+        return(None)
 
     def stop(self):
         _BlockDev.md.deactivate(self.name)
         self.state = 'disassembled'
-        return()
+        return(None)
 
     def updateStatus(self):
         _status = _BlockDev.md.detail(self.name)
@@ -189,7 +189,7 @@ class Array(object):
                 v = uuid.UUID(hex = v)
             info[k] = v
         self.info = info
-        return()
+        return(None)
 
     def writeConf(self, conf = '/etc/mdadm.conf'):
         conf = os.path.realpath(conf)
@@ -214,4 +214,4 @@ class Array(object):
             if nodev:
                 with open(conf, 'a') as fh:
                     fh.write('{0}\n'.format(arrayinfo))
-        return()
+        return(None)

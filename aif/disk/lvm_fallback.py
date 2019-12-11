@@ -43,7 +43,7 @@ class PV(object):
         if _meta.returncode != 0:
             self.meta = None
             self.is_pooled = False
-            return()
+            return(None)
         _meta = json.loads(_meta.stdout.decode('utf-8'))['report'][0]['pv'][0]
         for k, v in _meta.items():
             # We *could* regex this but the pattern would be a little more complex than idea,
@@ -64,7 +64,7 @@ class PV(object):
             meta[k] = v
         self.meta = meta
         self.is_pooled = True
-        return()
+        return(None)
 
     def prepare(self):
         if not self.meta:
@@ -80,7 +80,7 @@ class PV(object):
                self.devpath]
         subprocess.run(cmd)
         self._parseMeta()
-        return()
+        return(None)
 
 
 class VG(object):
@@ -113,7 +113,7 @@ class VG(object):
             raise ValueError('pvobj must be of type aif.disk.lvm.PV')
         pvobj.prepare()
         self.pvs.append(pvobj)
-        return()
+        return(None)
 
     def create(self):
         if not self.pvs:
@@ -129,7 +129,7 @@ class VG(object):
             pv._parseMeta()
         self.created = True
         self.updateInfo()
-        return()
+        return(None)
 
     def createLV(self, lv_xml = None):
         if not self.created:
@@ -145,7 +145,7 @@ class VG(object):
                 lv.create()
                 # self.lvs.append(lv)
         self.updateInfo()
-        return()
+        return(None)
 
     def start(self):
         cmd = ['vgchange',
@@ -154,7 +154,7 @@ class VG(object):
                self.name]
         subprocess.run(cmd)
         self.updateInfo()
-        return()
+        return(None)
 
     def stop(self):
         cmd = ['vgchange',
@@ -163,7 +163,7 @@ class VG(object):
                self.name]
         subprocess.run(cmd)
         self.updateInfo()
-        return()
+        return(None)
 
     def updateInfo(self):
         info = {}
@@ -178,7 +178,7 @@ class VG(object):
         if _info.returncode != 0:
             self.info = None
             self.created = False
-            return()
+            return(None)
         _info = json.loads(_info.stdout.decode('utf-8'))['report'][0]['vg'][0]
         for k, v in _info.items():
             # ints
@@ -196,7 +196,7 @@ class VG(object):
                 v = None
             info[k] = v
         self.info = info
-        return()
+        return(None)
 
 
 class LV(object):
@@ -250,7 +250,7 @@ class LV(object):
                                                           target = 'B'))
         if self.size >= _sizes['total']:
             self.size = 0
-        return()
+        return(None)
 
     def create(self):
         if not self.pvs:
@@ -267,7 +267,7 @@ class LV(object):
         self.created = True
         self.updateInfo()
         self.vg.updateInfo()
-        return()
+        return(None)
 
     def start(self):
         cmd = ['lvchange',
@@ -276,7 +276,7 @@ class LV(object):
                self.qualified_name]
         subprocess.run(cmd)
         self.updateInfo()
-        return()
+        return(None)
 
     def stop(self):
         cmd = ['lvchange',
@@ -285,7 +285,7 @@ class LV(object):
                self.qualified_name]
         subprocess.run(cmd)
         self.updateInfo()
-        return()
+        return(None)
 
     def updateInfo(self):
         info = {}
@@ -300,7 +300,7 @@ class LV(object):
         if _info.returncode != 0:
             self.info = None
             self.created = False
-            return()
+            return(None)
         _info = json.loads(_info.stdout.decode('utf-8'))['report'][0]['vg'][0]
         for k, v in _info.items():
             # ints
@@ -330,4 +330,4 @@ class LV(object):
                 v = None
             info[k] = v
         self.info = info
-        return()
+        return(None)

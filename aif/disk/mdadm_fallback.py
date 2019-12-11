@@ -49,7 +49,7 @@ class Member(object):
             # TODO: logging?
             self.is_superblocked = False
             self.superblock = None
-            return()
+            return(None)
         block = {}
         for idx, line in enumerate(super.stdout.decode('utf-8').splitlines()):
             line = line.strip()
@@ -116,7 +116,7 @@ class Member(object):
             block[k] = v
         self.superblock = block
         self.is_superblocked = True
-        return()
+        return(None)
 
     def prepare(self):
         if self.is_superblocked:
@@ -124,7 +124,7 @@ class Member(object):
             subprocess.run(['mdadm', '--misc', '--zero-superblock', self.devpath])
             self.is_superblocked = False
         self._parseDeviceBlock()
-        return()
+        return(None)
 
 
 class Array(object):
@@ -174,7 +174,7 @@ class Array(object):
             raise ValueError('memberobj must be of type aif.disk.mdadm.Member')
         memberobj.prepare()
         self.members.append(memberobj)
-        return()
+        return(None)
 
     def create(self):
         if not self.members:
@@ -199,7 +199,7 @@ class Array(object):
         self.updateStatus()
         self.writeConf()
         self.state = 'new'
-        return()
+        return(None)
 
     def start(self, scan = False):
         if not any((self.members, self.devpath)):
@@ -214,13 +214,13 @@ class Array(object):
         subprocess.run(cmd)
         self.updateStatus()
         self.state = 'assembled'
-        return()
+        return(None)
 
     def stop(self):
         # TODO: logging
         subprocess.run(['mdadm', '--stop', self.devpath])
         self.state = 'disassembled'
-        return()
+        return(None)
 
     def updateStatus(self):
         _info = mdstat.parse()
@@ -228,7 +228,7 @@ class Array(object):
             if k != self.name:
                 del(_info['devices'][k])
         self.info = copy.deepcopy(_info)
-        return()
+        return(None)
 
     def writeConf(self, conf = '/etc/mdadm.conf'):
         conf = os.path.realpath(conf)
@@ -250,4 +250,4 @@ class Array(object):
             if nodev:
                 with open(conf, 'a') as fh:
                     fh.write('{0}\n'.format(arrayinfo))
-        return()
+        return(None)

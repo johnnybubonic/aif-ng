@@ -57,4 +57,4 @@ class ServiceDB(object):
             else:
                 if os.path.exists(dest_path):
                     os.remove(dest_path)
-        return()
+        return(None)

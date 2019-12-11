@@ -204,19 +204,19 @@ class BaseConnection(object):
                 addrset = convertIpTuples(a)
                 if addrset not in self.addrs[addrtype]:
                     self.addrs[addrtype].append(addrset)
-        return()
+        return(None)
 
     def _initCfg(self):
         # A dummy method; this is overridden by the subclasses.
         # It's honestly here to make my IDE stop complaining. :)
         pass
-        return()
+        return(None)
 
     def _initConnCfg(self):
         # A dummy method; this is overridden by the subclasses.
         # It's honestly here to make my IDE stop complaining. :)
         pass
-        return()
+        return(None)
 
     def _initResolvers(self):
         resolvers_xml = self.xml.find('resolvers')
@@ -225,7 +225,7 @@ class BaseConnection(object):
                 resolver = ipaddress.ip_address(r.text.strip())
                 if resolver not in self.resolvers:
                     self.resolvers.append(resolver)
-        return()
+        return(None)
 
     def _initRoutes(self):
         routes_xml = self.xml.find('routes')
@@ -235,9 +235,9 @@ class BaseConnection(object):
                     addrset = convertIpTuples(a)
                     if addrset not in self.routes[addrtype]:
                         self.routes[addrtype].append(addrset)
-        return()
+        return(None)
 
     def _writeConnCfg(self, chroot_base):
         # Dummy method.
         pass
-        return()
+        return(None)

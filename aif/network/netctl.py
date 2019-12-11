@@ -105,7 +105,7 @@ class Connection(_common.BaseConnection):
         # Weird hack because netctl doesn't natively support assigning add'l addrs to a dhcp/dhcp6/slaac iface.
         if 'IPCustom' in self._cfg['BASE'].keys() and isinstance(self._cfg['BASE']['IPCustom'], list):
             self._cfg['BASE']['IPCustom'] = '({0})'.format(' '.join(self._cfg['BASE']['IPCustom']))
-        return()
+        return(None)
 
     def writeConf(self, chroot_base):
         systemd_base = os.path.join(chroot_base, 'etc', 'systemd', 'system')
@@ -260,7 +260,7 @@ class Connection(_common.BaseConnection):
                 fh.write(line)
         os.chmod(netctl_file, 0o0600)
         os.chown(netctl_file, 0, 0)
-        return()
+        return(None)
 
 
 class Ethernet(Connection):
@@ -300,4 +300,4 @@ class Wireless(Connection):
             # if crypto['type'] in ('wep', 'wpa', 'wpa2', 'wpa3'):
             if crypto['type'] in ('wpa', 'wpa2'):
                 self._cfg['BASE']['Key'] = crypto['auth']['psk']
-        return()
+        return(None)

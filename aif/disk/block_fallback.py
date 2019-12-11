@@ -144,18 +144,18 @@ class Disk(object):
         self.is_hiformatted = False
         self.is_partitioned = False
         self.partitions = []
-        return()
+        return(None)
 
     def diskFormat(self):
         if self.is_lowformatted:
-            return()
+            return(None)
         # This is a safeguard. We do *not* want to low-format a disk that is mounted.
         aif.utils.checkMounted(self.devpath)
         self.disk.deleteAllPartitions()
         self.disk.commit()
         self.is_lowformatted = True
         self.is_partitioned = False
-        return()
+        return(None)
 
     def getPartitions(self):
         # For GPT, this *technically* should be 34 -- or, more precisely, 2048 (see FAQ in manual), but the alignment
@@ -181,11 +181,11 @@ class Disk(object):
                 p = Partition(part, self.disk, start_sector, partnum, self.table_type, part_type = parttype)
             start_sector = p.end + 1
             self.partitions.append(p)
-        return()
+        return(None)
 
     def partFormat(self):
         if self.is_partitioned:
-            return()
+            return(None)
         if not self.is_lowformatted:
             self.diskFormat()
         # This is a safeguard. We do *not* want to partition a disk that is mounted.
@@ -193,11 +193,11 @@ class Disk(object):
         if not self.partitions:
             self.getPartitions()
         if not self.partitions:
-            return()
+            return(None)
         for p in self.partitions:
             self.disk.addPartition(partition = p, constraint = self.device.optimalAlignedConstraint)
             self.disk.commit()
             p.devpath = p.partition.path
             p.is_hiformatted = True
         self.is_partitioned = True
-        return()
+        return(None)

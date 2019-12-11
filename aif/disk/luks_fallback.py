@@ -40,7 +40,7 @@ class LuksSecretFile(LuksSecret):
             self.passphrase = secrets.token_bytes(self.size)
         if not isinstance(self.passphrase, bytes):
             self.passphrase = self.passphrase.encode('utf-8')
-        return()
+        return(None)
 
 
 class LUKS(object):
@@ -71,7 +71,7 @@ class LUKS(object):
                              '(aif.disk.luks.LuksSecretPassphrase or '
                              'aif.disk.luks.LuksSecretFile)')
         self.secrets.append(secretobj)
-        return()
+        return(None)
 
     def createSecret(self, secrets_xml = None):
         if not secrets_xml:  # Find all of them from self
@@ -115,11 +115,11 @@ class LUKS(object):
                                            passphrase = None,
                                            bytesize = kf.attrib.get('size', 4096))
             self.secrets.append(secretobj)
-        return()
+        return(None)
 
     def create(self):
         if self.created:
-            return()
+            return(None)
         if not self.secrets:
             raise RuntimeError('Cannot create a LUKS volume with no secrets added')
         for idx, secret in enumerate(self.secrets):
@@ -147,13 +147,13 @@ class LUKS(object):
                 subprocess.run(cmd, input = self.secrets[0].passphrase)
                 os.remove(tmpfile[1])
         self.created = True
-        return()
+        return(None)
 
     def lock(self):
         if not self.created:
             raise RuntimeError('Cannot lock a LUKS volume before it is created')
         if self.locked:
-            return()
+            return(None)
         # TODO: logging
         cmd = ['cryptsetup',
                '--batch-mode',
@@ -161,13 +161,13 @@ class LUKS(object):
                self.name]
         subprocess.run(cmd)
         self.locked = True
-        return()
+        return(None)
 
     def unlock(self, passphrase = None):
         if not self.created:
             raise RuntimeError('Cannot unlock a LUKS volume before it is created')
         if not self.locked:
-            return()
+            return(None)
         cmd = ['cryptsetup',
                '--batch-mode',
                'luksOpen',
@@ -176,7 +176,7 @@ class LUKS(object):
                self.name]
         subprocess.run(cmd, input = self.secrets[0].passphrase)
         self.locked = False
-        return()
+        return(None)
 
     def updateInfo(self):
         if self.locked:
@@ -225,7 +225,7 @@ class LUKS(object):
             elif k == 'uuid':
                 v = uuid.UUID(hex = v)
         self.info = info
-        return()
+        return(None)
 
     def writeConf(self, conf = '/etc/crypttab'):
         if not self.secrets:
@@ -252,4 +252,4 @@ class LUKS(object):
         if luksinfo not in conflines:
             with open(conf, 'a') as fh:
                 fh.write('{0}\n'.format(luksinfo))
-        return()
+        return(None)

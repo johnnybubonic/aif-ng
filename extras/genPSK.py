@@ -75,7 +75,7 @@ def main():
                           'Please ensure you have provided the correct passphrase.'))
     psk = pskGen(args.ssid, args.passphrase)
     print('PSK for network "{0}": {1}'.format(args.ssid, psk))
-    return()
+    return(None)
 
 
 if __name__ == '__main__':

@@ -42,7 +42,7 @@ class PV(object):
         except _BlockDev.LVMError:
             self.meta = None
             self.is_pooled = False
-            return()
+            return(None)
         for k in dir(_meta):
             if k.startswith('_'):
                 continue
@@ -52,7 +52,7 @@ class PV(object):
             meta[k] = v
         self.meta = meta
         self.is_pooled = True
-        return()
+        return(None)
 
     def prepare(self):
         try:
@@ -97,7 +97,7 @@ class PV(object):
                                0,
                                opts)
         self._parseMeta()
-        return()
+        return(None)
 
 
 class VG(object):
@@ -130,7 +130,7 @@ class VG(object):
             raise ValueError('pvobj must be of type aif.disk.lvm.PV')
         pvobj.prepare()
         self.pvs.append(pvobj)
-        return()
+        return(None)
 
     def create(self):
         if not self.pvs:
@@ -149,7 +149,7 @@ class VG(object):
             pv._parseMeta()
         self.created = True
         self.updateInfo()
-        return()
+        return(None)
 
     def createLV(self, lv_xml = None):
         if not self.created:
@@ -165,21 +165,21 @@ class VG(object):
                 lv.create()
                 # self.lvs.append(lv)
         self.updateInfo()
-        return()
+        return(None)
 
     def start(self):
         _BlockDev.lvm.vgactivate(self.name)
         self.updateInfo()
-        return()
+        return(None)
 
     def stop(self):
         _BlockDev.lvm.vgdeactivate(self.name)
         self.updateInfo()
-        return()
+        return(None)
 
     def updateInfo(self):
         if not self.created:
-            return()
+            return(None)
         _info = _BlockDev.lvm.vginfo(self.name)
         # TODO: parity with lvm_fallback.VG.updateInfo
         #       key names currently (probably) don't match and need to confirm the information's all present
@@ -192,7 +192,7 @@ class VG(object):
             v = getattr(_info, k)
             info[k] = v
         self.info = info
-        return()
+        return(None)
 
 
 class LV(object):
@@ -247,7 +247,7 @@ class LV(object):
                                                           target = 'B'))
         if self.size >= _sizes['total']:
             self.size = 0
-        return()
+        return(None)
 
     def create(self):
         if not self.pvs:
@@ -268,7 +268,7 @@ class LV(object):
         self.created = True
         self.updateInfo()
         self.vg.updateInfo()
-        return()
+        return(None)
 
     def start(self):
         _BlockDev.lvm.lvactivate(self.vg.name,
@@ -276,18 +276,18 @@ class LV(object):
                                  True,
                                  None)
         self.updateInfo()
-        return()
+        return(None)
 
     def stop(self):
         _BlockDev.lvm.lvdeactivate(self.vg.name,
                                    self.name,
                                    None)
         self.updateInfo()
-        return()
+        return(None)
 
     def updateInfo(self):
         if not self.created:
-            return()
+            return(None)
         _info = _BlockDev.lvm.lvinfo(self.vg.name, self.name)
         # TODO: parity with lvm_fallback.LV.updateInfo
         #       key names currently (probably) don't match and need to confirm the information's all present
@@ -300,4 +300,4 @@ class LV(object):
             v = getattr(_info, k)
             info[k] = v
         self.info = info
-        return()
+        return(None)

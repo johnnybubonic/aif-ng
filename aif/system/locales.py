@@ -31,7 +31,7 @@ class Locale(object):
                 self.userlocales.append(locale)
         if not self.userlocales:
             self.userlocales = ['en_US', 'en_US.UTF-8']
-        return()
+        return(None)
 
     def _verify(self):
         localegen = os.path.join(self.chroot_base, 'etc', 'locale.gen')  # This *should* be brand new.
@@ -50,7 +50,7 @@ class Locale(object):
         sysl = set(self.syslocales.keys())
         if (userl - sysl):
             raise ValueError('non-existent locale specified')
-        return()
+        return(None)
 
     def writeConf(self):
         # We basically recreate locale-gen in python here, more or less.
@@ -106,7 +106,7 @@ class Locale(object):
                 fh.write(line)
         os.chmod(cfg, 0o0644)
         os.chown(cfg, 0, 0)
-        return()
+        return(None)
 
 
 class Timezone(object):
@@ -127,4 +127,4 @@ class Timezone(object):
         if os.path.isfile(tzdestfile):
             os.remove(tzdestfile)
         os.symlink(tzsrcfile, tzdestfile)
-        return()
+        return(None)

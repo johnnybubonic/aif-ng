@@ -90,13 +90,13 @@ class Connection(_common.BaseConnection):
             if 'IPv6AcceptRA' not in self._cfg.keys():
                 self._cfg['IPv6AcceptRA'] = {'UseDNS': ('true' if self.auto['resolvers']['ipv6'] else 'false')}
         self._initConnCfg()
-        return()
+        return(None)
 
     def _initJ2(self):
         self.j2_env = jinja2.Environment(loader = jinja2.FileSystemLoader(searchpath = './'))
         self.j2_env.filters.update(aif.utils.j2_filters)
         self.j2_tpl = self.j2_env.get_template('networkd.conf.j2')
-        return()
+        return(None)
 
     def writeConf(self, chroot_base):
         cfgroot = os.path.join(chroot_base, 'etc', 'systemd', 'network')
@@ -109,7 +109,7 @@ class Connection(_common.BaseConnection):
         os.chmod(cfgfile, 0o0644)
         os.chown(cfgfile, 0, 0)
         self._writeConnCfg(chroot_base)
-        return()
+        return(None)
 
 
 class Ethernet(Connection):
@@ -155,7 +155,7 @@ class Wireless(Connection):
                                                                               'multi-user.target.wants/'
                                                                               'wpa_supplicant@'
                                                                               '{0}.service').format(self.device)
-        return()
+        return(None)
 
     def _writeConnCfg(self, chroot_base):
         cfgroot = os.path.join(chroot_base, 'etc', 'wpa_supplicant')
@@ -167,4 +167,4 @@ class Wireless(Connection):
             fh.write(self.wpasupp_tpl.render(wpa = self._wpasupp))
         os.chown(cfgfile, 0, 0)
         os.chmod(cfgfile, 0o0640)
-        return()
+        return(None)

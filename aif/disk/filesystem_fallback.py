@@ -47,7 +47,7 @@ class FS(object):
         cmd.append(self.devpath)
         subprocess.run(cmd)
         self.formatted = True
-        return()
+        return(None)
 
 
 class Mount(object):
@@ -76,7 +76,7 @@ class Mount(object):
 
     def mount(self):
         if self.mounted:
-            return()
+            return(None)
         os.makedirs(self.target, exist_ok = True)
         opts = self._parseOpts()
         # TODO: logging
@@ -87,12 +87,12 @@ class Mount(object):
         cmd.extend([self.source, self.target])
         subprocess.run(cmd)
         self.mounted = True
-        return()
+        return(None)
 
     def unmount(self, lazy = False, force = False):
         self.updateMount()
         if not self.mounted and not force:
-            return()
+            return(None)
         # TODO: logging
         cmd = ['/usr/bin/umount']
         if lazy:
@@ -102,11 +102,11 @@ class Mount(object):
         cmd.append(self.target)
         subprocess.run(cmd)
         self.mounted = False
-        return()
+        return(None)
 
     def updateMount(self):
         if self.source in [p.device for p in psutil.disk_partitions(all = True)]:
             self.mounted = True
         else:
             self.mounted = False
-        return()
+        return(None)

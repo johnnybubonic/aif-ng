@@ -18,4 +18,4 @@ class Sys(object):
         self.tz.apply()
         self.user.writeConf()
         self.services.apply()
-        return()
+        return(None)

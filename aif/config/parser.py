@@ -26,11 +26,11 @@ class Config(object):
         if validate:
             self.validate()
         self.pythonize()
-        return()
+        return(None)
 
     def fetch(self):  # Just a fail-safe; this is overridden by specific subclasses.
         pass
-        return()
+        return(None)
 
     def getXSD(self, xsdpath = None):
         if not xsdpath:
@@ -62,7 +62,7 @@ class Config(object):
             raw_xsd = req.content
             base_url = os.path.split(req.url)[0]  # This makes me feel dirty.
         self.xsd = etree.XMLSchema(etree.XML(raw_xsd, base_url = base_url))
-        return()
+        return(None)
 
     def parseRaw(self, parser = None):
         # self.xml = etree.parse(self.raw, parser = parser)
@@ -74,7 +74,7 @@ class Config(object):
         self.tree.xinclude()
         self.namespaced_tree.xinclude()
         self.stripNS()
-        return()
+        return(None)
 
     def populateDefaults(self):
         if not self.xsd:
@@ -82,7 +82,7 @@ class Config(object):
         if not self.defaultsParser:
             self.defaultsParser = etree.XMLParser(schema = self.xsd, attribute_defaults = True)
         self.parseRaw(parser = self.defaultsParser)
-        return()
+        return(None)
 
     def pythonize(self, stripped = True, obj = 'tree'):
         # https://bugs.launchpad.net/lxml/+bug/1850221
@@ -90,11 +90,11 @@ class Config(object):
         self.obj = objectify.fromstring(strobj)
         objectify.annotate(self.obj)
         objectify.xsiannotate(self.obj)
-        return()
+        return(None)
 
     def removeDefaults(self):
         self.parseRaw()
-        return()
+        return(None)
 
     def stripNS(self, obj = None):
         # https://stackoverflow.com/questions/30232031/how-can-i-strip-namespaces-out-of-an-lxml-tree/30233635#30233635
@@ -110,7 +110,7 @@ class Config(object):
             return(obj)
         else:
             raise ValueError('Did not know how to parse obj parameter')
-        return()
+        return(None)
 
     def toString(self, stripped = False, obj = None):
         if isinstance(obj, (etree._Element, etree._ElementTree)):
@@ -142,7 +142,7 @@ class Config(object):
         if not self.xsd:
             self.getXSD()
         self.xsd.assertValid(self.namespaced_tree)
-        return()
+        return(None)
 
 
 class LocalFile(Config):
@@ -157,7 +157,7 @@ class LocalFile(Config):
             raise ValueError('{0} does not exist'.format(self.source))
         with open(self.source, 'rb') as fh:
             self.raw = fh.read()
-        return()
+        return(None)
 
 
 class RemoteFile(Config):
@@ -171,7 +171,7 @@ class RemoteFile(Config):
         if not r.ok():
             raise RuntimeError('Could not download XML')
         self.raw = r.content
-        return()
+        return(None)
 
 
 class ConfigStr(Config):
@@ -182,7 +182,7 @@ class ConfigStr(Config):
 
     def fetch(self):
         self.raw = self.source.encode('utf-8')
-        return()
+        return(None)
 
 
 class ConfigBin(Config):
@@ -193,7 +193,7 @@ class ConfigBin(Config):
 
     def fetch(self):
         self.raw = self.source
-        return()
+        return(None)
 
 
 detector = {'raw': (re.compile(r'^\s*(?P<xml><(\?xml|aif)\s+.*)\s*$', re.DOTALL | re.MULTILINE), ConfigStr),

@@ -30,7 +30,7 @@ class GPG(object):
             self.primary_key = self.createKey('AIF-NG File Verification Key', sign = True, force = True)
         else:
             self.primary_key = self.getKey(self.primary_key, secret = True)
-        return()
+        return(None)
 
     def clean(self):
         # This is mostly just to cleanup the stuff we did before.
@@ -39,7 +39,7 @@ class GPG(object):
             self.primary_key = None
             shutil.rmtree(self.homedir)
         self.gpg = None
-        return()
+        return(None)
 
     def createKey(self, userid, *args, **kwargs):
         # algorithm=None, expires_in=0, expires=True, sign=False, encrypt=False, certify=False,
@@ -85,7 +85,7 @@ class GPG(object):
             except gpg.errors.KeyNotFound:
                 key = None
             return(key)
-        return()
+        return(None)
 
     def getKeyFile(self, keyfile, keyring_import = False):
         keyfile = os.path.abspath(os.path.expanduser(keyfile))
@@ -115,7 +115,7 @@ class GPG(object):
             if not isinstance(keydata, list):
                 keydata = [keydata]
             self.gpg.op_import_keys(keydata)
-        return()
+        return(None)
 
     def verifyData(self, data, keys = None, strict = False, detached = None, *args, **kwargs):
         results = {}

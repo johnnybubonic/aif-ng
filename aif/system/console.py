@@ -96,4 +96,4 @@ class Console(object):
                 fh.write(line)
         os.chmod(cfg, 0o0644)
         os.chown(cfg, 0, 0)
-        return()
+        return(None)

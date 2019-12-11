@@ -15,7 +15,7 @@ from . import hash_handler
 def checkMounted(devpath):
     if devpath in [p.device for p in psutil.disk_partitions(all = True)]:
         raise RuntimeError('{0} is mounted; we are cowardly refusing to destructive operations on it'.format(devpath))
-    return()
+    return(None)
 
 
 def collapseKeys(d, keylist = None):
