@@ -1,16 +1,21 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <aif xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
      xmlns="https://aif-ng.io/"
-     xsi:schemaLocation="https://aif-ng.io/ https://schema.xml.r00t2.io/projects/aif.xsd"
+     xsi:schemaLocation="https://aif-ng.io/ http://schema.xml.r00t2.io/projects/aif.xsd"
      chrootPath="/mnt/aif"
      reboot="false">
     <bootstrap>
         <tarball>https://arch.mirror.square-r00t.net/iso/latest/archlinux-bootstrap-2019.12.01-x86_64.tar.gz</tarball>
         <verify>
             <gpg>
-                <signatureFile>
-                    https://arch.mirror.square-r00t.net/iso/latest/archlinux-bootstrap-2019.12.01-x86_64.tar.gz.sig
-                </signatureFile>
+                <sigs>
+                    <signatureFile>
+                        https://arch.mirror.square-r00t.net/iso/latest/archlinux-bootstrap-2019.12.01-x86_64.tar.gz.sig
+                    </signatureFile>
+                </sigs>
+                <keys>
+                    <keyID>0x4AA4767BBC9C4B1D18AE28B77F2D434B9741E8AC</keyID>
+                </keys>
             </gpg>
             <hash>
                 <checksumFile hashType="md5">http://arch.mirror.square-r00t.net/iso/latest/md5sums.txt</checksumFile>

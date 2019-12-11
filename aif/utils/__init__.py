@@ -6,6 +6,10 @@ import shlex
 import subprocess
 ##
 import psutil
+##
+from . import file_handler
+from . import gpg_handler
+from . import hash_handler
 
 
 def checkMounted(devpath):
@@ -149,50 +153,50 @@ class _Sizer(object):
         # 'decimal' is base-10, 'binary' is base-2. (Duh.)
         # "b" = bytes, "n" = given value, and "u" = unit suffix's key in below notes.
         self.storageUnits = {'decimal': {  # n * (10 ** u) = b; b / (10 ** u) = u
-                                     0: (None, 'B', 'byte'),
-                                     3: ('k', 'kB', 'kilobyte'),
-                                     6: ('M', 'MB', 'megabyte'),
-                                     9: ('G', 'GB', 'gigabyte'),
-                                     12: ('T', 'TB', 'teraybte'),
-                                     13: ('P', 'PB', 'petabyte'),  # yeah, right.
-                                     15: ('E', 'EB', 'exabyte'),
-                                     18: ('Z', 'ZB', 'zettabyte'),
-                                     19: ('Y', 'YB', 'yottabyte')
-                                     },
-                             'binary': {  # n * (2 ** u) = b; b / (2 ** u) = u
-                                     -1: ('nybble', 'nibble', 'nyble', 'half-byte', 'tetrade', 'nibble'),
-                                     10: ('Ki', 'KiB', 'kibibyte'),
-                                     20: ('Mi', 'MiB', 'mebibyte'),
-                                     30: ('Gi', 'GiB', 'gibibyte'),
-                                     40: ('Ti', 'TiB', 'tebibyte'),
-                                     50: ('Pi', 'PiB', 'pebibyte'),
-                                     60: ('Ei', 'EiB', 'exbibyte'),
-                                     70: ('Zi', 'ZiB', 'zebibyte'),
-                                     80: ('Yi', 'YiB', 'yobibyte')
-                                     }}
+            0: (None, 'B', 'byte'),
+            3: ('k', 'kB', 'kilobyte'),
+            6: ('M', 'MB', 'megabyte'),
+            9: ('G', 'GB', 'gigabyte'),
+            12: ('T', 'TB', 'teraybte'),
+            13: ('P', 'PB', 'petabyte'),  # yeah, right.
+            15: ('E', 'EB', 'exabyte'),
+            18: ('Z', 'ZB', 'zettabyte'),
+            19: ('Y', 'YB', 'yottabyte')
+            },
+            'binary': {  # n * (2 ** u) = b; b / (2 ** u) = u
+                -1: ('nybble', 'nibble', 'nyble', 'half-byte', 'tetrade', 'nibble'),
+                10: ('Ki', 'KiB', 'kibibyte'),
+                20: ('Mi', 'MiB', 'mebibyte'),
+                30: ('Gi', 'GiB', 'gibibyte'),
+                40: ('Ti', 'TiB', 'tebibyte'),
+                50: ('Pi', 'PiB', 'pebibyte'),
+                60: ('Ei', 'EiB', 'exbibyte'),
+                70: ('Zi', 'ZiB', 'zebibyte'),
+                80: ('Yi', 'YiB', 'yobibyte')
+                }}
         # https://en.wikipedia.org/wiki/Bit#Multiple_bits - note that 8 bits = 1 byte
         self.bwUnits = {'decimal': {  # n * (10 ** u) = b; b / (10 ** u) = u
-                                0: (None, 'b', 'bit'),
-                                3: ('k', 'kb', 'kilobit'),
-                                6: ('M', 'Mb', 'megabit'),
-                                9: ('G', 'Gb', 'gigabit'),
-                                12: ('T', 'Tb', 'terabit'),
-                                13: ('P', 'Pb', 'petabit'),
-                                15: ('E', 'Eb', 'exabit'),
-                                18: ('Z', 'Zb', 'zettabit'),
-                                19: ('Y', 'Yb', 'yottabit')
-                                },
-                        'binary': {  # n * (2 ** u) = b; b / (2 ** u) = u
-                                -1: ('semi-octet', 'quartet', 'quadbit'),
-                                10: ('Ki', 'Kib', 'kibibit'),
-                                20: ('Mi', 'Mib', 'mebibit'),
-                                30: ('Gi', 'Gib', 'gibibit'),
-                                40: ('Ti', 'Tib', 'tebibit'),
-                                50: ('Pi', 'Pib', 'pebibit'),
-                                60: ('Ei', 'Eib', 'exbibit'),
-                                70: ('Zi', 'Zib', 'zebibit'),
-                                80: ('Yi', 'Yib', 'yobibit')
-                                }}
+            0: (None, 'b', 'bit'),
+            3: ('k', 'kb', 'kilobit'),
+            6: ('M', 'Mb', 'megabit'),
+            9: ('G', 'Gb', 'gigabit'),
+            12: ('T', 'Tb', 'terabit'),
+            13: ('P', 'Pb', 'petabit'),
+            15: ('E', 'Eb', 'exabit'),
+            18: ('Z', 'Zb', 'zettabit'),
+            19: ('Y', 'Yb', 'yottabit')
+            },
+            'binary': {  # n * (2 ** u) = b; b / (2 ** u) = u
+                -1: ('semi-octet', 'quartet', 'quadbit'),
+                10: ('Ki', 'Kib', 'kibibit'),
+                20: ('Mi', 'Mib', 'mebibit'),
+                30: ('Gi', 'Gib', 'gibibit'),
+                40: ('Ti', 'Tib', 'tebibit'),
+                50: ('Pi', 'Pib', 'pebibit'),
+                60: ('Ei', 'Eib', 'exbibit'),
+                70: ('Zi', 'Zib', 'zebibit'),
+                80: ('Yi', 'Yib', 'yobibit')
+                }}
         self.valid_storage = []
         for unit_type, convpair in self.storageUnits.items():
             for f, l in convpair.items():

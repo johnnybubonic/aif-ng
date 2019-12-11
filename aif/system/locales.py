@@ -1,4 +1,5 @@
 import configparser
+import copy
 import io
 import os
 import re
@@ -78,7 +79,7 @@ class Locale(object):
             else:
                 ldef_name = _locale_def_re.sub(r'\g<1>\g<2>', locale)
                 lpath = os.path.join(localesrcdir, 'locales', ldef_name)
-            env = dict(os.environ).copy()
+            env = copy.deepycopy(dict(os.environ))
             env['I18NPATH'] = localesrcdir
             subprocess.run(['localedef',
                             '--force',

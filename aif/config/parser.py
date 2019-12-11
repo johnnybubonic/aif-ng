@@ -36,6 +36,7 @@ class Config(object):
         if not xsdpath:
             xsdpath = self.xsd_path
         raw_xsd = None
+        base_url = None
         if xsdpath:
             xsdpath = os.path.abspath(os.path.expanduser(xsdpath))
             if not os.path.isfile(xsdpath):
@@ -43,11 +44,12 @@ class Config(object):
                                   'does not exist on the local filesystem'))
             with open(xsdpath, 'rb') as fh:
                 raw_xsd = fh.read()
+            base_url = os.path.split(xsdpath)[0]
         else:
             xsi = self.xml.nsmap.get('xsi', 'http://www.w3.org/2001/XMLSchema-instance')
             schemaLocation = '{{{0}}}schemaLocation'.format(xsi)
             schemaURL = self.xml.attrib.get(schemaLocation,
-                                            'https://aif-ng.io/aif.xsd?ref={0}'.format(self.xml.attrib['version']))
+                                            'https://schema.xml.r00t2.io/projects/aif.xsd')
             split_url = schemaURL.split()
             if len(split_url) == 2:  # a properly defined schemaLocation
                 schemaURL = split_url[1]
@@ -58,7 +60,8 @@ class Config(object):
                 # TODO: logging!
                 raise RuntimeError('Could not download XSD')
             raw_xsd = req.content
-        self.xsd = etree.XMLSchema(etree.XML(raw_xsd))
+            base_url = os.path.split(req.url)[0]  # This makes me feel dirty.
+        self.xsd = etree.XMLSchema(etree.XML(raw_xsd, base_url = base_url))
         return()
 
     def parseRaw(self, parser = None):
