@@ -1,3 +1,4 @@
+import logging
 import math
 import os
 import pathlib
@@ -7,14 +8,24 @@ import subprocess
 ##
 import psutil
 ##
+from . import parser
 from . import file_handler
 from . import gpg_handler
 from . import hash_handler
+from . import sources
+
+
+_logger = logging.getLogger('utils.__init__')
 
 
 def checkMounted(devpath):
-    if devpath in [p.device for p in psutil.disk_partitions(all = True)]:
-        raise RuntimeError('{0} is mounted; we are cowardly refusing to destructive operations on it'.format(devpath))
+    for p in psutil.disk_partitions(all = True):
+        if p.device == devpath:
+            _logger.error(('{0} is mounted at {1} but was specified as a target. '
+                           'Cowardly refusing to run potentially destructive operations on it.').format(devpath,
+                                                                                                        p.mountpoint))
+            # TODO: raise only if not dryrun? Raise warning instead if so?
+            raise RuntimeError('Device mounted in live environment')
     return(None)
 
 
@@ -104,6 +115,7 @@ def kernelFilesystems():
                 FS_FSTYPES.append(l[0])
             else:
                 FS_FSTYPES.append(l[1])
+    _logger.debug('Built list of pre-loaded filesystem types: {0}'.format(','.join(FS_FSTYPES)))
     _mod_dir = os.path.join('/lib/modules',
                             os.uname().release,
                             'kernel/fs')
@@ -119,14 +131,23 @@ def kernelFilesystems():
                 fs_name = mod_name.group('fsname')
             if fs_name:
                 # The kernel *probably* has autoloading enabled, but in case it doesn't...
-                # TODO: logging!
                 if os.getuid() == 0:
-                    subprocess.run(['modprobe', fs_name])
+                    cmd = subprocess.run(['modprobe', fs_name], stderr = subprocess.PIPE, stdout = subprocess.PIPE)
+                    _logger.debug('Executed: {0}'.format(' '.join(cmd.args)))
+                    if cmd.returncode != 0:
+                        _logger.warning('Command returned non-zero status')
+                        _logger.debug('Exit status: {0}'.format(str(cmd.returncode)))
+                        for a in ('stdout', 'stderr'):
+                            x = getattr(cmd, a)
+                            if x:
+                                _logger.debug('{0}: {1}'.format(a.upper(), x.decode('utf-8').strip()))
                     FS_FSTYPES.append(fs_name)
     except FileNotFoundError:
         # We're running on a kernel that doesn't have modules
+        _logger.info('Kernel has no modules available')
         pass
     FS_FSTYPES = sorted(list(set(FS_FSTYPES)))
+    _logger.debug('Generated full list of FS_FSTYPES: {0}'.format(','.join(FS_FSTYPES)))
     return(FS_FSTYPES)
 
 
@@ -143,16 +164,16 @@ def xmlBool(xmlobj):
 
 
 class _Sizer(object):
-    def __init__(self):
-        # We use different methods for converting between storage and BW, and different multipliers for each subtype.
-        # https://stackoverflow.com/a/12912296/733214
-        # https://stackoverflow.com/a/52684562/733214
-        # https://stackoverflow.com/questions/5194057/better-way-to-convert-file-sizes-in-python
-        # https://en.wikipedia.org/wiki/Orders_of_magnitude_(data)
-        # https://en.wikipedia.org/wiki/Binary_prefix
-        # 'decimal' is base-10, 'binary' is base-2. (Duh.)
-        # "b" = bytes, "n" = given value, and "u" = unit suffix's key in below notes.
-        self.storageUnits = {'decimal': {  # n * (10 ** u) = b; b / (10 ** u) = u
+    # We use different methods for converting between storage and BW, and different multipliers for each subtype.
+    # https://stackoverflow.com/a/12912296/733214
+    # https://stackoverflow.com/a/52684562/733214
+    # https://stackoverflow.com/questions/5194057/better-way-to-convert-file-sizes-in-python
+    # https://en.wikipedia.org/wiki/Orders_of_magnitude_(data)
+    # https://en.wikipedia.org/wiki/Binary_prefix
+    # 'decimal' is base-10, 'binary' is base-2. (Duh.)
+    # "b" = bytes, "n" = given value, and "u" = unit suffix's key in below notes.
+    storageUnits = {
+        'decimal': {  # n * (10 ** u) = b; b / (10 ** u) = u
             0: (None, 'B', 'byte'),
             3: ('k', 'kB', 'kilobyte'),
             6: ('M', 'MB', 'megabyte'),
@@ -163,19 +184,20 @@ class _Sizer(object):
             18: ('Z', 'ZB', 'zettabyte'),
             19: ('Y', 'YB', 'yottabyte')
             },
-            'binary': {  # n * (2 ** u) = b; b / (2 ** u) = u
-                -1: ('nybble', 'nibble', 'nyble', 'half-byte', 'tetrade', 'nibble'),
-                10: ('Ki', 'KiB', 'kibibyte'),
-                20: ('Mi', 'MiB', 'mebibyte'),
-                30: ('Gi', 'GiB', 'gibibyte'),
-                40: ('Ti', 'TiB', 'tebibyte'),
-                50: ('Pi', 'PiB', 'pebibyte'),
-                60: ('Ei', 'EiB', 'exbibyte'),
-                70: ('Zi', 'ZiB', 'zebibyte'),
-                80: ('Yi', 'YiB', 'yobibyte')
-                }}
-        # https://en.wikipedia.org/wiki/Bit#Multiple_bits - note that 8 bits = 1 byte
-        self.bwUnits = {'decimal': {  # n * (10 ** u) = b; b / (10 ** u) = u
+        'binary': {  # n * (2 ** u) = b; b / (2 ** u) = u
+            -1: ('nybble', 'nibble', 'nyble', 'half-byte', 'tetrade', 'nibble'),
+            10: ('Ki', 'KiB', 'kibibyte'),
+            20: ('Mi', 'MiB', 'mebibyte'),
+            30: ('Gi', 'GiB', 'gibibyte'),
+            40: ('Ti', 'TiB', 'tebibyte'),
+            50: ('Pi', 'PiB', 'pebibyte'),
+            60: ('Ei', 'EiB', 'exbibyte'),
+            70: ('Zi', 'ZiB', 'zebibyte'),
+            80: ('Yi', 'YiB', 'yobibyte')
+            }}
+    # https://en.wikipedia.org/wiki/Bit#Multiple_bits - note that 8 bits = 1 byte
+    bwUnits = {
+        'decimal': {  # n * (10 ** u) = b; b / (10 ** u) = u
             0: (None, 'b', 'bit'),
             3: ('k', 'kb', 'kilobit'),
             6: ('M', 'Mb', 'megabit'),
@@ -186,29 +208,32 @@ class _Sizer(object):
             18: ('Z', 'Zb', 'zettabit'),
             19: ('Y', 'Yb', 'yottabit')
             },
-            'binary': {  # n * (2 ** u) = b; b / (2 ** u) = u
-                -1: ('semi-octet', 'quartet', 'quadbit'),
-                10: ('Ki', 'Kib', 'kibibit'),
-                20: ('Mi', 'Mib', 'mebibit'),
-                30: ('Gi', 'Gib', 'gibibit'),
-                40: ('Ti', 'Tib', 'tebibit'),
-                50: ('Pi', 'Pib', 'pebibit'),
-                60: ('Ei', 'Eib', 'exbibit'),
-                70: ('Zi', 'Zib', 'zebibit'),
-                80: ('Yi', 'Yib', 'yobibit')
-                }}
-        self.valid_storage = []
-        for unit_type, convpair in self.storageUnits.items():
-            for f, l in convpair.items():
-                for suffix in l:
-                    if suffix not in self.valid_storage and suffix:
-                        self.valid_storage.append(suffix)
-        self.valid_bw = []
-        for unit_type, convpair in self.bwUnits.items():
-            for f, l in convpair.items():
-                for suffix in l:
-                    if suffix not in self.valid_bw and suffix:
-                        self.valid_bw.append(suffix)
+        'binary': {  # n * (2 ** u) = b; b / (2 ** u) = u
+            -1: ('semi-octet', 'quartet', 'quadbit'),
+            10: ('Ki', 'Kib', 'kibibit'),
+            20: ('Mi', 'Mib', 'mebibit'),
+            30: ('Gi', 'Gib', 'gibibit'),
+            40: ('Ti', 'Tib', 'tebibit'),
+            50: ('Pi', 'Pib', 'pebibit'),
+            60: ('Ei', 'Eib', 'exbibit'),
+            70: ('Zi', 'Zib', 'zebibit'),
+            80: ('Yi', 'Yib', 'yobibit')
+            }}
+    valid_storage = []
+    for unit_type, convpair in storageUnits.items():
+        for f, l in convpair.items():
+            for suffix in l:
+                if suffix not in valid_storage and suffix:
+                    valid_storage.append(suffix)
+    valid_bw = []
+    for unit_type, convpair in bwUnits.items():
+        for f, l in convpair.items():
+            for suffix in l:
+                if suffix not in valid_bw and suffix:
+                    valid_bw.append(suffix)
+
+    def __init__(self):
+        pass
 
     def convert(self, n, suffix):
         conversion = {}
@@ -227,6 +252,7 @@ class _Sizer(object):
         conversion = None
         base_factors = []
         if suffix not in self.valid_bw:
+            _logger.error('Passed an invalid suffix')
             raise ValueError('suffix is not a valid unit notation for this conversion')
         if target and target not in self.valid_bw:
             raise ValueError('target is not a valid unit notation for this conversion')
@@ -310,4 +336,3 @@ def convertSizeUnit(pos):
     else:
         raise ValueError('Invalid size specified: {0}'.format(orig_pos))
     return((from_beginning, _size, amt_type))
-

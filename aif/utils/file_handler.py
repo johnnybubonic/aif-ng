@@ -9,7 +9,7 @@ class File(object):
         self.path_rel = pathlib.PurePosixPath(self.orig_path)
         self.path_full = pathlib.PurePosixPath(self.fullpath)
 
-    def __str(self):
+    def __str__(self):
         return(self.fullpath)
 
 

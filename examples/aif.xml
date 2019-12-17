@@ -5,12 +5,20 @@
      chrootPath="/mnt/aif"
      reboot="false">
     <bootstrap>
-        <tarball>https://arch.mirror.square-r00t.net/iso/latest/archlinux-bootstrap-2019.12.01-x86_64.tar.gz</tarball>
+<!--        <tarball>-->
+<!--            https://arch.mirror.square-r00t.net/iso/latest/archlinux-bootstrap-2019.12.01-x86_64.tar.gz-->
+<!--        </tarball>-->
+        <tarball>
+            file:///tmp/archlinux-bootstrap-2019.12.01-x86_64.tar.gz
+        </tarball>
         <verify>
             <gpg>
                 <sigs>
+<!--                    <signatureFile>-->
+<!--                        https://arch.mirror.square-r00t.net/iso/latest/archlinux-bootstrap-2019.12.01-x86_64.tar.gz.sig-->
+<!--                    </signatureFile>-->
                     <signatureFile>
-                        https://arch.mirror.square-r00t.net/iso/latest/archlinux-bootstrap-2019.12.01-x86_64.tar.gz.sig
+                        file:///tmp/archlinux-bootstrap-2019.12.01-x86_64.tar.gz.sig
                     </signatureFile>
                 </sigs>
                 <keys>
@@ -18,8 +26,12 @@
                 </keys>
             </gpg>
             <hash>
-                <checksumFile hashType="md5">http://arch.mirror.square-r00t.net/iso/latest/md5sums.txt</checksumFile>
-                <checksumFile hashType="sha1">http://arch.mirror.square-r00t.net/iso/latest/sha1sums.txt</checksumFile>
+                <checksumFile hashType="md5" fileType="gnu">
+                    http://arch.mirror.square-r00t.net/iso/latest/md5sums.txt
+                </checksumFile>
+                <checksumFile hashType="sha1" fileType="gnu">
+                    http://arch.mirror.square-r00t.net/iso/latest/sha1sums.txt
+                </checksumFile>
             </hash>
         </verify>
     </bootstrap>

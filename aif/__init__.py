@@ -1,16 +1,25 @@
+import logging
+##
 try:
     from . import constants
+    _has_constants = True
 except ImportError:
     from . import constants_fallback as constants
+    _has_constants = False
+from . import log
 from . import constants_fallback
 from . import utils
 from . import disk
 from . import system
 from . import config
 from . import envsetup
-from . import log
 from . import network
 from . import pacman
+
+
+_logger = logging.getLogger('AIF')
+if not _has_constants:
+    _logger.warning('Could not import constants, so using constants_fallback as constants')
 
 
 class AIF(object):

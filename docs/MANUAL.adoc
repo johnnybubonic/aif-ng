@@ -129,7 +129,6 @@ Configure your bootloader to add the following options as necessary:
 ^m|aif_auth |(see <<aif_url, below>>)
 ^m|aif_username |(see <<aif_url, below>>)
 ^m|aif_password |(see <<aif_url, below>>)
-^m|aif_realm |(see <<aif_url, below>>)
 |======================
 
 [[aif_url]]
@@ -143,7 +142,6 @@ Configure your bootloader to add the following options as necessary:
 * If `aif_url` is an HTTP/HTTPS URL, then `aif_user` is the username to use with the https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#4xx_Client_errors[401^] (https://tools.ietf.org/html/rfc7235[RFC 7235^]) auth (via `aif_auth`).
 ** If `aif_url` is an FTP/FTPS URI, then `aif_user` will be the FTP user.
 ** The same behavior applies for `aif_password`.
-* If `aif_auth` is `digest`, this is the realm we would use (we attempt to "guess" if it isn’t specified); otherwise it is ignored.
 
 == Building a compatible LiveCD
 The default Arch install CD does not have AIF installed (hopefully, this will change someday). You have two options for using AIF-NG.
@@ -537,7 +535,6 @@ The `/aif/scripts/script` elements specify scripts to be run at different stages
 ^m|authtype |Same behavior as <<starting_an_install, `aif_auth`>> but for fetching this script (see also <<aif_url, further notes>> on this)
 ^m|user |Same behavior as <<starting_an_install, `aif_user`>> but for fetching this script (see also <<aif_url, further notes>> on this)
 ^m|password |Same behavior as <<starting_an_install, `aif_password`>> but for fetching this script (see also <<aif_url, further notes>> on this)
-^m|realm |Same behavior as <<starting_an_install, `aif_realm`>> but for fetching this script (see also <<aif_url, further notes>> on this)
 ^m|execution |(see <<script_types, below>>)
 |======================
 
@@ -555,6 +552,67 @@ There are several script types availabe for `execution`. Currently, these are:
 Here you will find further info and other resources relating to AIF-NG.
 
 == FAQ
+
+=== "How do I make AIF-NG operate entirely offline?"
+
+This is cooked right in, but takes a little extra work.
+
+1.) First you'll need to locally clone the supporting XSD (XML schemas) that AIF-NG uses to verify the configuration file:
+
+`/var/tmp/aif/xml`
+[source,bash]
+----
+mkdir -p /var/tmp/aif
+cd /var/tmp/aif
+git clone https://git.square-r00t.net/XML xml
+----
+
+The path you clone it to isn't important as long as you're consistent below.
+
+2.) Then edit your AIF-NG configuration file to source this directory for XML verification:
+
+`aif.xml` (before)
+[source,xml]
+----
+     xsi:schemaLocation="https://aif-ng.io/ http://schema.xml.r00t2.io/projects/aif.xsd"
+----
+
+`aif.xml` (after)
+[source,xml]
+----
+     xsi:schemaLocation="https://aif-ng.io/ file:///var/tmp/aif/xml/schema/projects/aif.xsd"
+----
+
+The XSD files use includes with relative paths, so the rest of that is automagic.
+
+3.) Use local file:// URIs in the rest of your AIF-NG configuration file.
+e.g.:
+
+[source,xml]
+----
+<tarball>file:///var/tmp/aif/bootstrap.tar.gz</tarball>
+----
+
+and
+
+[source,xml]
+----
+<signatureFile>file:///var/tmp/aif/bootstrap.tar.gz.sig</signatureFile>
+----
+
+etc.
+
+Obviously you need to *download* those files to their respective destinations first, however.
+
+4.) Lastly, ensure you only use local pacman mirrors in your config. This gets tricky because the chroot will not have a way to access the hosts filesystem without creating e.g. a bind mount beforehand.
+
+As long as:
+
+* No remote locations are specified in your AIF-NG configuration file...
+* *and it is completely and well defined*...
+* and your scripts don't make remote calls,
+
+then it shouldn't try to perform any remote operations.
 
 === "I specified start sector as 0 for a GPT-labeled disk but it starts at sector 2048 instead. What gives?"
 GPT requires 33 sectors for the table at the beginning (and 32 sectors at the end) for the actual table. That plus an extra (usually) 512 bytes at the beginning for something called a https://en.wikipedia.org/wiki/GUID_Partition_Table#Protective_MBR_(LBA_0)[Protective MBR^] (this prevents disk utilities from overwriting the GPT label automatically in case they only recognize "msdos" labels and assume the disk is not formatted yet).

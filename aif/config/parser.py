@@ -1,9 +1,12 @@
 import copy
+import logging
 import os
 import re
 ##
 import requests
 from lxml import etree, objectify
+
+_logger = logging.getLogger('config:{0}'.format(__name__))
 
 
 class Config(object):
@@ -55,12 +58,18 @@ class Config(object):
                 schemaURL = split_url[1]
             else:
                 schemaURL = split_url[0]  # a LAZY schemaLocation
-            req = requests.get(schemaURL)
-            if not req.ok:
-                # TODO: logging!
-                raise RuntimeError('Could not download XSD')
-            raw_xsd = req.content
-            base_url = os.path.split(req.url)[0]  # This makes me feel dirty.
+            if schemaURL.startswith('file://'):
+                schemaURL = re.sub(r'^file://', r'', schemaURL)
+                with open(schemaURL, 'rb') as fh:
+                    raw_xsd = fh.read()
+                base_url = os.path.dirname(schemaURL)
+            else:
+                req = requests.get(schemaURL)
+                if not req.ok:
+                    # TODO: logging!
+                    raise RuntimeError('Could not download XSD')
+                raw_xsd = req.content
+                base_url = os.path.split(req.url)[0]  # This makes me feel dirty.
         self.xsd = etree.XMLSchema(etree.XML(raw_xsd, base_url = base_url))
         return(None)
 
@@ -197,7 +206,7 @@ class ConfigBin(Config):
 
 
 detector = {'raw': (re.compile(r'^\s*(?P<xml><(\?xml|aif)\s+.*)\s*$', re.DOTALL | re.MULTILINE), ConfigStr),
-            'remote': (re.compile(r'^(?P<uri>(?P<proto>(https?|ftps?)://)(?P<path>.*))\s*$'), RemoteFile),
+            'remote': (re.compile(r'^(?P<uri>(?P<scheme>(https?|ftps?)://)(?P<path>.*))\s*$'), RemoteFile),
             'local': (re.compile(r'^(file://)?(?P<path>(/?[^/]+)+/?)$'), LocalFile)}
 
 

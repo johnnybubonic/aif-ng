@@ -22,6 +22,7 @@ EXTERNAL_DEPS = ['blkinfo',
                  'pytz',
                  'requests',
                  'validators']
+DEFAULT_LOGFILE = '/var/log/aif.log'
 # PARTED FLAG INDEXING
 PARTED_FSTYPES = sorted(list(dict(vars(parted.filesystem))['fileSystemType'].keys()))
 PARTED_FSTYPES_GUIDS = {'affs0': uuid.UUID(hex = '0FC63DAF-8483-4772-8E79-3D69D8477DE4'),
