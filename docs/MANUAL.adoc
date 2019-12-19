@@ -546,9 +546,10 @@ There are several script types availabe for `execution`. Currently, these are:
 * pkg
 * post
 
-*pre* scripts are run (in numerical `order`) before the disks are even formatted. *pkg* scripts are run (in numerical `order`) right before the <<code_package_code, packages>> are installed (this allows you to configure an <<command, alternate packager>> such as https://aur.archlinux.org/packages/apacman/[apacman^]) -- these are run *inside* the chroot of the new install. *post* scripts are run inside the chroot like *pkg*, but are executed very last thing, just before the reboot.
+*pre* scripts are run (in specified order) before the disks are even formatted. *pkg* scripts are run (in specified order) right before the <<code_package_code, packages>> are installed (this allows you to configure an <<command, alternate packager>> such as https://aur.archlinux.org/packages/apacman/[apacman^]) -- these are run *inside* the chroot of the new install. *post* scripts are run inside the chroot like *pkg*, but are executed very last thing, just before the reboot.
 
 = Further Information
+
 Here you will find further info and other resources relating to AIF-NG.
 
 == FAQ
@@ -614,6 +615,8 @@ As long as:
 
 then it shouldn't try to perform any remote operations.
 
+Note that if you specified a GPG verification, you'll need to use a local exported key file for the public key (`keyFile`); if you use a `keyID`, then AIF-NG will try to fetch the key from keyservers.
+
 === "I specified start sector as 0 for a GPT-labeled disk but it starts at sector 2048 instead. What gives?"
 GPT requires 33 sectors for the table at the beginning (and 32 sectors at the end) for the actual table. That plus an extra (usually) 512 bytes at the beginning for something called a https://en.wikipedia.org/wiki/GUID_Partition_Table#Protective_MBR_(LBA_0)[Protective MBR^] (this prevents disk utilities from overwriting the GPT label automatically in case they only recognize "msdos" labels and assume the disk is not formatted yet).
 
@@ -661,6 +664,19 @@ Because captive portals are a thing. *Authing* to them, however; that's out of m
 You can't, currently; support is only stubbed out for now. If absolutely necessary, you can manually configure it yourself via a `/aif/scripts/post/script` script.
 
 This hopefully will be changed in the future, however, as I'm interested in adding support. For now, open and WPA/WPA2 PSK only are considered supported.
+
+=== "How do I use my own GnuPG homedir instead of letting AIF-NG create one automatically?"
+I can pretty easily add support for this -- it's stubbed in already. But there are a couple reasons it doesn't really make sense to do so:
+
+* Being that most people are probably using this from a LiveCD/LiveUSB/PXE/whatever, it's *highly* unlikely they'll even have a static GnuPG homedir available.
+* Even if they did, AIF-NG has no real way of running a passphrase prompt. It's intended to be run automatically, non-interactively, and daemonized. You'd have to have a passphrase-less private key for it to work.
+** Why? Because it needs to be able to sign and trust the key ID you specified to get an accurate validity reading of the signature. If the private key has a passphrase, this is required for the operation to complete. If a custom homedir with a passphrased private key was specified, the signature's signer's public key would already need to be imported into the keyring, signed, AND trusted (with a sufficiently high enough level).
+
+=== "Why do I have to specify a URI or key ID for a GPG key but can include a raw text block for a GPG `signature`?"
+Because keys are (generally speaking) intended to be publicly fetchable in some form or another. `signatures` are not (necessarily); they're more geared towards being file objects. I definitely recommend using `signatureFile` instead, though, even if it's just to a local .sig/.asc file.
+
+=== "Why don't you support WKD for GPG key fetching?"
+Because I didn't. If there is interest, I can add support for it but please don't request it unless you plan on actually using it.
 
 == Bug Reports/Feature Requests
 NOTE: It is possible to submit a bug or feature request without registering in my bugtracker. One of my pet peeves is needing to create an account/register on a bugtracker simply to report a bug! The following links only require an email address to file a bug (which is necessary in case I need any further clarification from you or to keep you updated on the status of the bug/feature request -- so please be sure to use a valid email address).

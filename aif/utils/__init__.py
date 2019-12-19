@@ -252,9 +252,10 @@ class _Sizer(object):
         conversion = None
         base_factors = []
         if suffix not in self.valid_bw:
-            _logger.error('Passed an invalid suffix')
+            _logger.error('Suffix {0} is invalid; must be one of {1}'.format(suffix, ','.join(self.valid_bw)))
             raise ValueError('suffix is not a valid unit notation for this conversion')
         if target and target not in self.valid_bw:
+            _logger.error('Target {0} is invalid; must be one of {1}'.format(target, ','.join(self.valid_bw)))
             raise ValueError('target is not a valid unit notation for this conversion')
         for (_unit_type, _base) in (('decimal', 10), ('binary', 2)):
             if target and base_factors:
@@ -282,8 +283,10 @@ class _Sizer(object):
         conversion = None
         base_factors = []
         if suffix not in self.valid_storage:
+            _logger.error('Suffix {0} is invalid; must be one of {1}'.format(suffix, ','.join(self.valid_storage)))
             raise ValueError('suffix is not a valid unit notation for this conversion')
         if target and target not in self.valid_storage:
+            _logger.error('Target {0} is invalid; must be one of {1}'.format(target, ','.join(self.valid_storage)))
             raise ValueError('target is not a valid unit notation for this conversion')
         for (_unit_type, _base) in (('decimal', 10), ('binary', 2)):
             if target and base_factors:
@@ -334,5 +337,6 @@ def convertSizeUnit(pos):
         _size = int(pos.group('size'))
         amt_type = pos.group('pct_unit_or_sct').strip()
     else:
-        raise ValueError('Invalid size specified: {0}'.format(orig_pos))
+        _logger.error('Size {0} is invalid; did not match {1}'.format(orig_pos, _pos_re.pattern))
+        raise ValueError('Invalid size specified')
     return((from_beginning, _size, amt_type))

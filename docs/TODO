@@ -51,3 +51,12 @@ https://msdn.microsoft.com/en-us/library/dd489258.aspx
 if i ever need a list of GPT GUIDs, maybe to do some fancy GUID-to-name-and-back mapping?
 https://en.wikipedia.org/wiki/GUID_Partition_Table#Partition_type_GUIDs
 (mapping can be done via https://stackoverflow.com/questions/483666/reverse-invert-a-dictionary-mapping)
+
+
+
+docs todo:
+- syntax notation:
+bold element/attribute names are required (only specified once).
+regular are optional.
+italicized means there can be multiple (none, one or many) specified.
+italicized and bold means there must be at LEAST one.
