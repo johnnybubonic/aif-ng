@@ -107,7 +107,7 @@
         </lvm>
         <mdadm>
             <!-- level can be 0, 1, 4, 5, 6, or 10. RAID 1+0 (which is different from mdadm RAID10) would be done by
-                 creating an array with members of a previously assembled array. -->
+                 creating an array with members of a previously defined array. -->
             <array id="mdadm1" name="data" meta="1.2" level="1">
                 <member source="raid1_d1"/>
                 <member source="raid1_d2"/>

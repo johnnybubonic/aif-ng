@@ -133,7 +133,7 @@ def kernelFilesystems():
                 # The kernel *probably* has autoloading enabled, but in case it doesn't...
                 if os.getuid() == 0:
                     cmd = subprocess.run(['modprobe', fs_name], stderr = subprocess.PIPE, stdout = subprocess.PIPE)
-                    _logger.debug('Executed: {0}'.format(' '.join(cmd.args)))
+                    _logger.info('Executed: {0}'.format(' '.join(cmd.args)))
                     if cmd.returncode != 0:
                         _logger.warning('Command returned non-zero status')
                         _logger.debug('Exit status: {0}'.format(str(cmd.returncode)))
@@ -154,7 +154,7 @@ def kernelFilesystems():
 def xmlBool(xmlobj):
     # https://bugs.launchpad.net/lxml/+bug/1850221
     if isinstance(xmlobj, bool):
-        return (xmlobj)
+        return(xmlobj)
     if xmlobj.lower() in ('1', 'true'):
         return(True)
     elif xmlobj.lower() in ('0', 'false'):

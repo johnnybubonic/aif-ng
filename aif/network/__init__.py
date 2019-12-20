@@ -58,4 +58,4 @@ class Net(object):
                 realdest = os.path.join(chroot_base, dest)
                 os.symlink(src, realdest)
             iface.writeConf(chroot_base)
-        return ()
+        return(None)

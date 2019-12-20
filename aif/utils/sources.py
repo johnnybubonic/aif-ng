@@ -23,7 +23,7 @@ class ChecksumFile(object):
     def __init__(self, checksum_xml, filetype):
         self.xml = checksum_xml
         if self.xml is not None:
-            _logger.debug('checksum_xml: {0}'.format(etree.tostring(self.xml).decode('utf-8')))
+            _logger.debug('checksum_xml: {0}'.format(etree.tostring(self.xml, with_tail = False).decode('utf-8')))
         else:
             _logger.error('checksum_xml is required but not specified')
             raise ValueError('checksum_xml is required')
@@ -72,7 +72,7 @@ class Downloader(object):
         self.xml = netresource_xml
         _logger.info('Instantiated class {0}'.format(type(self).__name__))
         if netresource_xml is not None:
-            _logger.debug('netresource_xml: {0}'.format(etree.tostring(self.xml).decode('utf-8')))
+            _logger.debug('netresource_xml: {0}'.format(etree.tostring(self.xml, with_tail = False).decode('utf-8')))
         else:
             _logger.error('netresource_xml is required but not specified')
             raise ValueError('netresource_xml is required')
@@ -110,12 +110,12 @@ class Downloader(object):
     def verify(self, verify_xml, *args, **kwargs):
         gpg_xml = verify_xml.find('gpg')
         if gpg_xml is not None:
-            _logger.debug('gpg_xml: {0}'.format(etree.tostring(gpg_xml).decode('utf-8')))
+            _logger.debug('gpg_xml: {0}'.format(etree.tostring(gpg_xml, with_tail = False).decode('utf-8')))
         else:
             _logger.debug('No <gpg> in verify_xml')
         hash_xml = verify_xml.find('hash')
         if hash_xml is not None:
-            _logger.debug('Hash XML: {0}'.format(etree.tostring(hash_xml).decode('utf-8')))
+            _logger.debug('hash_xml: {0}'.format(etree.tostring(hash_xml, with_tail = False).decode('utf-8')))
         else:
             _logger.debug('No <hash> in verify_xml')
         results = {}
@@ -135,15 +135,15 @@ class Downloader(object):
         _logger.debug('GPG primary key: {0}'.format(self.gpg.primary_key.fpr))
         keys_xml = gpg_xml.find('keys')
         if keys_xml is not None:
-            _logger.debug('keys_xml: {0}'.format(etree.tostring(keys_xml).decode('utf-8')))
+            _logger.debug('keys_xml: {0}'.format(etree.tostring(keys_xml, with_tail = False).decode('utf-8')))
         else:
             _logger.error('No required <keys> in gpg_xml')
             raise ValueError('<keys> is required in a GPG verification block')
         sigs_xml = gpg_xml.find('sigs')
         if sigs_xml is not None:
-            _logger.debug('Keys XML: {0}'.format(etree.tostring(keys_xml).decode('utf-8')))
+            _logger.debug('sigs_xml: {0}'.format(etree.tostring(sigs_xml, with_tail = False).decode('utf-8')))
         else:
-            _logger.error('No required <keys> in gpg_xml')
+            _logger.error('No required <sigs> in gpg_xml')
             raise ValueError('<sigs> is required in a GPG verification block')
         fnargs = {'strict': keys_xml.attrib.get('detect')}
         if fnargs['strict']:  # We have to manually do this since it's in our parent's __init__
@@ -157,7 +157,7 @@ class Downloader(object):
         if keys_xml is not None:
             fnargs['keys'] = []
             for key_id_xml in keys_xml.findall('keyID'):
-                _logger.debug('Found <keyID>: {0}'.format(etree.tostring(key_id_xml).decode('utf-8')))
+                _logger.debug('key_id_xml: {0}'.format(etree.tostring(key_id_xml, with_tail = False).decode('utf-8')))
                 if key_id_xml.text == 'auto':
                     _logger.debug('Key ID was set to "auto"; using {0}'.format(aif.constants_fallback.ARCH_RELENG_KEY))
                     self.gpg.findKeyByID(aif.constants_fallback.ARCH_RELENG_KEY, source = 'remote',
@@ -174,7 +174,8 @@ class Downloader(object):
                         raise RuntimeError('Could not find key ID specified')
                 fnargs['keys'].append(k)
             for key_file_xml in keys_xml.findall('keyFile'):
-                _logger.debug('Found <keyFile>: {0}'.format(etree.tostring(key_file_xml).decode('utf-8')))
+                _logger.debug('key_file_xml: {0}'.format(etree.tostring(key_file_xml,
+                                                                        with_tail = False).decode('utf-8')))
                 downloader = getDLHandler(key_file_xml.text.strip())  # Recursive objects for the win?
                 dl = downloader(key_file_xml)
                 dl.get()
@@ -218,7 +219,7 @@ class Downloader(object):
         self.data.seek(0, 0)
         if checksum_file_xml is not None:
             for cksum_xml in checksum_file_xml:
-                _logger.debug('Found <checksumFile>: {0}'.format(etree.tostring(cksum_xml).decode('utf-8')))
+                _logger.debug('cksum_xml: {0}'.format(etree.tostring(cksum_xml, with_tail = False).decode('utf-8')))
                 htype = cksum_xml.attrib['hashType'].strip().lower()
                 ftype = cksum_xml.attrib['fileType'].strip().lower()
                 fname = cksum_xml.attrib.get('filePath',
@@ -237,7 +238,7 @@ class Downloader(object):
                 results.append(result)
         if checksum_xml is not None:
             for cksum_xml in checksum_xml:
-                _logger.debug('Found <checksum>: {0}'.format(etree.tostring(cksum_xml).decode('utf-8')))
+                _logger.debug('cksum_xml: {0}'.format(etree.tostring(cksum_xml, with_tail = False).decode('utf-8')))
                 # Thankfully, this is a LOT easier.
                 htype = cksum_xml.attrib['hashType'].strip().lower()
                 result = (cksum_xml.text.strip().lower() == checksums[htype])

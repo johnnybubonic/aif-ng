@@ -20,7 +20,7 @@ class Config(object):
         self.xsd = None
         self.defaultsParser = None
         self.obj = None
-        _logger.debug('Instantiated {0}.'.format(type(self).__name__))
+        _logger.info('Instantiated {0}.'.format(type(self).__name__))
 
     def main(self, validate = True, populate_defaults = True):
         self.fetch()
@@ -135,7 +135,7 @@ class Config(object):
                 for e in x.xpath(xpathq):
                     e.tag = etree.QName(e).localname
         elif isinstance(obj, (etree._Element, etree._ElementTree)):
-            _logger.debug('XML object provided: {0}'.format(etree.tostring(obj)))
+            _logger.debug('XML object provided: {0}'.format(etree.tostring(obj, with_tail = False).decode('utf-8')))
             obj = copy.deepcopy(obj)
             for e in obj.xpath(xpathq):
                 e.tag = etree.QName(e).localname

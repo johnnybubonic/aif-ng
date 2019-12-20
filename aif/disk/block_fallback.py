@@ -3,8 +3,8 @@
 # https://github.com/dcantrell/pyparted/blob/master/examples/query_device_capacity.py
 # TODO: Remember to replicate genfstab behaviour.
 
+import logging
 import os
-import re
 try:
     # https://stackoverflow.com/a/34812552/733214
     # https://github.com/karelzak/util-linux/blob/master/libmount/python/test_mount_context.py#L6
@@ -15,7 +15,7 @@ except ImportError:
 ##
 import blkinfo
 import parted  # https://www.gnu.org/software/parted/api/index.html
-import psutil
+from lxml import etree
 ##
 import aif.constants
 import aif.utils
@@ -25,14 +25,114 @@ import aif.utils
 #                https://unix.stackexchange.com/questions/325886/bios-gpt-do-we-need-a-boot-flag
 
 
+_logger = logging.getLogger(__name__)
+
+
+class Disk(object):
+    def __init__(self, disk_xml):
+        self.xml = disk_xml
+        _logger.debug('disk_xml: {0}'.format(etree.tostring(self.xml, with_tail = False).decode('utf-8')))
+        self.id = self.xml.attrib['id']
+        self.devpath = os.path.realpath(self.xml.attrib['device'])
+        self.is_lowformatted = None
+        self.is_hiformatted = None
+        self.is_partitioned = None
+        self.partitions = None
+        self._initDisk()
+
+    def _initDisk(self):
+        if self.devpath == 'auto':
+            self.devpath = '/dev/{0}'.format(blkinfo.BlkDiskInfo().get_disks()[0]['kname'])
+        if not os.path.isfile(self.devpath):
+            raise ValueError('{0} does not exist; please specify an explicit device path'.format(self.devpath))
+        self.table_type = self.xml.attrib.get('diskFormat', 'gpt').lower()
+        if self.table_type in ('bios', 'mbr', 'dos'):
+            self.table_type = 'msdos'
+        validlabels = parted.getLabels()
+        if self.table_type not in validlabels:
+            raise ValueError(('Disk format {0} is not valid for this architecture;'
+                              'must be one of: {1}'.format(self.table_type, ', '.join(list(validlabels)))))
+        self.device = parted.getDevice(self.devpath)
+        self.disk = parted.freshDisk(self.device, self.table_type)
+        _logger.debug('Configured parted device for {0}.'.format(self.devpath))
+        self.is_lowformatted = False
+        self.is_hiformatted = False
+        self.is_partitioned = False
+        self.partitions = []
+        return(None)
+
+    def diskFormat(self):
+        if self.is_lowformatted:
+            return(None)
+        # This is a safeguard. We do *not* want to low-format a disk that is mounted.
+        aif.utils.checkMounted(self.devpath)
+        self.disk.deleteAllPartitions()
+        self.disk.commit()
+        self.is_lowformatted = True
+        self.is_partitioned = False
+        return(None)
+
+    def getPartitions(self):
+        # For GPT, this *technically* should be 34 -- or, more precisely, 2048 (see FAQ in manual), but the alignment
+        # optimizer fixes it for us automatically.
+        # But for DOS tables, it's required.
+        _logger.info('Establishing partitions for {0}'.format(self.devpath))
+        if self.table_type == 'msdos':
+            start_sector = 2048
+        else:
+            start_sector = 0
+        self.partitions = []
+        xml_partitions = self.xml.findall('part')
+        for idx, part in enumerate(xml_partitions):
+            partnum = idx + 1
+            if self.table_type == 'gpt':
+                p = Partition(part, self.disk, start_sector, partnum, self.table_type)
+            else:
+                parttype = 'primary'
+                if len(xml_partitions) > 4:
+                    if partnum == 4:
+                        parttype = 'extended'
+                    elif partnum > 4:
+                        parttype = 'logical'
+                p = Partition(part, self.disk, start_sector, partnum, self.table_type, part_type = parttype)
+            start_sector = p.end + 1
+            self.partitions.append(p)
+            _logger.debug('Added partition {0}'.format(p.id))
+        return(None)
+
+    def partFormat(self):
+        if self.is_partitioned:
+            return(None)
+        if not self.is_lowformatted:
+            self.diskFormat()
+        # This is a safeguard. We do *not* want to partition a disk that is mounted.
+        aif.utils.checkMounted(self.devpath)
+        if not self.partitions:
+            self.getPartitions()
+        if not self.partitions:
+            return(None)
+        for p in self.partitions:
+            self.disk.addPartition(partition = p, constraint = self.device.optimalAlignedConstraint)
+            self.disk.commit()
+            p.devpath = p.partition.path
+            p.is_hiformatted = True
+        self.is_partitioned = True
+        return(None)
+
+
 class Partition(object):
     def __init__(self, part_xml, diskobj, start_sector, partnum, tbltype, part_type = None):
         if tbltype not in ('gpt', 'msdos'):
-            raise ValueError('{0} must be one of gpt or msdos'.format(tbltype))
+            _logger.error('Invalid tabletype specified: {0}. Must be one of: gpt,msdos.'.format(tbltype))
+            raise ValueError('Invalid tbltype.')
         if tbltype == 'msdos' and part_type not in ('primary', 'extended', 'logical'):
-            raise ValueError(('You must specify if this is a '
-                              'primary, extended, or logical partition for msdos partition tables'))
+            _logger.error(('Table type msdos requires the part_type to be specified and must be one of: primary,'
+                           'extended,logical (instead of: {0}).').format(part_type))
+            raise ValueError('The part_type must be specified for msdos tables')
         self.xml = part_xml
+        _logger.debug('part_xml: {0}'.format(etree.tostring(self.xml, with_tail = False).decode('utf-8')))
+        _logger.debug('Partition number: {0}'.format(partnum))
+        _logger.debug('Partition table type: {0}.'.format(tbltype))
         self.id = self.xml.attrib['id']
         self.flags = set()
         for f in self.xml.findall('partitionFlag'):
@@ -58,6 +158,7 @@ class Partition(object):
         self.disk = diskobj
         self.device = self.disk.device
         self.devpath = '{0}{1}'.format(self.device.path, self.partnum)
+        _logger.debug('Assigned to disk: {0} ({1}) at path {2}'.format(self.disk.id, self.device, self.devpath))
         self.is_hiformatted = False
         sizes = {}
         for s in ('start', 'stop'):
@@ -86,6 +187,7 @@ class Partition(object):
                 self.end = (self.device.getLength() - 1) - sizes['stop'][0]
         else:
             self.end = self.begin + sizes['stop'][0]
+        _logger.debug('Size: sector {0} to {1}.'.format(self.begin, self.end))
         # TECHNICALLY we could craft the Geometry object with "length = ...", but it doesn't let us be explicit
         # in configs. So we manually crunch the numbers and do it all at the end.
         self.geometry = parted.Geometry(device = self.device,
@@ -110,94 +212,7 @@ class Partition(object):
             # self.partition.name = self.xml.attrib.get('name')
             _pedpart = self.partition.getPedPartition()
             _pedpart.set_name(self.xml.attrib['name'])
+            _logger.debug('Partition name: {0}'.format(self.xml.attrib['name']))
     #
     # def detect(self):
     #     pass  # TODO; blkinfo?
-
-
-class Disk(object):
-    def __init__(self, disk_xml):
-        self.xml = disk_xml
-        self.id = self.xml.attrib['id']
-        self.devpath = os.path.realpath(self.xml.attrib['device'])
-        self.is_lowformatted = None
-        self.is_hiformatted = None
-        self.is_partitioned = None
-        self.partitions = None
-        self._initDisk()
-
-    def _initDisk(self):
-        if self.devpath == 'auto':
-            self.devpath = '/dev/{0}'.format(blkinfo.BlkDiskInfo().get_disks()[0]['kname'])
-        if not os.path.isfile(self.devpath):
-            raise ValueError('{0} does not exist; please specify an explicit device path'.format(self.devpath))
-        self.table_type = self.xml.attrib.get('diskFormat', 'gpt').lower()
-        if self.table_type in ('bios', 'mbr', 'dos'):
-            self.table_type = 'msdos'
-        validlabels = parted.getLabels()
-        if self.table_type not in validlabels:
-            raise ValueError(('Disk format {0} is not valid for this architecture;'
-                              'must be one of: {1}'.format(self.table_type, ', '.join(list(validlabels)))))
-        self.device = parted.getDevice(self.devpath)
-        self.disk = parted.freshDisk(self.device, self.table_type)
-        self.is_lowformatted = False
-        self.is_hiformatted = False
-        self.is_partitioned = False
-        self.partitions = []
-        return(None)
-
-    def diskFormat(self):
-        if self.is_lowformatted:
-            return(None)
-        # This is a safeguard. We do *not* want to low-format a disk that is mounted.
-        aif.utils.checkMounted(self.devpath)
-        self.disk.deleteAllPartitions()
-        self.disk.commit()
-        self.is_lowformatted = True
-        self.is_partitioned = False
-        return(None)
-
-    def getPartitions(self):
-        # For GPT, this *technically* should be 34 -- or, more precisely, 2048 (see FAQ in manual), but the alignment
-        # optimizer fixes it for us automatically.
-        # But for DOS tables, it's required.
-        if self.table_type == 'msdos':
-            start_sector = 2048
-        else:
-            start_sector = 0
-        self.partitions = []
-        xml_partitions = self.xml.findall('part')
-        for idx, part in enumerate(xml_partitions):
-            partnum = idx + 1
-            if self.table_type == 'gpt':
-                p = Partition(part, self.disk, start_sector, partnum, self.table_type)
-            else:
-                parttype = 'primary'
-                if len(xml_partitions) > 4:
-                    if partnum == 4:
-                        parttype = 'extended'
-                    elif partnum > 4:
-                        parttype = 'logical'
-                p = Partition(part, self.disk, start_sector, partnum, self.table_type, part_type = parttype)
-            start_sector = p.end + 1
-            self.partitions.append(p)
-        return(None)
-
-    def partFormat(self):
-        if self.is_partitioned:
-            return(None)
-        if not self.is_lowformatted:
-            self.diskFormat()
-        # This is a safeguard. We do *not* want to partition a disk that is mounted.
-        aif.utils.checkMounted(self.devpath)
-        if not self.partitions:
-            self.getPartitions()
-        if not self.partitions:
-            return(None)
-        for p in self.partitions:
-            self.disk.addPartition(partition = p, constraint = self.device.optimalAlignedConstraint)
-            self.disk.commit()
-            p.devpath = p.partition.path
-            p.is_hiformatted = True
-        self.is_partitioned = True
-        return(None)

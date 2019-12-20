@@ -554,8 +554,22 @@ Here you will find further info and other resources relating to AIF-NG.
 
 == FAQ
 
-=== "How do I make AIF-NG operate entirely offline?"
+=== "Eww, why XML?"
+Because it's the superior format for this:
 
+* It supports in-spec validation of data values and data types, formatting of data levels, required data objects and at certain occurrence levels, etc. (unlike JSON, YAML, INI, etc.). Both in and out of channel.
+** This means it's MUCH easier for code/language/project/etc.-agnostic software to create, generate, and validate a configuration profile.
+* It supports inclusion via XInclude, letting you standardize your configuration snippets across multiple configuration profiles (unlike JSON, YAML, INI, etc.).
+* It supports sane nesting (unlike INI).
+* It supports attributes to data objects (unlike JSON, YAML, INI, etc.).
+* While certainly not used as extensively as it could be in this particular project, it supports namespacing -- and referential namespacing at that, providing a URI to get more info about a certain namespace. JSON, YAML, INI, etc. all do not.
+* It is not whitespace-sensitive to denote significance/levels of objects (unlike YAML and, in some cases, INI). This allows for whitespace compression (commonly referred to as "minifying") while still being able to completely retain whitespace inside data's content.
+** And as a result, it requires MUCH less escaping and post-parsing cleanup like e.g. JSON and YAML do.
+* and so on.
+
+Trust me. XML is superior, especially when needing to represent something as complex as *an entire OS install*. Sorry not sorry to all the bigmad webdevs and DevOps-y people out there. JSON and YAML actually do suck.
+
+=== "How do I make AIF-NG operate entirely offline?"
 This is cooked right in, but takes a little extra work.
 
 1.) First you'll need to locally clone the supporting XSD (XML schemas) that AIF-NG uses to verify the configuration file:
@@ -631,6 +645,18 @@ See above.
 Using `start`/`stop` attributes makes sense for disk partitions because they operate on actual geometry (positions on-disk); that is, this lets you create a "gap" between partitions on the disk which can be helpful if you want to do any modifications to the partition table afterwards (this is also why partitions are processed in the order they're specified).
 
 LVM (LVs, in particular), however, aren't consecutive. There *is* no concept of a "start" and "stop" for an LV; LVM uses chunks called "(physical) extents" rather than sectors, and VGs don't have geometry since they're essentially a pool of blocks. This is also why the modifiers like `-` and `+` aren't allowed for LV sizes - they're position-based.
+
+=== "How can I use a whole disk as an MDADM member?"
+TL;DR: https://unix.stackexchange.com/questions/320103/whats-the-difference-between-creating-mdadm-array-using-partitions-or-the-whole[You don't^]. You just don't.
+
+The long-winded answer: it's a terrible idea. I'm not here to criticize how you want to structure your install, but I'm definitely going to try to prevent some dumb mistakes from being made. This is one of them.
+
+It can cause a whole slew of issues:, including but not limited to:
+
+* Inflexible disk replacement. Disk geometry (low-level formatting, etc.) can https://queue.acm.org/detail.cfm?id=864058[vary wildly across vendors and models^]. When you have to replace a disk in your degraded RAID array, you're going to be in for a nasty surprise (loss of performance, incompatible size, etc.) when one vendor aligned their e.g. 1TB disk to 512 blocks and the other to 128 blocks (because there are some dumb vendors out there). If you try to replace a disk in a RAID-1 with mismatched size, even by a couple blocks, you're gonna have a bad time.
+* Your motherboard may arbitrarily wipe out the RAID superblocks. http://forum.asrock.com/forum_posts.asp?TID=10174[(source)^] https://news.ycombinator.com/item?id=18541493[source^] https://www.phoronix.com/scan.php?page=news_item&px=Linux-Software-RAID-ASRock[source^]
+* It can cause some weird issues with e.g. LVM on top of the array. https://askubuntu.com/questions/860643/raid-array-doesnt-reassemble-after-reboot[source^] https://superuser.com/questions/1492938/mdadm-raid-underlaying-an-lvm-gone-after-reboot[source^]
+* You can't put a bootloader or EFI System Partition on the disk.
 
 === "How do I specify packages from the AUR?"
 You'd have to https://wiki.archlinux.org/index.php/Makepkg[build the package(s)^], https://wiki.archlinux.org/index.php/Pacman/Tips_and_tricks#Custom_local_repository[set up a repository^], serve it via e.g. https://www.nginx.com/[nginx^], and add it as a repo (`/aif/pacman/repos/repo`) first. Then you can specify the package as normal as a `/aif/pacman/software/package` item.
