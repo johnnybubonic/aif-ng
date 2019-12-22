@@ -217,7 +217,6 @@ class LUKS(object):
             _logger.error('Secrets must be added before the configuration can be written.')
             raise RuntimeError('Missing secrets')
         conf = os.path.join(chroot_base, 'etc', 'crypttab')
-        initconf = '{0}.initramfs'.format(conf)
         with open(conf, 'r') as fh:
             conflines = fh.read().splitlines()
         # Get UUID
@@ -239,5 +238,8 @@ class LUKS(object):
         if luksinfo not in conflines:
             with open(conf, 'a') as fh:
                 fh.write('{0}\n'.format(luksinfo))
+        if init_hook:
+            _logger.debug('Symlinked initramfs crypttab.')
+            os.symlink('/etc/crypttab', os.path.join(chroot_base, 'etc', 'crypttab.initramfs'))
         _logger.debug('Generated crypttab line: {0}'.format(luksinfo))
         return(None)
