@@ -1,11 +1,13 @@
 import copy
 import datetime
+import logging
 import os
 import re
 import subprocess
 import uuid
 ##
 import mdstat
+from lxml import etree
 ##
 import aif.disk.block_fallback as block
 import aif.disk.luks_fallback as luks

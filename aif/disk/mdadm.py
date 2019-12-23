@@ -1,7 +1,10 @@
 import datetime
+import logging
 import os
 import re
 import uuid
+##
+from lxml import etree
 ##
 import aif.utils
 import aif.constants
@@ -11,24 +14,29 @@ import aif.disk.luks as luks
 import aif.disk.lvm as lvm
 
 
+_logger = logging.getLogger(__name__)
+
+
 _BlockDev = _common.BlockDev
 
 
 class Member(object):
     def __init__(self, member_xml, partobj):
         self.xml = member_xml
+        _logger.debug('member_xml: {0}'.format(etree.tostring(self.xml, with_tail = False).decode('utf-8')))
         self.device = partobj
         if not isinstance(self.device, (block.Disk,
                                         block.Partition,
                                         Array,
                                         luks.LUKS,
                                         lvm.LV)):
-            raise ValueError(('partobj must be of type '
-                              'aif.disk.block.Disk, '
-                              'aif.disk.block.Partition, '
-                              'aif.disk.luks.LUKS, '
-                              'aif.disk.lvm.LV, or'
-                              'aif.disk.mdadm.Array'))
+            _logger.error(('partobj must be of type '
+                           'aif.disk.block.Disk, '
+                           'aif.disk.block.Partition, '
+                           'aif.disk.luks.LUKS, '
+                           'aif.disk.lvm.LV, or'
+                           'aif.disk.mdadm.Array.'))
+            raise ValueError('Invalid partobj type')
         _common.addBDPlugin('mdraid')
         self.devpath = self.device.devpath
         self.is_superblocked = None
@@ -36,12 +44,14 @@ class Member(object):
         self._parseDeviceBlock()
 
     def _parseDeviceBlock(self):
+        _logger.info('Parsing {0} device block metainfo.'.format(self.devpath))
         # TODO: parity with mdadm_fallback.Member._parseDeviceBlock
         #       key names currently (probably) don't match and need to confirm the information's all present
         block = {}
         try:
             _block = _BlockDev.md.examine(self.devpath)
         except _BlockDev.MDRaidError:
+            _logger.debug('Member device is not a member yet.')
             self.is_superblocked = False
             self.superblock = None
             return(None)
@@ -59,6 +69,7 @@ class Member(object):
                 v = uuid.UUID(hex = v)
             block[k] = v
         self.superblock = block
+        _logger.debug('Rendered superblock info: {0}'.format(block))
         self.is_superblocked = True
         return(None)
 
@@ -75,26 +86,33 @@ class Member(object):
 class Array(object):
     def __init__(self, array_xml, homehost, devpath = None):
         self.xml = array_xml
+        _logger.debug('array_xml: {0}'.format(etree.tostring(array_xml, with_tail = False).decode('utf-8')))
         self.id = self.xml.attrib['id']
         self.level = int(self.xml.attrib['level'])
         if self.level not in aif.constants.MDADM_SUPPORTED_LEVELS:
-            raise ValueError('RAID level must be one of: {0}'.format(', '.join([str(i)
-                                                                                for i in
-                                                                                aif.constants.MDADM_SUPPORTED_LEVELS])))
+            _logger.error(('RAID level ({0}) must be one of: '
+                           '{1}.').format(self.level,
+                                         ', '.join([str(i) for i in aif.constants.MDADM_SUPPORTED_LEVELS])))
+            raise ValueError('Invalid RAID level')
         self.metadata = self.xml.attrib.get('meta', '1.2')
         if self.metadata not in aif.constants.MDADM_SUPPORTED_METADATA:
-            raise ValueError('Metadata version must be one of: {0}'.format(', '.join(
-                                                                            aif.constants.MDADM_SUPPORTED_METADATA)))
+            _logger.error(('Metadata version ({0}) must be one of: '
+                           '{1}.').format(self.metadata, ', '.join(aif.constants.MDADM_SUPPORTED_METADATA)))
+            raise ValueError('Invalid metadata version')
         _common.addBDPlugin('mdraid')
         self.chunksize = int(self.xml.attrib.get('chunkSize', 512))
         if self.level in (4, 5, 6, 10):
             if not aif.utils.isPowerofTwo(self.chunksize):
-                # TODO: log.warn instead of raise exception? Will mdadm lose its marbles if it *isn't* a proper number?
-                raise ValueError('chunksize must be a power of 2 for the RAID level you specified')
+                # TODO: warn instead of raise exception? Will mdadm lose its marbles if it *isn't* a proper number?
+                _logger.error('Chunksize ({0}) must be a power of 2 for RAID level {1}.'.format(self.chunksize,
+                                                                                                self.level))
+                raise ValueError('Invalid chunksize')
         if self.level in (0, 4, 5, 6, 10):
             if not aif.utils.hasSafeChunks(self.chunksize):
-                # TODO: log.warn instead of raise exception? Will mdadm lose its marbles if it *isn't* a proper number?
-                raise ValueError('chunksize must be divisible by 4 for the RAID level you specified')
+                # TODO: warn instead of raise exception? Will mdadm lose its marbles if it *isn't* a proper number?
+                _logger.error('Chunksize ({0}) must be divisible by 4 for RAID level {1}'.format(self.chunksize,
+                                                                                                 self.level))
+                raise ValueError('Invalid chunksize')
         self.layout = self.xml.attrib.get('layout', 'none')
         if self.level in aif.constants.MDADM_SUPPORTED_LAYOUTS.keys():
             matcher, layout_default = aif.constants.MDADM_SUPPORTED_LAYOUTS[self.level]
@@ -102,7 +120,8 @@ class Array(object):
                 if layout_default:
                     self.layout = layout_default
                 else:
-                    self.layout = None  # TODO: log.warn?
+                    _logger.warning('Did not detect a valid layout.')
+                    self.layout = None
         else:
             self.layout = None
         self.name = self.xml.attrib['name']
@@ -118,7 +137,8 @@ class Array(object):
 
     def addMember(self, memberobj):
         if not isinstance(memberobj, Member):
-            raise ValueError('memberobj must be of type aif.disk.mdadm.Member')
+            _logger.error('memberobj must be of type aif.disk.mdadm.Member.')
+            raise TypeError('Invalid memberobj type')
         memberobj.prepare()
         self.members.append(memberobj)
         return(None)
