@@ -37,7 +37,7 @@ class FS(object):
                            'aif.disk.luks.LUKS, '
                            'aif.disk.lvm.LV, or'
                            'aif.disk.mdadm.Array.'))
-            raise ValueError('Invalid sourceobj type')
+            raise TypeError('Invalid sourceobj type')
         self.source = sourceobj
         self.devpath = sourceobj.devpath
         self.formatted = False
@@ -83,7 +83,7 @@ class Mount(object):
         _logger.debug('mount_xml: {0}'.format(etree.tostring(self.xml, with_tail = False).decode('utf-8')))
         if not isinstance(fsobj, FS):
             _logger.error('partobj must be of type aif.disk.filesystem.FS.')
-            raise ValueError('Invalid type for fsobj')
+            raise TypeError('Invalid fsobj type')
         _common.addBDPlugin('fs')  # We *could* use the UDisks dbus to mount too, but best to stay within libblockdev.
         self.id = self.xml.attrib['id']
         self.fs = fsobj

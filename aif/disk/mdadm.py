@@ -36,7 +36,7 @@ class Member(object):
                            'aif.disk.luks.LUKS, '
                            'aif.disk.lvm.LV, or'
                            'aif.disk.mdadm.Array.'))
-            raise ValueError('Invalid partobj type')
+            raise TypeError('Invalid partobj type')
         _common.addBDPlugin('mdraid')
         self.devpath = self.device.devpath
         self.is_superblocked = None
@@ -92,7 +92,7 @@ class Array(object):
         if self.level not in aif.constants.MDADM_SUPPORTED_LEVELS:
             _logger.error(('RAID level ({0}) must be one of: '
                            '{1}.').format(self.level,
-                                         ', '.join([str(i) for i in aif.constants.MDADM_SUPPORTED_LEVELS])))
+                                          ', '.join([str(i) for i in aif.constants.MDADM_SUPPORTED_LEVELS])))
             raise ValueError('Invalid RAID level')
         self.metadata = self.xml.attrib.get('meta', '1.2')
         if self.metadata not in aif.constants.MDADM_SUPPORTED_METADATA:
@@ -145,7 +145,8 @@ class Array(object):
 
     def create(self):
         if not self.members:
-            raise RuntimeError('Cannot create an array with no members')
+            _logger.error('Cannot create an array with no members.')
+            raise RuntimeError('Missing members')
         opts = [_BlockDev.ExtraArg.new('--homehost',
                                        self.homehost),
                 _BlockDev.ExtraArg.new('--name',
@@ -170,8 +171,10 @@ class Array(object):
         return(None)
 
     def start(self, scan = False):
+        _logger.info('Starting array {0}.'.format(self.name))
         if not any((self.members, self.devpath)):
-            raise RuntimeError('Cannot assemble an array with no members (for hints) or device path')
+            _logger.error('Cannot assemble an array with no members (for hints) or device path.')
+            raise RuntimeError('Cannot start unspecified array')
         if scan:
             target = None
         else:
@@ -185,6 +188,7 @@ class Array(object):
         return(None)
 
     def stop(self):
+        _logger.error('Stopping aray {0}.'.format(self.name))
         _BlockDev.md.deactivate(self.name)
         self.state = 'disassembled'
         return(None)
@@ -209,10 +213,11 @@ class Array(object):
                 v = uuid.UUID(hex = v)
             info[k] = v
         self.info = info
+        _logger.debug('Rendered info: {0}'.format(info))
         return(None)
 
-    def writeConf(self, conf = '/etc/mdadm.conf'):
-        conf = os.path.realpath(conf)
+    def writeConf(self, chroot_base):
+        conf = os.path.join(chroot_base, 'etc', 'mdadm.conf')
         with open(conf, 'r') as fh:
             conflines = fh.read().splitlines()
         arrayinfo = ('ARRAY '
@@ -227,10 +232,9 @@ class Array(object):
             for l in conflines:
                 if r.search(l):
                     nodev = False
-                    # TODO: logging?
-                    # and/or Raise an exception here;
-                    # an array already exists with that name but not with the same opts/GUID/etc.
-                    break
+                    # TODO: warning and skip instead?
+                    _logger.error('An array already exists with that name but not with the same opts/GUID/etc.')
+                    raise RuntimeError('Duplicate array')
             if nodev:
                 with open(conf, 'a') as fh:
                     fh.write('{0}\n'.format(arrayinfo))

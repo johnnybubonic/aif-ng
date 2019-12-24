@@ -32,7 +32,7 @@ class FS(object):
                            'aif.disk.luks.LUKS, '
                            'aif.disk.lvm.LV, or'
                            'aif.disk.mdadm.Array.'))
-            raise ValueError('Invalid sourceobj type')
+            raise TypeError('Invalid sourceobj type')
         self.id = self.xml.attrib['id']
         self.source = sourceobj
         self.devpath = sourceobj.devpath
@@ -77,7 +77,7 @@ class Mount(object):
         self.id = self.xml.attrib['id']
         if not isinstance(fsobj, FS):
             _logger.error('partobj must be of type aif.disk.filesystem.FS.')
-            raise ValueError('Invalid type for fsobj')
+            raise TypeError('Invalid fsobj type')
         self.id = self.xml.attrib['id']
         self.fs = fsobj
         self.source = self.fs.devpath

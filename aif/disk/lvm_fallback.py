@@ -26,7 +26,7 @@ class LV(object):
         self.pvs = []
         if not isinstance(self.vg, VG):
             _logger.debug('vgobj must be of type aif.disk.lvm.VG')
-            raise ValueError('Invalid vgobj type')
+            raise TypeError('Invalid vgobj type')
         self.info = None
         self.devpath = '/dev/{0}/{1}'.format(self.vg.name, self.name)
         self.created = False
@@ -211,7 +211,7 @@ class PV(object):
                            'aif.disk.block.Partition, '
                            'aif.disk.luks.LUKS, or'
                            'aif.disk.mdadm.Array.'))
-            raise ValueError('Invalid partobj type')
+            raise TypeError('Invalid partobj type')
         self.devpath = self.device.devpath
         self.is_pooled = False
         self.meta = None
@@ -327,7 +327,7 @@ class VG(object):
     def addPV(self, pvobj):
         if not isinstance(pvobj, PV):
             _logger.error('pvobj must be of type aif.disk.lvm.PV.')
-            raise ValueError('Invalid pvbobj type')
+            raise TypeError('Invalid pvbobj type')
         pvobj.prepare()
         self.pvs.append(pvobj)
         return(None)

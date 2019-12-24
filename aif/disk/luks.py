@@ -72,7 +72,7 @@ class LUKS(object):
                            'aif.disk.block.Partition, '
                            'aif.disk.lvm.LV, or'
                            'aif.disk.mdadm.Array.'))
-            raise ValueError('Invalid partobj type')
+            raise TypeError('Invalid partobj type')
         _common.addBDPlugin('crypto')
         self.devpath = '/dev/mapper/{0}'.format(self.name)
         self.info = None
@@ -83,7 +83,7 @@ class LUKS(object):
                           'aif.disk.luks.LuksSecret '
                           '(aif.disk.luks.LuksSecretPassphrase or '
                           'aif.disk.luks.LuksSecretFile).')
-            raise ValueError('Invalid secretobj type')
+            raise TypeError('Invalid secretobj type')
         self.secrets.append(secretobj)
         return(None)
 

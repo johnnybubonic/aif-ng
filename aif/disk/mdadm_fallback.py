@@ -16,6 +16,9 @@ import aif.utils
 import aif.constants
 
 
+_logger = logging.getLogger(__name__)
+
+
 _mdblock_size_re = re.compile(r'^(?P<sectors>[0-9]+)\s+'
                               r'\((?P<GiB>[0-9.]+)\s+GiB\s+'
                               r'(?P<GB>[0-9.]+)\s+GB\)')
@@ -29,14 +32,18 @@ _mdblock_badblock_re = re.compile(r'^(?P<entries>[0-9]+)\s+entries'
 class Member(object):
     def __init__(self, member_xml, partobj):
         self.xml = member_xml
+        _logger.debug('member_xml: {0}'.format(etree.tostring(self.xml, with_tail = False).decode('utf-8')))
         self.device = partobj
         if not isinstance(self.device, (block.Partition,
                                         block.Disk,
                                         Array,
                                         lvm.LV,
                                         luks.LUKS)):
-            raise ValueError(('partobj must be of type aif.disk.block.Partition, '
-                              'aif.disk.block.Disk, or aif.disk.mdadm.Array'))
+            _logger.error(('partobj must be of type '
+                           'aif.disk.block.Partition, '
+                           'aif.disk.block.Disk, or '
+                           'aif.disk.mdadm.Array'))
+            raise TypeError('Invalid partobj type')
         self.devpath = self.device.devpath
         self.is_superblocked = None
         self.superblock = None
@@ -47,8 +54,14 @@ class Member(object):
         _super = subprocess.run(['mdadm', '--examine', self.devpath],
                                 stdout = subprocess.PIPE,
                                 stderr = subprocess.PIPE)
+        _logger.info('Executed: {0}'.format(' '.join(_super.args)))
         if _super.returncode != 0:
-            # TODO: logging?
+            _logger.warning('Command returned non-zero status')
+            _logger.debug('Exit status: {0}'.format(str(_super.returncode)))
+            for a in ('stdout', 'stderr'):
+                x = getattr(_super, a)
+                if x:
+                    _logger.debug('{0}: {1}'.format(a.upper(), x.decode('utf-8').strip()))
             self.is_superblocked = False
             self.superblock = None
             return(None)
@@ -117,13 +130,23 @@ class Member(object):
                 v = int(v.split(None, 1)[0])
             block[k] = v
         self.superblock = block
+        _logger.debug('Rendered superblock info: {0}'.format(block))
         self.is_superblocked = True
         return(None)
 
     def prepare(self):
         if self.is_superblocked:
-            # TODO: logging
-            subprocess.run(['mdadm', '--misc', '--zero-superblock', self.devpath])
+            cmd = subprocess.run(['mdadm', '--misc', '--zero-superblock', self.devpath],
+                                 stdout = subprocess.PIPE,
+                                 stderr = subprocess.PIPE)
+            _logger.info('Executed: {0}'.format(' '.join(cmd.args)))
+            if cmd.returncode != 0:
+                _logger.warning('Command returned non-zero status')
+                _logger.debug('Exit status: {0}'.format(str(cmd.returncode)))
+                for a in ('stdout', 'stderr'):
+                    x = getattr(cmd, a)
+                    if x:
+                        _logger.debug('{0}: {1}'.format(a.upper(), x.decode('utf-8').strip()))
             self.is_superblocked = False
         self._parseDeviceBlock()
         return(None)
@@ -132,25 +155,31 @@ class Member(object):
 class Array(object):
     def __init__(self, array_xml, homehost, devpath = None):
         self.xml = array_xml
+        _logger.debug('array_xml: {0}'.format(etree.tostring(self.xml, with_tail = False).decode('utf-8')))
         self.id = self.xml.attrib['id']
         self.level = int(self.xml.attrib['level'])
         if self.level not in aif.constants.MDADM_SUPPORTED_LEVELS:
-            raise ValueError('RAID level must be one of: {0}'.format(', '.join([str(i)
-                                                                                for i in
-                                                                                aif.constants.MDADM_SUPPORTED_LEVELS])))
+            _logger.error(('RAID level ({0}) must be one of: '
+                           '{1}').format(self.level, ', '.join([str(i) for i in aif.constants.MDADM_SUPPORTED_LEVELS])))
+            raise ValueError('Invalid RAID level')
         self.metadata = self.xml.attrib.get('meta', '1.2')
         if self.metadata not in aif.constants.MDADM_SUPPORTED_METADATA:
-            raise ValueError('Metadata version must be one of: {0}'.format(', '.join(
-                                                                            aif.constants.MDADM_SUPPORTED_METADATA)))
+            _logger.error(('Metadata version ({0}) must be one of: '
+                           '{1}').format(self.metadata, ', '.join(aif.constants.MDADM_SUPPORTED_METADATA)))
+            raise ValueError('Invalid metadata version')
         self.chunksize = int(self.xml.attrib.get('chunkSize', 512))
         if self.level in (4, 5, 6, 10):
             if not aif.utils.isPowerofTwo(self.chunksize):
-                # TODO: log.warn instead of raise exception? Will mdadm lose its marbles if it *isn't* a proper number?
-                raise ValueError('chunksize must be a power of 2 for the RAID level you specified')
+                # TODO: warn instead of raise exception? Will mdadm lose its marbles if it *isn't* a proper number?
+                _logger.error('Chunksize ({0}) must be a power of 2 for RAID level {1}.'.format(self.chunksize,
+                                                                                                self.level))
+                raise ValueError('Invalid chunksize')
         if self.level in (0, 4, 5, 6, 10):
             if not aif.utils.hasSafeChunks(self.chunksize):
-                # TODO: log.warn instead of raise exception? Will mdadm lose its marbles if it *isn't* a proper number?
-                raise ValueError('chunksize must be divisible by 4 for the RAID level you specified')
+                # TODO: warn instead of raise exception? Will mdadm lose its marbles if it *isn't* a proper number?
+                _logger.error('Chunksize ({0}) must be divisible by 4 for RAID level {1}'.format(self.chunksize,
+                                                                                                 self.level))
+                raise ValueError('Invalid chunksize')
         self.layout = self.xml.attrib.get('layout', 'none')
         if self.level in aif.constants.MDADM_SUPPORTED_LAYOUTS.keys():
             matcher, layout_default = aif.constants.MDADM_SUPPORTED_LAYOUTS[self.level]
@@ -158,7 +187,8 @@ class Array(object):
                 if layout_default:
                     self.layout = layout_default
                 else:
-                    self.layout = None  # TODO: log.warn?
+                    _logger.warning('Did not detect a valid layout.')
+                    self.layout = None
         else:
             self.layout = None
         self.name = self.xml.attrib['name']
@@ -173,29 +203,40 @@ class Array(object):
 
     def addMember(self, memberobj):
         if not isinstance(memberobj, Member):
-            raise ValueError('memberobj must be of type aif.disk.mdadm.Member')
+            _logger.error('memberobj must be of type aif.disk.mdadm.Member')
+            raise ValueError('Invalid memberobj type')
         memberobj.prepare()
         self.members.append(memberobj)
         return(None)
 
     def create(self):
         if not self.members:
-            raise RuntimeError('Cannot create an array with no members')
-        cmd = ['mdadm', '--create',
-               '--name={0}'.format(self.name),
-               '--bitmap=internal',
-               '--level={0}'.format(self.level),
-               '--metadata={0}'.format(self.metadata),
-               '--chunk={0}'.format(self.chunksize),
-               '--homehost={0}'.format(self.homehost),
-               '--raid-devices={0}'.format(len(self.members))]
+            _logger.error('Cannot create an array with no members.')
+            raise RuntimeError('Missing members')
+        cmd_str = ['mdadm', '--create',
+                   '--name={0}'.format(self.name),
+                   '--bitmap=internal',
+                   '--level={0}'.format(self.level),
+                   '--metadata={0}'.format(self.metadata),
+                   '--chunk={0}'.format(self.chunksize),
+                   '--homehost={0}'.format(self.homehost),
+                   '--raid-devices={0}'.format(len(self.members))]
         if self.layout:
-            cmd.append('--layout={0}'.format(self.layout))
-        cmd.append(self.devpath)
+            cmd_str.append('--layout={0}'.format(self.layout))
+        cmd_str.append(self.devpath)
         for m in self.members:
-            cmd.append(m.devpath)
+            cmd_str.append(m.devpath)
         # TODO: logging!
-        subprocess.run(cmd)
+        cmd = subprocess.run(cmd_str, stdout = subprocess.PIPE, stderr = subprocess.PIPE)
+        _logger.info('Executed: {0}'.format(' '.join(cmd.args)))
+        if cmd.returncode != 0:
+            _logger.warning('Command returned non-zero status')
+            _logger.debug('Exit status: {0}'.format(str(cmd.returncode)))
+            for a in ('stdout', 'stderr'):
+                x = getattr(cmd, a)
+                if x:
+                    _logger.debug('{0}: {1}'.format(a.upper(), x.decode('utf-8').strip()))
+            raise RuntimeError('Failed to create array successfully')
         for m in self.members:
             m._parseDeviceBlock()
         self.updateStatus()
@@ -204,23 +245,44 @@ class Array(object):
         return(None)
 
     def start(self, scan = False):
+        _logger.info('Starting array {0}.'.format(self.name))
         if not any((self.members, self.devpath)):
-            raise RuntimeError('Cannot assemble an array with no members (for hints) or device path')
-        cmd = ['mdadm', '--assemble', self.devpath]
+            _logger.error('Cannot assemble an array with no members (for hints) or device path.')
+            raise RuntimeError('Cannot start unspecified array')
+        cmd_str = ['mdadm', '--assemble', self.devpath]
         if not scan:
             for m in self.members:
-                cmd.append(m.devpath)
+                cmd_str.append(m.devpath)
         else:
-            cmd.append('--scan')
-        # TODO: logging!
-        subprocess.run(cmd)
+            cmd_str.append('--scan')
+        cmd = subprocess.run(cmd_str, stdout = subprocess.PIPE, stderr = subprocess.PIPE)
+        _logger.info('Executed: {0}'.format(' '.join(cmd.args)))
+        if cmd.returncode != 0:
+            _logger.warning('Command returned non-zero status')
+            _logger.debug('Exit status: {0}'.format(str(cmd.returncode)))
+            for a in ('stdout', 'stderr'):
+                x = getattr(cmd, a)
+                if x:
+                    _logger.debug('{0}: {1}'.format(a.upper(), x.decode('utf-8').strip()))
+            raise RuntimeError('Failed to start array successfully')
         self.updateStatus()
         self.state = 'assembled'
         return(None)
 
     def stop(self):
-        # TODO: logging
-        subprocess.run(['mdadm', '--stop', self.devpath])
+        _logger.error('Stopping aray {0}.'.format(self.name))
+        cmd = subprocess.run(['mdadm', '--stop', self.devpath],
+                             stdout = subprocess.PIPE,
+                             stderr = subprocess.PIPE)
+        _logger.info('Executed: {0}'.format(' '.join(cmd.args)))
+        if cmd.returncode != 0:
+            _logger.warning('Command returned non-zero status')
+            _logger.debug('Exit status: {0}'.format(str(cmd.returncode)))
+            for a in ('stdout', 'stderr'):
+                x = getattr(cmd, a)
+                if x:
+                    _logger.debug('{0}: {1}'.format(a.upper(), x.decode('utf-8').strip()))
+            raise RuntimeError('Failed to stop array successfully')
         self.state = 'disassembled'
         return(None)
 
@@ -230,25 +292,35 @@ class Array(object):
             if k != self.name:
                 del(_info['devices'][k])
         self.info = copy.deepcopy(_info)
+        _logger.debug('Rendered info: {0}'.format(_info))
         return(None)
 
-    def writeConf(self, conf = '/etc/mdadm.conf'):
-        conf = os.path.realpath(conf)
+    def writeConf(self, chroot_base):
+        conf = os.path.join(chroot_base, 'etc', 'mdadm.conf')
         with open(conf, 'r') as fh:
             conflines = fh.read().splitlines()
-        # TODO: logging
-        arrayinfo = subprocess.run(['mdadm', '--detail', '--brief', self.devpath],
-                                   stdout = subprocess.PIPE).stdout.decode('utf-8').strip()
+        cmd = subprocess.run(['mdadm', '--detail', '--brief', self.devpath],
+                             stdout = subprocess.PIPE,
+                             stderr = subprocess.PIPE)
+        _logger.info('Executed: {0}'.format(' '.join(cmd.args)))
+        if cmd.returncode != 0:
+            _logger.warning('Command returned non-zero status')
+            _logger.debug('Exit status: {0}'.format(str(cmd.returncode)))
+            for a in ('stdout', 'stderr'):
+                x = getattr(cmd, a)
+                if x:
+                    _logger.debug('{0}: {1}'.format(a.upper(), x.decode('utf-8').strip()))
+            raise RuntimeError('Failed to get information about array successfully')
+        arrayinfo = cmd.stdout.decode('utf-8').strip()
         if arrayinfo not in conflines:
             r = re.compile(r'^ARRAY\s+{0}'.format(self.devpath))
             nodev = True
             for l in conflines:
                 if r.search(l):
                     nodev = False
-                    # TODO: logging?
-                    # and/or Raise an exception here;
-                    # an array already exists with that name but not with the same opts/GUID/etc.
-                    break
+                    # TODO: warning and skip instead?
+                    _logger.error('An array already exists with that name but not with the same opts/GUID/etc.')
+                    raise RuntimeError('Duplicate array')
             if nodev:
                 with open(conf, 'a') as fh:
                     fh.write('{0}\n'.format(arrayinfo))

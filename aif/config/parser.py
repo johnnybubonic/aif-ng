@@ -166,8 +166,9 @@ class Config(object):
                 _logger.debug('Converting instance\'s stripped XML to a string')
                 obj = self.xml
         else:
-            raise ValueError(('obj parameter must be "tree", "xml", or of type '
-                              'lxml.etree._Element or lxml.etree._ElementTree'))
+            _logger.error(('obj parameter must be "tree", "xml", or of type '
+                           'lxml.etree._Element or lxml.etree._ElementTree'))
+            raise TypeError('Invalid obj type')
         obj = copy.deepcopy(obj)
         strxml = etree.tostring(obj,
                                 encoding = 'utf-8',
@@ -263,7 +264,7 @@ def getConfig(cfg_ref, validate = True, populate_defaults = True, xsd_path = Non
             ptrn = re.compile(detector['raw'][0].pattern.encode('utf-8'))
             if not ptrn.search(cfg_ref):
                 _logger.error('Could not detect which configuration type was passed.')
-                raise ValueError('Unespected/unparseable cfg_ref.')
+                raise ValueError('Unexpected/unparseable cfg_ref.')
             else:
                 _logger.info('Config detected as ConfigBin.')
                 cfgobj = ConfigBin(cfg_ref, xsd_path = xsd_path)
