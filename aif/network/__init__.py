@@ -1,4 +1,7 @@
+import logging
 import os
+##
+from lxml import etree
 ##
 from . import _common
 from . import netctl
@@ -21,11 +24,16 @@ from . import networkmanager
 #     from . import networkd_fallback as networkd
 
 
+_logger = logging.getLogger(__name__)
+
+
 class Net(object):
     def __init__(self, chroot_base, network_xml):
         self.xml = network_xml
+        # We don't bother logging the entirety of network_xml here because we do it in the respective networks
         self.chroot_base = chroot_base
         self.hostname = self.xml.attrib['hostname'].strip()
+        _logger.info('Hostname: {0}'.format(self.hostname))
         self.provider = self.xml.attrib.get('provider', 'networkd').strip()
         if self.provider == 'netctl':
             self.provider = netctl
@@ -46,6 +54,7 @@ class Net(object):
             elif e.tag == 'wireless':
                 conn = self.provider.Wireless(e)
             self.connections.append(conn)
+            _logger.info('Added connection of type {0}.'.format(type(conn).__name__))
 
     def apply(self, chroot_base):
         cfg = os.path.join(chroot_base, 'etc', 'hostname')

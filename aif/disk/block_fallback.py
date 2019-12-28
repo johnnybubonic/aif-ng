@@ -44,14 +44,16 @@ class Disk(object):
         if self.devpath == 'auto':
             self.devpath = '/dev/{0}'.format(blkinfo.BlkDiskInfo().get_disks()[0]['kname'])
         if not os.path.isfile(self.devpath):
-            raise ValueError('{0} does not exist; please specify an explicit device path'.format(self.devpath))
+            _logger.error('Disk {0} does not exist; please specify an explicit device path'.format(self.devpath))
+            raise ValueError('Disk not found')
         self.table_type = self.xml.attrib.get('diskFormat', 'gpt').lower()
         if self.table_type in ('bios', 'mbr', 'dos'):
             self.table_type = 'msdos'
         validlabels = parted.getLabels()
         if self.table_type not in validlabels:
-            raise ValueError(('Disk format {0} is not valid for this architecture;'
-                              'must be one of: {1}'.format(self.table_type, ', '.join(list(validlabels)))))
+            _logger.error(('Disk format ({0}) is not valid for this architecture;'
+                           'must be one of: {1}'.format(self.table_type, ', '.join(list(validlabels)))))
+            raise ValueError('Invalid disk format')
         self.device = parted.getDevice(self.devpath)
         self.disk = parted.freshDisk(self.device, self.table_type)
         _logger.debug('Configured parted device for {0}.'.format(self.devpath))
@@ -152,9 +154,10 @@ class Partition(object):
             self.part_type = parted.PARTITION_NORMAL
         self.fs_type = self.xml.attrib['fsType'].lower()
         if self.fs_type not in aif.constants.PARTED_FSTYPES:
-            raise ValueError(('{0} is not a valid partition filesystem type; '
-                              'must be one of: {1}').format(self.xml.attrib['fsType'],
-                                                            ', '.join(sorted(aif.constants.PARTED_FSTYPES))))
+            _logger.error(('{0} is not a valid partition filesystem type; must be one of: '
+                           '{1}').format(self.xml.attrib['fsType'],
+                                         ', '.join(sorted(aif.constants.PARTED_FSTYPES))))
+            raise ValueError('Invalid partition filesystem type')
         self.disk = diskobj
         self.device = self.disk.device
         self.devpath = '{0}{1}'.format(self.device.path, self.partnum)

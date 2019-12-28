@@ -1,3 +1,4 @@
+import logging
 import os
 ##
 # We have to use Jinja2 because while there are ways to *parse* an INI with duplicate keys
@@ -7,6 +8,9 @@ import jinja2
 ##
 import aif.utils
 from . import _common
+
+
+_logger = logging.getLogger(__name__)
 
 
 class Connection(_common.BaseConnection):
@@ -35,6 +39,7 @@ class Connection(_common.BaseConnection):
         self._initJ2()
 
     def _initCfg(self):
+        _logger.info('Building config.')
         if self.device == 'auto':
             self.device = _common.getDefIface(self.connection_type)
         self._cfg = {'Match': {'Name': self.device},
@@ -90,9 +95,11 @@ class Connection(_common.BaseConnection):
             if 'IPv6AcceptRA' not in self._cfg.keys():
                 self._cfg['IPv6AcceptRA'] = {'UseDNS': ('true' if self.auto['resolvers']['ipv6'] else 'false')}
         self._initConnCfg()
+        _logger.info('Config built successfully.')
         return(None)
 
     def _initJ2(self):
+        _logger.debug('Fetching template from networkd.conf.j2')
         self.j2_env = jinja2.Environment(loader = jinja2.FileSystemLoader(searchpath = './'))
         self.j2_env.filters.update(aif.utils.j2_filters)
         self.j2_tpl = self.j2_env.get_template('networkd.conf.j2')
@@ -109,6 +116,9 @@ class Connection(_common.BaseConnection):
         os.chmod(cfgfile, 0o0644)
         os.chown(cfgfile, 0, 0)
         self._writeConnCfg(chroot_base)
+        _logger.info('Wrote: {0}'.format(cfgfile))
+        _logger.debug('Rendering variables: {0}'.format(self._cfg))
+        _logger.debug('Rendered template: {0}'.format(self.j2_tpl.render(cfg = self._cfg)))
         return(None)
 
 
@@ -149,6 +159,7 @@ class Wireless(Connection):
                 self._wpasupp['psk'] = crypto['auth']['psk']
         else:
             self._wpasupp['key_mgmt'] = 'NONE'
+        _logger.debug('Fetching template from wpa_supplicant.conf.j2')
         self.wpasupp_tpl = self.j2_env.get_template('wpa_supplicant.conf.j2')
         self.services[('/usr/lib/systemd/system/wpa_supplicant@.service')] = ('etc/systemd/'
                                                                               'system/'
@@ -167,4 +178,7 @@ class Wireless(Connection):
             fh.write(self.wpasupp_tpl.render(wpa = self._wpasupp))
         os.chown(cfgfile, 0, 0)
         os.chmod(cfgfile, 0o0640)
+        _logger.info('Wrote: {0}'.format(cfgfile))
+        _logger.debug('Rendering variables: {0}'.format(self._wpasupp))
+        _logger.debug('Rendered template: {0}'.format(self.wpasupp_tpl.render(wpa = self._wpasupp)))
         return(None)

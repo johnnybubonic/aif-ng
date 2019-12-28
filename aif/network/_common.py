@@ -1,9 +1,11 @@
 import binascii
 import ipaddress
+import logging
 import os
 import pathlib
 import re
 ##
+from lxml import etree
 from passlib.crypto.digest import pbkdf2_hmac
 from pyroute2 import IPDB
 ##
@@ -15,8 +17,10 @@ import aif.utils
 # from gi.repository import GObject, NM, GLib
 
 
+_logger = logging.getLogger('net:_common')
+
+
 def canonizeEUI(phyaddr):
-    # The easy transformations first.
     phyaddr = re.sub(r'[.:-]', '', phyaddr.upper().strip())
     eui = ':'.join(['{0}'.format(phyaddr[i:i+2]) for i in range(0, 12, 2)])
     return(eui)
@@ -33,6 +37,7 @@ def convertIpTuples(addr_xmlobj):
     else:
         components = addr_xmlobj.text.strip().split('/')
         if len(components) > 2:
+            _logger.error('Too many slashes in IP/CIDR string.')
             raise ValueError('Invalid IP/CIDR format: {0}'.format(addr_xmlobj.text))
         if len(components) == 1:
             addr = ipaddress.ip_address(components[0])
@@ -45,6 +50,8 @@ def convertIpTuples(addr_xmlobj):
         try:
             gw = ipaddress.ip_address(addr_xmlobj.attrib.get('gateway').strip())
         except (ValueError, AttributeError):
+            _logger.warning(('Non-conformant gateway value (attempting automatic gateway address): '
+                             '{0}').format(addr_xmlobj.attrib.get('gateway')))
             gw = next(net.hosts())
     return((addr, net, gw))
 
@@ -53,20 +60,24 @@ def convertPSK(ssid, passphrase):
     try:
         passphrase = passphrase.encode('utf-8').decode('ascii').strip('\r').strip('\n')
     except UnicodeDecodeError:
-        raise ValueError('passphrase must be an ASCII string')
+        _logger.error('WPA passphrase must be an ASCII string')
+        raise ValueError('Passed invalid encoding for WPA PSK string')
     if len(ssid) > 32:
+        _logger.error('')
         raise ValueError('ssid must be <= 32 characters')
     if not 7 < len(passphrase) < 64:
         raise ValueError('passphrase must be >= 8 and <= 32 characters')
     raw_psk = pbkdf2_hmac('sha1', str(passphrase), str(ssid), 4096, 32)
     hex_psk = binascii.hexlify(raw_psk)
     str_psk = hex_psk.decode('utf-8')
+    _logger.debug('Converted ({0}){1} to {2}'.format(str(passphrase), str(ssid), str_psk))
     return(str_psk)
 
 
 def convertWifiCrypto(crypto_xmlobj, ssid):
     crypto = {'type': crypto_xmlobj.find('type').text.strip(),
               'auth': {}}
+    _logger.info('Parsing a WiFi crypto object.')
     creds_xml = crypto_xmlobj.xpath('psk|enterprise')[0]
     # if crypto['type'] in ('wpa', 'wpa2', 'wpa3'):
     if crypto['type'] in ('wpa', 'wpa2'):
@@ -88,6 +99,7 @@ def convertWifiCrypto(crypto_xmlobj, ssid):
     # TODO: enterprise support
     # elif crypto['mode'] == 'enterprise':
     #     pass
+    _logger.debug('Rendered crypto settings: {0}'.format(crypto))
     return(crypto)
 
 
@@ -100,7 +112,8 @@ def getDefIface(ifacetype):
     elif ifacetype == 'wireless':
         prefix = 'wl'
     else:
-        raise ValueError('ifacetype must be one of "ethernet" or "wireless"')
+        _logger.error('ifacetype must be one of "ethernet" or "wireless"')
+        raise ValueError('Invalid iface type')
     ifname = None
     with IPDB() as ipdb:
         for iface in ipdb.interfaces.keys():
@@ -108,6 +121,7 @@ def getDefIface(ifacetype):
                 ifname = iface
                 break
     if not ifname:
+        _logger.warning('Unable to find default interface')
         return(None)
     return(ifname)
 
@@ -125,13 +139,16 @@ def isNotPersistent(chroot_base = '/'):
         return(True)
     cmds = aif.utils.kernelCmdline(chroot_base)
     if 'net.ifnames' in cmds.keys() and cmds['net.ifnames'] == '0':
+        _logger.debug('System network interfaces are not persistent')
         return(True)
+    _logger.debug('System network interfaces are persistent')
     return(False)
 
 
 class BaseConnection(object):
     def __init__(self, iface_xml):
         self.xml = iface_xml
+        _logger.debug('iface_xml: {0}'.format(etree.tostring(self.xml, with_tail = False).decode('utf-8')))
         self.id = self.xml.attrib['id'].strip()
         self.device = self.xml.attrib['device'].strip()
         self.is_defroute = aif.utils.xmlBool(self.xml.attrib.get('defroute', 'false').strip())
@@ -197,6 +214,7 @@ class BaseConnection(object):
         self._initAddrs()
         self._initResolvers()
         self._initRoutes()
+        _logger.info('Instantiated network provider {0}'.format(type(self).__name__))
 
     def _initAddrs(self):
         for addrtype in ('ipv4', 'ipv6'):

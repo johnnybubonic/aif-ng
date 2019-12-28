@@ -187,7 +187,7 @@ class Downloader(object):
                 dl.data.seek(0, 0)
             if not fnargs['keys']:
                 _logger.debug('Found no keys in keys_xml')
-                raise ValueError('Could not find any keys')
+                raise RuntimeError('Could not find any keys')
         if sigs_xml is not None:
             for sig_text_xml in sigs_xml.findall('signature'):
                 _logger.debug('Found <signature>')

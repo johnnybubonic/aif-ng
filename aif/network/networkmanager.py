@@ -1,10 +1,13 @@
 import configparser
 import datetime
+import logging
 import os
 import uuid
 ##
-import aif.utils
 from . import _common
+
+
+_logger = logging.getLogger(__name__)
 
 
 class Connection(_common.BaseConnection):
@@ -26,6 +29,7 @@ class Connection(_common.BaseConnection):
         self.uuid = uuid.uuid4()
 
     def _initCfg(self):
+        _logger.info('Building config.')
         if self.device == 'auto':
             self.device = _common.getDefIface(self.connection_type)
         self._cfg = configparser.ConfigParser()
@@ -89,6 +93,13 @@ class Connection(_common.BaseConnection):
                                                                                         str(net.prefixlen),
                                                                                         str(gw))
         self._initConnCfg()
+        _logger.info('Config built successfully.')
+        # TODO: does this render correctly?
+        # This is only for debug logging.
+        _logout = {}
+        for s in self._cfg.sections():
+            _logout[s] = dict(self._cfg[s])
+        _logger.debug('Config: {0}'.format(_logout))
         return(None)
 
     def writeConf(self, chroot_base):
@@ -109,6 +120,7 @@ class Connection(_common.BaseConnection):
         os.chmod(cfgroot, 0o0755)
         os.chmod(cfgdir, 0o0700)
         os.chmod(cfgpath, 0o0600)
+        _logger.info('Wrote: {0}'.format(cfgpath))
         return(None)
 
 

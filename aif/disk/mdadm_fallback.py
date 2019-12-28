@@ -92,9 +92,8 @@ class Member(object):
             elif k == 'unused_space':
                 r = _mdblock_unused_re.search(v)
                 if not r:
-                    raise ValueError(('Could not parse {0} for '
-                                      '{1}\'s superblock').format(orig_k,
-                                                                  self.devpath))
+                    _logger.error('Could not parse {0} for {1}\'s superblock'.format(orig_k, self.devpath))
+                    raise RuntimeError('Could not parse unused space in superblock')
                 v = {}
                 for i in ('before', 'after'):
                     v[i] = int(r.group(i))  # in sectors
@@ -102,9 +101,8 @@ class Member(object):
                 k = 'badblock_log_entries'
                 r = _mdblock_badblock_re.search(v)
                 if not r:
-                    raise ValueError(('Could not parse {0} for '
-                                      '{1}\'s superblock').format(orig_k,
-                                                                  self.devpath))
+                    _logger.error('Could not parse {0} for {1}\'s superblock'.format(orig_k, self.devpath))
+                    raise RuntimeError('Could not parse badblocks in superblock')
                 v = {}
                 for i in ('entries', 'offset'):
                     v[i] = int(r.group(i)) # offset is in sectors
@@ -118,9 +116,8 @@ class Member(object):
             elif re.search(r'^((avail|used)_dev|array)_size$', k):
                 r = _mdblock_size_re.search(v)
                 if not r:
-                    raise ValueError(('Could not parse {0} for '
-                                      '{1}\'s superblock').format(orig_k,
-                                                                  self.devpath))
+                    _logger.error('Could not parse {0} for {1}\'s superblock'.format(orig_k, self.devpath))
+                    raise RuntimeError('Could not parse size value in superblock')
                 v = {}
                 for i in ('sectors', 'GB', 'GiB'):
                     v[i] = float(r.group(i))
@@ -204,7 +201,7 @@ class Array(object):
     def addMember(self, memberobj):
         if not isinstance(memberobj, Member):
             _logger.error('memberobj must be of type aif.disk.mdadm.Member')
-            raise ValueError('Invalid memberobj type')
+            raise TypeError('Invalid memberobj type')
         memberobj.prepare()
         self.members.append(memberobj)
         return(None)
