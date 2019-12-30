@@ -17,8 +17,8 @@ class Console(object):
     def __init__(self, chroot_base, console_xml):
         self.xml = console_xml
         self.chroot_base = chroot_base
-        self._cfg = configparser.ConfigParser()
-        self._cfg.optionxform(str)
+        self._cfg = configparser.ConfigParser(allow_no_value = True, interpolation = None)
+        self._cfg.optionxform = str
         self.keyboard = Keyboard(self.xml.find('keyboard'))
         self.font = Font(self.xml.find('text'))
         self._cfg['BASE'] = {}

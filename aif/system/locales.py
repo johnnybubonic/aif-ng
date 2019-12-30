@@ -23,7 +23,7 @@ class Locale(object):
         self.syslocales = {}
         self.userlocales = []
         self.rawlocales = None
-        self._localevars = configparser.ConfigParser()
+        self._localevars = configparser.ConfigParser(allow_no_value = True, interpolation = None)
         self._localevars.optionxform = str
         self._localevars['BASE'] = {}
         self._initVars()

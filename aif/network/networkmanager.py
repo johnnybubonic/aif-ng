@@ -32,7 +32,7 @@ class Connection(_common.BaseConnection):
         _logger.info('Building config.')
         if self.device == 'auto':
             self.device = _common.getDefIface(self.connection_type)
-        self._cfg = configparser.ConfigParser()
+        self._cfg = configparser.ConfigParser(allow_no_value = True, interpolation = None)
         self._cfg.optionxform = str
         self._cfg['connection'] = {'id': self.id,
                                    'uuid': self.uuid,
