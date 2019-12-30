@@ -42,6 +42,7 @@ class Net(object):
         elif self.provider == 'networkd':
             self.provider = networkd
         else:
+            _logger.error('Unable to determine which network provider to use based on configuration.')
             raise RuntimeError('Could not determine provider')
         self.connections = []
         self._initConns()
@@ -62,6 +63,7 @@ class Net(object):
             fh.write('{0}\n'.format(self.hostname))
         os.chown(cfg, 0, 0)
         os.chmod(cfg, 0o0644)
+        _logger.info('Wrote: {0}'.format(cfg))
         for iface in self.connections:
             for src, dest in iface.services.items():
                 realdest = os.path.join(chroot_base, dest)

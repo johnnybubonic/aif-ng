@@ -1,8 +1,12 @@
+import logging
 import os
 import pathlib
 import re
 ##
 import aif.utils
+
+
+_logger = logging.getLogger(__name__)
 
 
 _svc_suffixes = ('service', 'socket', 'device', 'mount', 'automount', 'swap', 'target',
@@ -34,6 +38,12 @@ class Service(object):
         else:
             self.unit_file = '{0}.{1}'.format(self.name, self.type)
             self.dest_file = self.unit_file
+        if self.slice:
+            _logger.info('Initialized service: {0}@{1}'.format(self.name, self.slice))
+        else:
+            _logger.info('Initialized service: {0}'.format(self.name))
+        for a in ('name', 'slice', 'type', 'enabled'):
+            _logger.debug('{0}: {1}'.format(a.title(), getattr(self, a)))
 
 
 class ServiceDB(object):
@@ -54,7 +64,11 @@ class ServiceDB(object):
             if svc.enabled:
                 if not os.path.isfile(dest_path):
                     os.symlink(src_path, dest_path)
+                    _logger.info('Created symlink: {0} => {1}'.format(src_path, dest_path))
+                _logger.debug('{0} enabled'.format(svc.name))
             else:
                 if os.path.exists(dest_path):
                     os.remove(dest_path)
+                    _logger.info('Removed file/symlink: {0}'.format(dest_path))
+                _logger.debug('{0} disabled'.format(svc.name))
         return(None)

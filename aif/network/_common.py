@@ -63,10 +63,11 @@ def convertPSK(ssid, passphrase):
         _logger.error('WPA passphrase must be an ASCII string')
         raise ValueError('Passed invalid encoding for WPA PSK string')
     if len(ssid) > 32:
-        _logger.error('')
-        raise ValueError('ssid must be <= 32 characters')
+        _logger.error('SSID must be <= 32 characters long.')
+        raise ValueError('Invalid ssid length')
     if not 7 < len(passphrase) < 64:
-        raise ValueError('passphrase must be >= 8 and <= 32 characters')
+        _logger.error('Passphrase must be >= 8 and <= 32 characters long.')
+        raise ValueError('Invalid passphrase length')
     raw_psk = pbkdf2_hmac('sha1', str(passphrase), str(ssid), 4096, 32)
     hex_psk = binascii.hexlify(raw_psk)
     str_psk = hex_psk.decode('utf-8')
@@ -92,7 +93,8 @@ def convertWifiCrypto(crypto_xmlobj, ssid):
             try:
                 crypto['auth']['passphrase'] = psk_xml.text.strip('\r').strip('\n')
             except UnicodeDecodeError:
-                raise ValueError('WPA-PSK passphrases must be ASCII')
+                _logger.error('WPA-PSK passphrases must be ASCII.')
+                raise ValueError('Invalid WPA-PSK encoding')
             crypto['auth']['psk'] = convertPSK(ssid, crypto['auth']['passphrase'])
         else:
             crypto['auth']['psk'] = psk_xml.text.strip().lower()

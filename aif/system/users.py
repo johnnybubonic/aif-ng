@@ -5,6 +5,7 @@
 # https://wiki.archlinux.org/index.php/users_and_groups#File_list
 
 import datetime
+import logging
 import os
 import re
 import shutil
@@ -15,6 +16,9 @@ import passlib.hash
 ##
 import aif.utils
 import aif.constants_fallback
+
+
+_logger = logging.getLogger(__name__)
 
 
 _skipline_re = re.compile(r'^\s*(#|$)')
@@ -46,11 +50,14 @@ class Group(object):
         else:
             if not self.password:
                 self.password = '!!'
+        _logger.info('Rendered G=group entry')
+        for a in ('name', 'gid', 'password', 'create'):
+            _logger.debug('{0}: {1}'.format(a.title(), getattr(self, a)))
 
     def genFileLine(self):
         if not self.gid:
-            raise RuntimeError(('Group objects must have a gid set before their '
-                                'group/gshadow entries can be generated'))
+            _logger.error('Group objects must have a gid set before their group/gshadow entries can be generated')
+            raise RuntimeError('Need GID')
         # group(5)
         self.group_entry = [self.name,  # Group name
                             'x',  # Password, normally, but we use shadow for this
@@ -61,6 +68,8 @@ class Group(object):
                               (self.password.hash if self.password.hash else '!!'),  # Password hash (if it has one)
                               ','.join(self.admins),  # Users with administrative control of group
                               ','.join(self.members)]  # Comma-separated members of group
+        _logger.debug('Rendered group entry: {0}'.format(self.group_entry))
+        _logger.debug('Rendered gshadow entry: {0}'.format(self.gshadow_entry))
         return(None)
 
     def parseGroupLine(self, line):
@@ -71,6 +80,9 @@ class Group(object):
             self.members = set(members)
         self.gid = int(groupdict['gid'])
         self.name = groupdict['name']
+        _logger.info('Parsed group line.')
+        for a in ('name', 'gid', 'members'):
+            _logger.debug('{0}: {1}'.format(a.title(), getattr(self, a)))
         return(None)
 
     def parseGshadowLine(self, line):
@@ -85,6 +97,9 @@ class Group(object):
             self.admins = set(admins)
         if members:
             self.members = set(members)
+        _logger.info('Parsed gshadow line.')
+        for a in ('password', 'admins', 'members'):
+            _logger.debug('{0}: {1}'.format(a.title(), getattr(self, a)))
         return(None)
 
 
@@ -132,6 +147,7 @@ class Password(object):
         if self.hash not in ('', None):
             self.hash_type = re.sub(r'_crypt$', '', self._pass_context.identify(self.hash))
             if not self.hash_type:
+                _logger.warning('Unable to detect hash type for string {0}'.format(self.hash))
                 warnings.warn('Could not determine hash type')
         return(None)
 
@@ -160,6 +176,7 @@ class User(object):
 
     def _initVals(self):
         if self.xml is None:
+            _logger.debug('Instantiated blank User object.')
             # We manually assign these.
             return(None)
         self.name = self.xml.attrib['name']
@@ -206,12 +223,14 @@ class User(object):
             g = Group(group_xml)
             g.members.add(self.name)
             self.groups.append(g)
+        _logger.info('User object for {0} instantiated.'.format(self.name))
         return(None)
 
     def genFileLine(self):
         if not all((self.uid, self.primary_group.gid)):
-            raise RuntimeError(('User objects must have a uid and primary_group.gid set before their '
-                                'passwd/shadow entries can be generated'))
+            _logger.error(('User objects must have a uid and primary_group.gid set before their passwd/shadow entries '
+                           'can be generated'))
+            raise RuntimeError('Need UID/primary_group.gid')
         # passwd(5)
         self.passwd_entry = [self.name,  # Username
                              'x',  # self.password.hash is not used because shadow, but this would be password
@@ -230,6 +249,20 @@ class User(object):
                              (str(self.inactive_period) if self.inactive_period else ''),  # Password inactivity period
                              (str((self.expire_date - _epoch).days) if self.expire_date else ''),  # Expiration date
                              '']  # "Reserved"
+        _logger.debug('Rendered passwd entry: {0}'.format(self.passwd_entry))
+        _logger.debug('Rendered shadow entry: {0}'.format(self.shadow_entry))
+        return(None)
+
+    def parsePasswdLine(self, line):
+        userdict = dict(zip(['name', 'password', 'uid', 'gid', 'comment', 'home', 'shell'],
+                            line.split(':')))
+        self.name = userdict['name']
+        self.primary_group = int(userdict['gid'])  # This gets transformed by UserDB() to the proper Group() obj
+        self.uid = int(userdict['uid'])
+        for k in ('home', 'shell'):
+            if userdict[k].strip() != '':
+                setattr(self, k, userdict[k])
+        _logger.debug('Parsed passwd entry: {0}'.format(userdict))
         return(None)
 
     def parseShadowLine(self, line):
@@ -249,18 +282,8 @@ class User(object):
             self.expire_date = None
         else:
             self.expire_date = datetime.datetime.fromtimestamp(shadowdict['expire_date'])
+        _logger.debug('Parsed shadow entry: {0}'.format(shadowdict))
         return(shadowdict)
-
-    def parsePasswdLine(self, line):
-        userdict = dict(zip(['name', 'password', 'uid', 'gid', 'comment', 'home', 'shell'],
-                            line.split(':')))
-        self.name = userdict['name']
-        self.primary_group = int(userdict['gid'])  # This gets transformed by UserDB() to the proper Group() obj
-        self.uid = int(userdict['uid'])
-        for k in ('home', 'shell'):
-            if userdict[k].strip() != '':
-                setattr(self, k, userdict[k])
-        return(None)
 
 
 class UserDB(object):
@@ -322,6 +345,7 @@ class UserDB(object):
             if k in self.login_defaults.keys():
                 v = self.login_defaults[k].lower()
                 self.login_defaults[k] = (True if v == 'yes' else False)
+        _logger.debug('Parsed login defaults config: {0}'.format(self.login_defaults))
         return(None)
 
     def _parseShadow(self):
@@ -371,7 +395,8 @@ class UserDB(object):
             u = User(user_xml)
             # TODO: system accounts?
             if u.name in [i.name for i in self.new_users]:
-                warnings.warn(('User {0} already specified; skipping').format(u.name))
+                _logger.warning('User {0} already specified; skipping to avoid duplicate conflicts.'.format(u.name))
+                warnings.warn('User already specified')
                 continue
             if not u.uid:
                 u.uid = self.getAvailUID()
@@ -431,42 +456,49 @@ class UserDB(object):
 
     def writeConf(self):
         # We shouldn't really use this, because root should be at the beginning.
-        users_by_name = sorted(self.new_users, key = lambda x: x.name)
+        users_by_name = sorted(self.new_users, key = lambda user: user.name)
         # This automatically puts root first (uid = 0)
-        users_by_uid = sorted(self.new_users, key = lambda x: x.uid)
+        users_by_uid = sorted(self.new_users, key = lambda user: user.uid)
         # Ditto.
-        groups_by_name = sorted(self.new_groups, key = lambda x: x.name)
-        groups_by_gid = sorted(self.new_groups, key = lambda x: x.gid)
+        groups_by_name = sorted(self.new_groups, key = lambda group: group.name)
+        groups_by_gid = sorted(self.new_groups, key = lambda group: group.gid)
         for x in (self.new_users, self.new_groups):
             for i in x:
                 i.genFileLine()
         for f in (self.passwd_file, self.shadow_file, self.group_file, self.gshadow_file):
             backup = '{0}-'.format(f)
             shutil.copy2(f, backup)
+            _logger.info('Wrote: {0}'.format(backup))
         with open(self.passwd_file, 'w') as fh:
             for u in users_by_uid:
                 fh.write(':'.join(u.passwd_entry))
                 fh.write('\n')
+        _logger.info('Wrote: {0}'.format(self.passwd_file))
         with open(self.shadow_file, 'w') as fh:
             for u in self.new_users:
                 fh.write(':'.join(u.shadow_entry))
                 fh.write('\n')
+        _logger.info('Wrote: {0}'.format(self.shadow_file))
         with open(self.group_file, 'w') as fh:
             for g in groups_by_gid:
                 fh.write(':'.join(g.group_entry))
                 fh.write('\n')
+        _logger.info('Wrote: {0}'.format(self.group_file))
         with open(self.gshadow_file, 'w') as fh:
             for g in self.new_users:
                 fh.write(':'.join(g.gshadow_entry))
                 fh.write('\n')
+        _logger.info('Wrote: {0}'.format(self.gshadow_file))
         for u in self.new_users:
             if u.new:
                 homedir = os.path.join(self.chroot_base, u.home)
                 # We only set perms for the homedir itself. It's up to the user to specify in a post script if this
                 # needs to be different.
                 if os.path.isdir(homedir):
-                    os.stat(homedir)
-                    # TODO: log original owner, permissions, etc.
+                    stats = os.stat(homedir)
+                    _logger.warning('Homedir {0} for user {1} already exists; original stat: {2}'.format(homedir,
+                                                                                                         u.name,
+                                                                                                         stats))
                 os.makedirs(homedir, exist_ok = True)
                 shutil.copytree(os.path.join(self.chroot_base, 'etc', 'skel'), homedir)
                 os.chown(homedir, u.uid, u.primary_group.gid)
@@ -490,4 +522,5 @@ class UserDB(object):
                                                            ('NOPASSWD: ' if not u.sudoPassword else '')))
             os.chown(sudo_file, 0, 0)
             os.chmod(sudo_file, 0o0440)
+            _logger.info('Wrote: {0}'.format(sudo_file))
         return(None)
