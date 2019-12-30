@@ -15,7 +15,7 @@ from . import _common
 _logger = logging.getLogger(__name__)
 
 
-_skipconfline_re = re.compile(r'^[ \t]*#([ \t]+.*)?$')
+_skipconfline_re = re.compile(r'^[ \t]*(#|$)')
 
 
 class PackageManager(object):
