@@ -47,39 +47,13 @@ class PackageManager(object):
         self.repos = []
         self.packages = []
         self.mirrorlist = []
-        # We need to run this twice; first to get some defaults.
-        self._parseConf()
+        self._initHandler()
         self._initMirrors()
         self._initRepos()
-        self._appendConf()
-        self._parseConf()
 
-    def _initMirrors(self):
-        mirrors = self.xml.find('mirrorList')
-        if mirrors is not None:
-            for m in mirrors.findall('mirror'):
-                mirror = Mirror(m)
-                self.mirrorlist.append(mirror)
-        return(None)
-
-    def _initRepos(self):
-        repos = self.xml.find('repos')
-        for r in repos.findall('repo'):
-            repo = Repo(r)
-            self.repos.append(repo)
-        return(None)
-
-    def _parseConf(self):
+    def _initHandler(self):
         # TODO: Append mirrors/repos to pacman.conf here before we parse?
-        with open(self.configfile, 'r') as fh:
-            _cf = '\n'.join([i for i in fh.read().splitlines() if i.strip() != ''])
-        self.config = configparser.ConfigParser(allow_no_value = True,
-                                                interpolation = None,
-                                                strict = False,
-                                                dict_type = _common.MultiOrderedDict)
-        self.config.optionxform = str
-        self.config.read_string(_cf)
-        self.opts = {'Architecture': 'auto',
+        self.opts = {'Architecture': 'x86_64',  # Technically, "auto" but Arch proper only supports x86_64.
                      'CacheDir': '/var/cache/pacman/pkg/',
                      'CheckSpace': True,
                      'CleanMethod': 'KeepInstalled',
@@ -102,15 +76,6 @@ class PackageManager(object):
                      # 'VerbosePkgLists': None,
                      'XferCommand': '/usr/bin/curl -L -C - -f -o %o %u'
                      }
-        _opts = dict(self.config.items('options'))
-        self.config.
-        for k in ('CheckSpace', 'Color', 'TotalDownload', 'UseSyslog', 'VerbosePkgLists'):
-            if k in _opts.keys():
-                _opts[k] = True
-            else:
-                _opts[k] = False
-        self.opts.update(_opts)
-        self.config.remove_section('options')
         for k, v in self.opts.items():
             if k in ('CacheDir', 'DBPath', 'GPGDir', 'HookDir', 'LogFile', 'RootDir'):
                 v = re.sub(r'^/+', r'', v)
@@ -128,24 +93,60 @@ class PackageManager(object):
             self.handler.ignoregrps = self.opts['IgnoreGroup']
         if self.opts['IgnorePkg']:
             self.handler.ignorepkgs = self.opts['IgnorePkg']
-        # These are the bare minimum that come enabled.
-        for repo in self.config.sections():
-            # TODO: figure out what the heck to do with the SigLevels
-            self.handler.register_syncdb(repo, 0)
-            self.config.get(repo, )
+        return(None)
 
+    def _initMirrors(self):
+        mirrors = self.xml.find('mirrorList')
+        if mirrors is not None:
+            _mirrorlist = os.path.join(self.chroot_base, 'etc', 'pacman.d', 'mirrorlist')
+            with open(_mirrorlist, 'a') as fh:
+                fh.write('\n# Added by AIF-NG.\n')
+                for m in mirrors.findall('mirror'):
+                    mirror = Mirror(m)
+                    self.mirrorlist.append(mirror)
+                    fh.write('Server = {0}\n'.format(mirror.uri))
+            _logger.info('Appended: {0}'.format(_mirrorlist))
+        return(None)
+
+    def _initRepos(self):
+        repos = self.xml.find('repos')
+        _conf = os.path.join(self.chroot_base, 'etc', 'pacman.conf')
+        with open(_conf, 'a') as fh:
+            fh.write('\n# Added by AIF-NG.\n')
+            for r in repos.findall('repo'):
+                repo = Repo(r)
+                self.repos.append(repo)
+                if repo.enabled:
+                    fh.write('[{0}]\n'.format(repo.name))
+                    if repo.siglevel:
+                        fh.write('SigLevel = {0}\n'.format(repo.siglevel))
+                    if repo.uri:
+                        fh.write('Server = {0}\n'.format(repo.uri))
+                    else:
+                        fh.write('Include = /etc/pacman.d/mirrorlist\n')
+                else:
+                    fh.write('#[{0}]\n'.format(repo.name))
+                    if repo.siglevel:
+                        fh.write('#SigLevel = {0}\n'.format(repo.siglevel))
+                    if repo.uri:
+                        fh.write('#Server = {0}\n'.format(repo.uri))
+                    else:
+                        fh.write('#Include = /etc/pacman.d/mirrorlist\n')
+        _logger.info('Appended: {0}'.format(_conf))
         return(None)
 
 
 class Repo(object):
-    def __init__(self, repo_xml):
+    def __init__(self, repo_xml, arch = 'x86_64'):
         # TODO: support Usage? ("REPOSITORY SECTIONS", pacman.conf(5))
         self.xml = repo_xml
         _logger.debug('repo_xml: {0}'.format(etree.tostring(self.xml, with_tail = False).decode('utf-8')))
-        _siglevelmap = {'default': }
+        # TODO: SigLevels?!
         self.name = self.xml.attrib['name']
-        self.uri = self.xml.attrib['mirror']  # "server" in pyalpm lingo.
+        self.uri = self.xml.attrib.get('mirror')  # "server" in pyalpm lingo.
         self.enabled = (True if self.xml.attrib.get('enabled', 'true') in ('1', 'true') else False)
-        _sigs = 0
-        for siglevel in self.xml.attrib['sigLevel'].split():
-            sl = _siglevelmap[siglevel]
+        self.siglevel = self.xml.attrib.get('sigLevel')
+        self.real_uri = None
+        if self.uri:
+            self.real_uri = self.uri.replace('$repo', self.name).replace('$arch', arch)
+        return(None)
