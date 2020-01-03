@@ -3,6 +3,9 @@ import logging
 from collections import OrderedDict
 
 
+# TODO: Add pacman.conf parsing?
+
+
 _logger = logging.getLogger('pacman:_common')
 
 

@@ -106,6 +106,7 @@ class Downloader(object):
 
     def parseGpgVerify(self, results):
         pass  # TODO? Might not need to.
+        return(None)
 
     def verify(self, verify_xml, *args, **kwargs):
         gpg_xml = verify_xml.find('gpg')
@@ -131,7 +132,7 @@ class Downloader(object):
         # This means we can *always* instantiate the GPG handler from scratch.
         self.gpg = gpg_handler.GPG()
         _logger.info('Established GPG session.')
-        _logger.debug('GPG home dir: {0}'.format(self.gpg.homedir))
+        _logger.debug('GPG home dir: {0}'.format(self.gpg.home))
         _logger.debug('GPG primary key: {0}'.format(self.gpg.primary_key.fpr))
         keys_xml = gpg_xml.find('keys')
         if keys_xml is not None:
@@ -217,7 +218,7 @@ class Downloader(object):
         checksum_file_xml = hash_xml.findall('checksumFile')
         checksums = self.checksum.hashData(self.data.read())
         self.data.seek(0, 0)
-        if checksum_file_xml is not None:
+        if checksum_file_xml:
             for cksum_xml in checksum_file_xml:
                 _logger.debug('cksum_xml: {0}'.format(etree.tostring(cksum_xml, with_tail = False).decode('utf-8')))
                 htype = cksum_xml.attrib['hashType'].strip().lower()
@@ -236,7 +237,7 @@ class Downloader(object):
                     _logger.warning(('Checksum type {0} mismatch: '
                                      '{1} (data) vs. {2} (specified)').format(htype, checksums[htype], cksum))
                 results.append(result)
-        if checksum_xml is not None:
+        if checksum_xml:
             for cksum_xml in checksum_xml:
                 _logger.debug('cksum_xml: {0}'.format(etree.tostring(cksum_xml, with_tail = False).decode('utf-8')))
                 # Thankfully, this is a LOT easier.
@@ -339,6 +340,9 @@ class HTTPDownloader(Downloader):
     def get(self):
         self.data.seek(0, 0)
         req = requests.get(self.real_uri, auth = self.auth)
+        if not req.ok:
+            _logger.error('Could not fetch remote resource: {0}'.format(self.real_uri))
+            raise RuntimeError('Unable to fetch remote resource')
         self.data.write(req.content)
         self.data.seek(0, 0)
         _logger.info('Read in {0} bytes'.format(self.data.getbuffer().nbytes))

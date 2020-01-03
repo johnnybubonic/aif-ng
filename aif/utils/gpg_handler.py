@@ -45,13 +45,13 @@ class KeyEditor(object):
 
 
 class GPG(object):
-    def __init__(self, homedir = None, primary_key = None, *args, **kwargs):
-        self.homedir = homedir
+    def __init__(self, home = None, primary_key = None, *args, **kwargs):
+        self.home = home
         self.primary_key = primary_key
         self.temporary = None
         self.ctx = None
         self._imported_keys = []
-        _logger.debug('Homedir: {0}'.format(self.homedir))
+        _logger.debug('Homedir: {0}'.format(self.home))
         _logger.debug('Primary key: {0}'.format(self.primary_key))
         if args:
             _logger.debug('args: {0}'.format(','.join(args)))
@@ -61,17 +61,17 @@ class GPG(object):
         self._initContext()
 
     def _initContext(self):
-        if not self.homedir:
-            self.homedir = tempfile.mkdtemp(prefix = '.aif.', suffix = '.gpg')
+        if not self.home:
+            self.home = tempfile.mkdtemp(prefix = '.aif.', suffix = '.gpg')
             self.temporary = True
-            _logger.debug('Set as temporary homedir.')
-        self.homedir = os.path.abspath(os.path.expanduser(self.homedir))
-        _logger.debug('Homedir finalized: {0}'.format(self.homedir))
-        if not os.path.isdir(self.homedir):
-            os.makedirs(self.homedir, exist_ok = True)
-            os.chmod(self.homedir, 0o0700)
-            _logger.info('Created {0}'.format(self.homedir))
-        self.ctx = gpg.Context(home_dir = self.homedir)
+            _logger.debug('Set as temporary home.')
+        self.home = os.path.abspath(os.path.expanduser(self.home))
+        _logger.debug('Homedir finalized: {0}'.format(self.home))
+        if not os.path.isdir(self.home):
+            os.makedirs(self.home, exist_ok = True)
+            os.chmod(self.home, 0o0700)
+            _logger.info('Created {0}'.format(self.home))
+        self.ctx = gpg.Context(home_dir = self.home)
         if self.temporary:
             self.primary_key = self.createKey('AIF-NG File Verification Key',
                                               sign = True,
@@ -92,12 +92,12 @@ class GPG(object):
 
     def clean(self):
         # This is mostly just to cleanup the stuff we did before.
-        _logger.info('Cleaning GPG homedir.')
+        _logger.info('Cleaning GPG home.')
         self.primary_key = self.primary_key.fpr
         if self.temporary:
             self.primary_key = None
-            shutil.rmtree(self.homedir)
-            _logger.info('Deleted temporary GPG homedir: {0}'.format(self.homedir))
+            shutil.rmtree(self.home)
+            _logger.info('Deleted temporary GPG home: {0}'.format(self.home))
         self.ctx = None
         return(None)
 
@@ -147,7 +147,7 @@ class GPG(object):
         if keys:
             _logger.debug('Found keys: {0}'.format(keys))
         else:
-            _logger.warn('Found no keys.')
+            _logger.warning('Found no keys.')
         if keyring_import:
             _logger.debug('Importing enabled; importing found keys.')
             self.importKeys(keys, native = True)

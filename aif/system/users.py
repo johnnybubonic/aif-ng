@@ -120,7 +120,7 @@ class Password(object):
             if not self._is_gshadow:
                 self.disabled = aif.utils.xmlBool(self.xml.attrib.get('locked', 'false'))
             self._password_xml = self.xml.xpath('passwordPlain|passwordHash')
-            if self._password_xml is not None:
+            if self._password_xml:
                 self._password_xml = self._password_xml[0]
                 if self._password_xml.tag == 'passwordPlain':
                     self.password = self._password_xml.text.strip()
@@ -187,12 +187,12 @@ class User(object):
         self.sudoPassword = aif.utils.xmlBool(self.xml.attrib.get('sudoPassword', 'true'))
         self.home = self.xml.attrib.get('home', '/home/{0}'.format(self.name))
         self.uid = self.xml.attrib.get('uid')
-        if self.uid is not None:
+        if self.uid:
             self.uid = int(self.uid)
         self.primary_group = Group(None)
         self.primary_group.name = self.xml.attrib.get('group', self.name)
         self.primary_group.gid = self.xml.attrib.get('gid')
-        if self.primary_group.gid is not None:
+        if self.primary_group.gid:
             self.primary_group.gid = int(self.primary_group.gid)
         self.primary_group.create = True
         self.primary_group.members.add(self.name)
@@ -204,7 +204,7 @@ class User(object):
         self.inactive_period = int(self.xml.attrib.get('inactiveDays', 0))
         self.expire_date = self.xml.attrib.get('expireDate')
         self.last_change = _since_epoch.days - 1
-        if self.expire_date is not None:
+        if self.expire_date:
             # https://www.w3.org/TR/xmlschema-2/#dateTime
             try:
                 self.expire_date = datetime.datetime.fromtimestamp(int(self.expire_date))  # It's an Epoch

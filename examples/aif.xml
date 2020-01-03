@@ -5,21 +5,21 @@
      chrootPath="/mnt/aif"
      reboot="false">
     <bootstrap>
-<!--        <tarball>-->
-<!--            https://arch.mirror.square-r00t.net/iso/latest/archlinux-bootstrap-2019.12.01-x86_64.tar.gz-->
-<!--        </tarball>-->
         <tarball>
-            file:///tmp/archlinux-bootstrap-2019.12.01-x86_64.tar.gz
+            https://arch.mirror.square-r00t.net/iso/latest/archlinux-bootstrap-2020.01.01-x86_64.tar.gz
         </tarball>
+        <!--        <tarball>-->
+        <!--            file:///tmp/archlinux-bootstrap-2020.01.01-x86_64.tar.gz-->
+        <!--        </tarball>-->
         <verify>
             <gpg>
                 <sigs>
-<!--                    <signatureFile>-->
-<!--                        https://arch.mirror.square-r00t.net/iso/latest/archlinux-bootstrap-2019.12.01-x86_64.tar.gz.sig-->
-<!--                    </signatureFile>-->
                     <signatureFile>
-                        file:///tmp/archlinux-bootstrap-2019.12.01-x86_64.tar.gz.sig
+                        https://arch.mirror.square-r00t.net/iso/latest/archlinux-bootstrap-2020.01.01-x86_64.tar.gz.sig
                     </signatureFile>
+                    <!--                    <signatureFile>-->
+                    <!--                        file:///tmp/archlinux-bootstrap-2020.01.01-x86_64.tar.gz.sig-->
+                    <!--                    </signatureFile>-->
                 </sigs>
                 <keys detect="false">
                     <keyID>0x4AA4767BBC9C4B1D18AE28B77F2D434B9741E8AC</keyID>
@@ -230,16 +230,6 @@
         </services>
     </system>
     <pacman>
-        <repos>
-            <repo name="core" enabled="true" sigLevel="default" mirror="file:///etc/pacman.d/mirrorlist"/>
-            <repo name="extra" enabled="true" sigLevel="default" mirror="file:///etc/pacman.d/mirrorlist"/>
-            <repo name="community" enabled="true" sigLevel="default" mirror="file:///etc/pacman.d/mirrorlist"/>
-            <repo name="multilib" enabled="true" sigLevel="default" mirror="file:///etc/pacman.d/mirrorlist"/>
-            <repo name="testing" enabled="false" sigLevel="default" mirror="file:///etc/pacman.d/mirrorlist"/>
-            <repo name="multilib-testing" enabled="false" sigLevel="default" mirror="file:///etc/pacman.d/mirrorlist"/>
-            <repo name="archlinuxfr" enabled="false" sigLevel="Optional TrustedOnly"
-                  mirror="http://repo.archlinux.fr/$arch"/>
-        </repos>
         <mirrorList>
             <mirror>http://arch.mirror.square-r00t.net/$repo/os/$arch</mirror>
             <mirror>http://mirror.us.leaseweb.net/archlinux/$repo/os/$arch</mirror>
@@ -248,6 +238,19 @@
             <mirror>http://mirrors.gigenet.com/archlinux/$repo/os/$arch</mirror>
             <mirror>http://mirror.jmu.edu/pub/archlinux/$repo/os/$arch</mirror>
         </mirrorList>
+        <repos>
+            <repo name="core" enabled="true" sigLevel="default">
+                <include>file:///etc/pacman.d/mirrorlist</include>
+            </repo>
+            <repo name="extra" enabled="true" sigLevel="default"/>
+            <repo name="community" enabled="true" sigLevel="default"/>
+            <repo name="multilib" enabled="true" sigLevel="default"/>
+            <repo name="testing" enabled="false" sigLevel="default"/>
+            <repo name="multilib-testing" enabled="false" sigLevel="default"/>
+            <repo name="sqrt" enabled="false" sigLevel="Required">
+                <mirror>https://$repo.arch.repo.square-r00t.net</mirror>
+            </repo>
+        </repos>
         <software>
             <package repo="core">sed</package>
             <package>python</package>
