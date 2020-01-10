@@ -8,6 +8,8 @@ import gpg
 
 
 # We don't use utils.gpg_handler because this is pretty much all procedural.
+# Though, maybe add e.g. TofuDB stuff to it, and subclass it here?
+# TODO.
 
 _logger = logging.getLogger(__name__)
 

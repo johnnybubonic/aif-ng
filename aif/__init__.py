@@ -14,7 +14,7 @@ from . import system
 from . import config
 from . import envsetup
 from . import network
-from . import pacman
+from . import software
 
 
 _logger = logging.getLogger('AIF')
