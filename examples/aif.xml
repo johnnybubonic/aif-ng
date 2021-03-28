@@ -6,7 +6,7 @@
      reboot="false">
     <bootstrap>
         <tarball>
-            https://arch.mirror.square-r00t.net/iso/latest/archlinux-bootstrap-2020.01.01-x86_64.tar.gz
+            https://arch.mirror.square-r00t.net/iso/latest/archlinux-bootstrap-2020.03.01-x86_64.tar.gz
         </tarball>
         <!--        <tarball>-->
         <!--            file:///tmp/archlinux-bootstrap-2020.01.01-x86_64.tar.gz-->
@@ -15,7 +15,7 @@
             <gpg>
                 <sigs>
                     <signatureFile>
-                        https://arch.mirror.square-r00t.net/iso/latest/archlinux-bootstrap-2020.01.01-x86_64.tar.gz.sig
+                        https://arch.mirror.square-r00t.net/iso/latest/archlinux-bootstrap-2020.03.01-x86_64.tar.gz.sig
                     </signatureFile>
                     <!--                    <signatureFile>-->
                     <!--                        file:///tmp/archlinux-bootstrap-2020.01.01-x86_64.tar.gz.sig-->
